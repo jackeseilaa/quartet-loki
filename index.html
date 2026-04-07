@@ -1,36 +1,233 @@
 <!DOCTYPE html>
+
 <html lang="fi">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes"><title>Quartet Loki</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,700;1,700&family=Outfit:wght@400;800&display=swap" rel="stylesheet">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Quartet Loki"/>
+<meta name="theme-color" content="#0a4272"/>
+<title>Quartet Loki v1.1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--o:#0a4272;--g:#b45309;--c:#fff;--bg:#f3f4f6;--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)}
+:root{
+  --ocean:#0a4272;--ocean-dark:#083458;--ocean-light:#1e5fa3;
+  --gold:#b45309;--gold-dark:#92400e;
+  --tmi:#1d4ed8;--tmi-bg:#dbeafe;--tmi-border:#93c5fd;
+  --oy:#7c3aed;--oy-bg:#ede9fe;--oy-border:#c4b5fd;
+  --text:#111827;--text-muted:#374151;--text-light:#6b7280;
+  --line:#e5e7eb;--bg:#f3f4f6;--card:#ffffff;
+  --shadow:0 1px 3px rgba(0,0,0,.10),0 1px 2px rgba(0,0,0,.06);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,.10),0 2px 4px -1px rgba(0,0,0,.06);
+  --radius:14px;--radius-sm:10px;
+  --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
+}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'Outfit',sans-serif;background:var(--bg);color:#111}
-.auth{height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a4272 0%,#052a46 100%);padding:20px}
-.auth-c{background:#fff;padding:40px;border-radius:24px;text-align:center;width:100%;max-width:400px}
-.topbar{background:var(--o);color:#fff;padding:calc(var(--st) + 12px) 16px 12px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
-.topbar b{font-family:'Cormorant Garamond',serif;font-size:22px}
-.content{padding:16px;max-width:800px;margin:0 auto}
-.tabs{display:flex;gap:4px;background:#fff;padding:4px;border-radius:12px;margin-bottom:16px}
-.tab{flex:1;padding:10px;border:none;background:none;font-size:13px;font-weight:600;border-radius:9px;cursor:pointer}
-.tab.active{background:var(--o);color:#fff}
-.dash-h{background:linear-gradient(135deg,var(--o),#1e5fa3);color:#fff;padding:24px;border-radius:20px;margin-bottom:12px;text-align:center}
-.dash-s{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
-.dash-i{background:#fff;padding:12px;border-radius:12px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
-.card{background:#fff;padding:16px;border-radius:12px;margin-bottom:10px;border-left:4px solid #ddd}
-.card.tmi{border-left-color:#1d4ed8}.card.oy{border-left-color:#7c3aed}
-.fab{position:fixed;bottom:calc(var(--sb) + 20px);right:20px;background:var(--o);color:#fff;width:56px;height:56px;border-radius:50%;border:none;font-size:28px}
-.mod-o{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:flex-end;z-index:200}
-.mod{background:#fff;width:100%;border-radius:20px 20px 0 0;padding:24px;padding-bottom:calc(var(--sb) + 24px)}
-.btn{background:var(--o);color:#fff;width:100%;padding:14px;border:none;border-radius:10px;font-weight:700;margin-top:10px;cursor:pointer}
+html,body{height:100%}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+
+/* ── AUTH ── */
+.auth-screen{
+min-height:100vh;display:flex;align-items:center;justify-content:center;
+padding:24px;
+background:linear-gradient(135deg,#0a4272 0%,#052a46 60%,#083458 100%);
+}
+.auth-card{
+background:#fff;border-radius:24px;padding:48px 40px;width:min(420px,100%);
+text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);
+}
+.auth-emblem{font-size:56px;margin-bottom:20px;line-height:1}
+.auth-title{
+font-family:‘Cormorant Garamond’,serif;font-size:38px;font-weight:700;
+color:var(–ocean);letter-spacing:-.5px;margin-bottom:6px;line-height:1.1;
+}
+.auth-title em{color:var(–gold);font-style:italic}
+.auth-sub{font-size:13px;color:var(–text-light);margin-bottom:32px}
+.auth-btn{
+background:var(–ocean);color:#fff;border:none;border-radius:12px;
+padding:14px 24px;font-size:15px;font-weight:600;font-family:‘Outfit’,sans-serif;
+width:100%;cursor:pointer;transition:background .15s;
+}
+.auth-btn:hover{background:var(–ocean-dark)}
+.auth-version{font-size:11px;color:#9ca3af;margin-top:20px}
+
+/* ── TOPBAR ── */
+.topbar{
+background:var(–ocean);color:#fff;
+padding:calc(var(–st) + 14px) 20px 14px;
+display:flex;justify-content:space-between;align-items:center;
+position:sticky;top:0;z-index:100;
+box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+.topbar-title{
+font-family:‘Cormorant Garamond’,serif;font-size:24px;font-weight:700;
+letter-spacing:-.3px;display:flex;align-items:center;gap:10px;
+}
+.topbar-title span{font-size:20px}
+.topbar-logout{
+font-size:12px;font-weight:600;color:rgba(255,255,255,.75);
+cursor:pointer;padding:6px 10px;border-radius:8px;
+transition:color .15s,background .15s;
+}
+.topbar-logout:hover{color:#fff;background:rgba(255,255,255,.15)}
+
+/* ── TABS ── */
+.tabs-wrap{background:var(–card);border-bottom:1px solid var(–line);position:sticky;top:calc(var(–st) + 52px);z-index:90}
+.tabs{display:flex;padding:8px 16px;gap:4px;max-width:800px;margin:0 auto}
+.tab{
+flex:1;padding:9px 8px;border:none;background:none;
+font-size:13px;font-weight:600;font-family:‘Outfit’,sans-serif;
+border-radius:var(–radius-sm);cursor:pointer;color:var(–text-light);
+transition:background .15s,color .15s;
+}
+.tab.active{background:var(–ocean);color:#fff}
+.tab:not(.active):hover{background:var(–bg);color:var(–text)}
+
+/* ── CONTENT ── */
+.content{padding:16px;max-width:800px;margin:0 auto;padding-bottom:calc(var(–sb) + 90px)}
+
+/* ── DASHBOARD ── */
+.dash-hero{
+background:linear-gradient(135deg,var(–ocean) 0%,var(–ocean-light) 100%);
+color:#fff;padding:28px 24px;border-radius:20px;margin-bottom:14px;
+text-align:center;position:relative;overflow:hidden;
+box-shadow:var(–shadow-md);
+}
+.dash-hero::before{
+content:‘⚓’;position:absolute;right:-10px;bottom:-20px;
+font-size:110px;opacity:.08;line-height:1;
+}
+.dash-hero-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;opacity:.75;margin-bottom:8px}
+.dash-hero-pct{font-size:72px;font-weight:800;line-height:1;letter-spacing:-3px}
+.dash-hero-sub{font-size:13px;opacity:.8;margin-top:6px}
+
+.dash-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.dash-stat{
+background:var(–card);padding:16px 12px;border-radius:var(–radius);
+text-align:center;box-shadow:var(–shadow);border:1px solid var(–line);
+}
+.dash-stat-num{font-size:26px;font-weight:800;color:var(–ocean);line-height:1;margin-bottom:4px}
+.dash-stat-label{font-size:11px;font-weight:600;color:var(–text-light);text-transform:uppercase;letter-spacing:.05em}
+
+.dash-bar-wrap{background:var(–card);padding:18px;border-radius:var(–radius);box-shadow:var(–shadow);border:1px solid var(–line);margin-bottom:14px}
+.dash-bar-title{font-size:12px;font-weight:700;color:var(–text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px}
+.dash-bar{height:10px;border-radius:99px;background:var(–line);overflow:hidden;display:flex;gap:2px}
+.dash-bar-tmi{background:var(–tmi);border-radius:99px;transition:width .5s ease}
+.dash-bar-oy{background:var(–oy);border-radius:99px;transition:width .5s ease}
+.dash-bar-legend{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap}
+.dash-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:2px}
+.dash-legend-item{display:flex;align-items:flex-start;gap:6px;font-size:13px;color:var(–text-muted)}
+.dash-legend-label{font-weight:600;color:var(–text)}
+
+/* ── LOKI LIST ── */
+.loki-empty{text-align:center;padding:60px 20px;color:var(–text-light)}
+.loki-empty-icon{font-size:48px;margin-bottom:12px}
+.loki-empty-text{font-size:15px}
+
+.loki-card{
+background:var(–card);border-radius:var(–radius);margin-bottom:10px;
+box-shadow:var(–shadow);border:1px solid var(–line);
+border-left:4px solid var(–line);overflow:hidden;
+}
+.loki-card.tmi{border-left-color:var(–tmi)}
+.loki-card.oy{border-left-color:var(–oy)}
+
+.loki-card-body{padding:14px 16px}
+.loki-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px}
+.loki-date{font-size:14px;font-weight:700;color:var(–text)}
+.loki-badge{
+font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+padding:3px 8px;border-radius:99px;flex-shrink:0;
+}
+.loki-badge.tmi{background:var(–tmi-bg);color:var(–tmi);border:1px solid var(–tmi-border)}
+.loki-badge.oy{background:var(–oy-bg);color:var(–oy);border:1px solid var(–oy-border)}
+.loki-kohde{font-size:15px;color:var(–text-muted)}
+
+.loki-card-foot{
+border-top:1px solid var(–line);padding:8px 16px;
+display:flex;gap:8px;
+}
+.btn-del{
+background:none;border:none;font-size:12px;font-weight:600;
+color:#dc2626;cursor:pointer;padding:4px 8px;border-radius:6px;
+transition:background .15s;font-family:‘Outfit’,sans-serif;
+}
+.btn-del:hover{background:#fee2e2}
+
+/* ── FAB ── */
+.fab{
+position:fixed;bottom:calc(var(–sb) + 24px);right:20px;
+background:var(–ocean);color:#fff;width:58px;height:58px;
+border-radius:50%;border:none;font-size:30px;font-weight:300;
+box-shadow:0 4px 16px rgba(10,66,114,.45);cursor:pointer;
+display:flex;align-items:center;justify-content:center;
+transition:transform .15s,box-shadow .15s;z-index:150;
+}
+.fab:active{transform:scale(.93);box-shadow:0 2px 8px rgba(10,66,114,.3)}
+
+/* ── MODAL ── */
+.modal-overlay{
+position:fixed;inset:0;background:rgba(0,0,0,.5);
+display:flex;align-items:flex-end;z-index:200;
+animation:fadeIn .2s ease;
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{
+background:#fff;width:100%;border-radius:24px 24px 0 0;
+padding:24px 20px calc(var(–sb) + 28px);
+animation:slideUp .25s ease;max-height:92vh;overflow-y:auto;
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:40px;height:4px;background:var(–line);border-radius:2px;margin:0 auto 20px;display:block}
+.modal-title{font-family:‘Cormorant Garamond’,serif;font-size:26px;font-weight:700;color:var(–ocean);margin-bottom:18px}
+
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;font-weight:700;color:var(–text-muted);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:6px}
+.form-input,.form-select,.form-textarea{
+width:100%;padding:12px 14px;border:1.5px solid var(–line);border-radius:var(–radius-sm);
+font-size:15px;font-family:‘Outfit’,sans-serif;color:var(–text);background:#fff;
+transition:border-color .15s,box-shadow .15s;outline:none;
+-webkit-appearance:none;appearance:none;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{
+border-color:var(–ocean);box-shadow:0 0 0 3px rgba(10,66,114,.1);
+}
+.form-textarea{resize:vertical;min-height:80px}
+
+.btn-save{
+background:var(–ocean);color:#fff;width:100%;padding:15px;
+border:none;border-radius:var(–radius-sm);font-size:15px;font-weight:700;
+font-family:‘Outfit’,sans-serif;margin-top:8px;cursor:pointer;
+transition:background .15s;
+}
+.btn-save:hover{background:var(–ocean-dark)}
+.btn-cancel{
+background:#f3f4f6;color:var(–text-muted);width:100%;padding:13px;
+border:none;border-radius:var(–radius-sm);font-size:14px;font-weight:600;
+font-family:‘Outfit’,sans-serif;margin-top:8px;cursor:pointer;
+transition:background .15s;
+}
+.btn-cancel:hover{background:#e5e7eb}
+
+/* ── MISC ── */
+.version-note{text-align:center;font-size:11px;color:#9ca3af;padding:8px 0 4px}
 </style>
+
 </head>
-<body><div id="root"></div><script type="module">
+<body>
+<div id="root"></div>
+
+<script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const APP_VERSION = 'v1.1';
+const ALLOWED_EMAIL = 'jacke.seilaa@gmail.com';
 
 const cfg = {
   apiKey: "AIzaSyB7Dp5_5fN0Iko-4Jn1D2Dp6NNNih63UO0",
@@ -41,37 +238,251 @@ const cfg = {
   appId: "1:543523103696:web:439a312efa6aec398a8fd5"
 };
 
-const auth = getAuth(initializeApp(cfg));
-const db = getFirestore();
+const app = initializeApp(cfg);
+const auth = getAuth(app);
+const db = getFirestore(app);
 const prov = new GoogleAuthProvider();
-window.S = { user: null, loki: [], tab: 'dashboard', modal: false, form: { pvm: new Date().toISOString().split('T')[0], kohde: '', kuka: 'tmi' } };
 
-window.login=()=>signInWithRedirect(auth,prov); window.logout=()=>signOut(auth);
-window.setTab=(t)=>{S.tab=t;render()}; window.toggleM=(v)=>{S.modal=v;render()};
-window.save=async()=>{await addDoc(collection(db,'quartet_loki'),S.form);window.toggleM(false)};
-window.del=async(id)=>{if(confirm('Poista?'))await deleteDoc(doc(db,'quartet_loki',id))};
-function render() {
-  const root = document.getElementById('root');
-  if (!S.user) {
-    root.innerHTML = `<div class="auth"><div class="auth-c"><div style="font-size:50px">⚓</div><h1 style="font-family:'Cormorant Garamond'">Quartet Loki</h1><button class="btn" onclick="window.login()">Kirjaudu Googlella</button></div></div>`;
-    return;
+const S = {
+  user: null,
+  loki: [],
+  tab: 'dashboard',
+  modal: false,
+  form: {
+    pvm: new Date().toISOString().split('T')[0],
+    kohde: '',
+    kuka: 'tmi'
   }
-  const tmi = S.loki.filter(i=>i.kuka==='tmi').length, oy = S.loki.filter(i=>i.kuka==='oy').length;
-  root.innerHTML = `
-    <div class="topbar"><b>⚓ Quartet Loki</b><span onclick="window.logout()" style="font-size:12px">Ulos</span></div>
-    <div class="content">
-      <div class="tabs"><button class="tab ${S.tab==='dashboard'?'active':''}" onclick="window.setTab('dashboard')">Tilastot</button><button class="tab ${S.tab==='loki'?'active':''}" onclick="window.setTab('loki')">Lokikirja</button></div>
-      ${S.tab==='dashboard' ? `<div class="dash-h"><div style="font-size:48px;font-weight:800">${Math.round(((tmi+oy)/(S.loki.length||1))*100)}%</div></div><div class="dash-s"><div class="dash-i"><b>${S.loki.length}</b><p>Kaikki</p></div><div class="dash-i"><b>${tmi}</b><p>Tmi</p></div><div class="dash-i"><b>${oy}</b><p>Oy</p></div></div>` : 
-      S.loki.map(i => `<div class="card ${i.kuka}"><b>${new Date(i.pvm).toLocaleDateString('fi')}</b><br>${i.kohde} (${i.kuka})<br><span style="color:red;font-size:11px" onclick="window.del('${i.id}')">Poista</span></div>`).join('')}
-    </div>
-    <button class="fab" onclick="window.toggleM(true)">+</button>
-    ${S.modal ? `<div class="mod-o"><div class="mod"><h3>Uusi merkintä</h3><input type="date" value="${S.form.pvm}" oninput="S.form.pvm=this.value"><input type="text" placeholder="Kohde" oninput="S.form.kohde=this.value"><select onchange="S.form.kuka=this.value"><option value="tmi">Tmi</option><option value="oy">Oy</option></select><button class="btn" onclick="window.save()">Tallenna</button><button class="btn" style="background:#eee;color:#333" onclick="window.toggleM(false)">Peruuta</button></div></div>` : ''}`;
+};
+
+// ── AUTH ──
+window.login = () => signInWithRedirect(auth, prov);
+window.logout = () => signOut(auth);
+
+// ── NAV ──
+window.setTab = (t) => { S.tab = t; render(); };
+
+// ── MODAL ──
+window.openModal = () => {
+  S.form = { pvm: new Date().toISOString().split('T')[0], kohde: '', kuka: 'tmi' };
+  S.modal = true;
+  render();
+};
+window.closeModal = () => { S.modal = false; render(); };
+
+// ── FORM ──
+window.updateForm = (field, val) => { S.form[field] = val; };
+
+// ── SAVE ──
+window.save = async () => {
+  if (!S.form.kohde.trim()) { alert('Syötä kohde'); return; }
+  try {
+    await addDoc(collection(db, 'quartet_loki'), {
+      pvm: S.form.pvm,
+      kohde: S.form.kohde.trim(),
+      kuka: S.form.kuka,
+      luotu: serverTimestamp()
+    });
+    window.closeModal();
+  } catch(e) { alert('Tallennus epäonnistui: ' + e.message); }
+};
+
+// ── DELETE ──
+window.del = async (id) => {
+  if (!confirm('Poistetaanko merkintä?')) return;
+  try { await deleteDoc(doc(db, 'quartet_loki', id)); }
+  catch(e) { alert('Poisto epäonnistui: ' + e.message); }
+};
+
+// ── HELPERS ──
+function fmtDate(s) {
+  if (!s) return '';
+  const d = new Date(s);
+  if (isNaN(d)) return s;
+  return d.toLocaleDateString('fi-FI', { day:'numeric', month:'numeric', year:'numeric' });
+}
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ── RENDER ──
+function render() {
+  const root = document.getElementById('root');
+
+  if (!S.user) {
+    root.innerHTML = `
+      <div class="auth-screen">
+        <div class="auth-card">
+          <div class="auth-emblem">⚓</div>
+          <div class="auth-title">Quartet <em>Loki</em></div>
+          <div class="auth-sub">s/y Quartet · Absolut 37 · Lokikirja</div>
+          <button class="auth-btn" onclick="window.login()">Kirjaudu Googlella</button>
+          <div class="auth-version">${APP_VERSION}</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const tmi = S.loki.filter(i => i.kuka === 'tmi');
+  const oy  = S.loki.filter(i => i.kuka === 'oy');
+  const tot = S.loki.length;
+  const bizPct = tot > 0 ? Math.round(((tmi.length + oy.length) / tot) * 100) : 0;
+  const tmiPct = tot > 0 ? Math.round((tmi.length / tot) * 100) : 0;
+  const oyPct  = tot > 0 ? Math.round((oy.length  / tot) * 100) : 0;
+
+  root.innerHTML = `
+    <div class="topbar">
+      <div class="topbar-title"><span>⚓</span> Quartet Loki</div>
+      <div class="topbar-logout" onclick="window.logout()">Ulos</div>
+    </div>
+
+    <div class="tabs-wrap">
+      <div class="tabs">
+        <button class="tab ${S.tab==='dashboard'?'active':''}" onclick="window.setTab('dashboard')">Tilastot</button>
+        <button class="tab ${S.tab==='loki'?'active':''}" onclick="window.setTab('loki')">Lokikirja</button>
+      </div>
+    </div>
+
+    <div class="content">
+      ${S.tab === 'dashboard' ? renderDashboard(tot, tmi, oy, bizPct, tmiPct, oyPct) : renderLoki()}
+    </div>
+
+    <button class="fab" onclick="window.openModal()">+</button>
+
+    ${S.modal ? renderModal() : ''}
+  `;
+}
+
+function renderDashboard(tot, tmi, oy, bizPct, tmiPct, oyPct) {
+  return `
+    <div class="dash-hero">
+      <div class="dash-hero-label">Yrityskäyttö (Tmi + Oy)</div>
+      <div class="dash-hero-pct">${bizPct}<small style="font-size:36px;font-weight:600">%</small></div>
+      <div class="dash-hero-sub">${tmi.length + oy.length} / ${tot} merkinnästä</div>
+    </div>
+
+    <div class="dash-stats">
+      <div class="dash-stat">
+        <div class="dash-stat-num">${tot}</div>
+        <div class="dash-stat-label">Kaikki</div>
+      </div>
+      <div class="dash-stat">
+        <div class="dash-stat-num" style="color:var(--tmi)">${tmi.length}</div>
+        <div class="dash-stat-label">Tmi</div>
+      </div>
+      <div class="dash-stat">
+        <div class="dash-stat-num" style="color:var(--oy)">${oy.length}</div>
+        <div class="dash-stat-label">Oy</div>
+      </div>
+    </div>
+
+    <div class="dash-bar-wrap">
+      <div class="dash-bar-title">Jakautuma</div>
+      <div class="dash-bar">
+        <div class="dash-bar-tmi" style="width:${tmiPct}%"></div>
+        <div class="dash-bar-oy"  style="width:${oyPct}%"></div>
+      </div>
+      <div class="dash-bar-legend">
+        <div class="dash-legend-item">
+          <div class="dash-legend-dot" style="background:var(--tmi)"></div>
+          <div><span class="dash-legend-label">Tmi ${tmiPct}%</span> · J Sailing</div>
+        </div>
+        <div class="dash-legend-item">
+          <div class="dash-legend-dot" style="background:var(--oy)"></div>
+          <div><span class="dash-legend-label">Oy ${oyPct}%</span> · AJarmo Oy</div>
+        </div>
+        <div class="dash-legend-item">
+          <div class="dash-legend-dot" style="background:var(--line)"></div>
+          <div><span class="dash-legend-label">Oma ${100-tmiPct-oyPct}%</span> · Vapaa-aika</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="version-note">${APP_VERSION} · jsailing-f716c</div>
+  `;
+}
+
+function renderLoki() {
+  if (S.loki.length === 0) return `
+    <div class="loki-empty">
+      <div class="loki-empty-icon">📋</div>
+      <div class="loki-empty-text">Ei lokimerkintöjä vielä.<br>Lisää ensimmäinen + -painikkeella.</div>
+    </div>`;
+
+  return S.loki.map(i => `
+    <div class="loki-card ${esc(i.kuka)}">
+      <div class="loki-card-body">
+        <div class="loki-card-top">
+          <div class="loki-date">${fmtDate(i.pvm)}</div>
+          <div class="loki-badge ${esc(i.kuka)}">${esc(i.kuka)}</div>
+        </div>
+        <div class="loki-kohde">${esc(i.kohde)}</div>
+      </div>
+      <div class="loki-card-foot">
+        <button class="btn-del" onclick="window.del('${esc(i.id)}')">Poista</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderModal() {
+  return `
+    <div class="modal-overlay" onclick="event.target===this&&window.closeModal()">
+      <div class="modal">
+        <span class="modal-handle"></span>
+        <div class="modal-title">Uusi merkintä</div>
+
+        <div class="form-group">
+          <label class="form-label">Päivämäärä</label>
+          <input type="date" class="form-input" value="${esc(S.form.pvm)}"
+            oninput="window.updateForm('pvm',this.value)">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Kohde / kuvaus</label>
+          <input type="text" class="form-input" placeholder="esim. Pihlajasaari–Harmaja–Roihuvuori"
+            value="${esc(S.form.kohde)}"
+            oninput="window.updateForm('kohde',this.value)">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Käyttäjä</label>
+          <select class="form-select" onchange="window.updateForm('kuka',this.value)">
+            <option value="tmi" ${S.form.kuka==='tmi'?'selected':''}>Tmi — J Sailing</option>
+            <option value="oy"  ${S.form.kuka==='oy' ?'selected':''}>Oy — AJarmo Oy</option>
+            <option value="oma" ${S.form.kuka==='oma'?'selected':''}>Oma käyttö</option>
+          </select>
+        </div>
+
+        <button class="btn-save" onclick="window.save()">Tallenna</button>
+        <button class="btn-cancel" onclick="window.closeModal()">Peruuta</button>
+      </div>
+    </div>`;
+}
+
+// ── FIREBASE LISTENERS ──
 onAuthStateChanged(auth, u => {
-  if (u && u.email === 'jacke.seilaa@gmail.com') {
-    S.user = u; onSnapshot(query(collection(db, 'quartet_loki'), orderBy('pvm', 'desc')), snap => { S.loki = snap.docs.map(d => ({ id: d.id, ...d.data() })); render(); });
-  } else { S.user = null; render(); }
+  if (u && u.email === ALLOWED_EMAIL) {
+    S.user = u;
+    onSnapshot(
+      query(collection(db, 'quartet_loki'), orderBy('pvm', 'desc')),
+      snap => {
+        S.loki = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        render();
+      },
+      err => console.error('Snapshot error:', err)
+    );
+  } else {
+    S.user = null;
+    S.loki = [];
+    render();
+  }
 });
-getRedirectResult(auth).catch(console.error); render();
-</script></body></html>
+
+getRedirectResult(auth).catch(console.error);
+render();
+</script>
+
+</body>
+</html>
