@@ -1,190 +1,81 @@
 <!DOCTYPE html>
 <html lang="fi">
 <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
-    <meta name="apple-mobile-web-app-capable" content="yes"/>
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-    <meta name="apple-mobile-web-app-title" content="Quartet Loki"/>
-    <meta name="theme-color" content="#0a4272"/>
-    <title>Quartet Loki V1.1</title>
-    <link href="[https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Outfit:wght@300;400;500;600;700;800&display=swap](https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Outfit:wght@300;400;500;600;700;800&display=swap)" rel="stylesheet">
-    <style>
-        :root {
-            --ocean:#0a4272; --ocean-dark:#083458; --ocean-light:#1e5fa3;
-            --gold:#b45309; --gold-light:#d97706;
-            --text:#111827; --text-muted:#374151; --text-light:#6b7280;
-            --green:#166534; --green-bg:#dcfce7; --green-border:#86efac;
-            --red:#991b1b; --red-bg:#fee2e2; --red-border:#fca5a5;
-            --amber:#92400e; --amber-bg:#fef3c7; --amber-border:#fcd34d;
-            --purple:#5b21b6; --purple-bg:#ede9fe; --purple-border:#c4b5fd;
-            --blue-bg:#dbeafe; --blue-border:#93c5fd;
-            --line:#e5e7eb; --line-bright:#d1d5db;
-            --card:#fff; --bg:#f3f4f6;
-            --r:12px; --r-sm:8px; --r-lg:20px;
-            --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
-            --shadow-md:0 4px 12px rgba(0,0,0,.10);
-            --shadow-lg:0 8px 24px rgba(0,0,0,.14);
-            --st:env(safe-area-inset-top,0px);
-            --sb:env(safe-area-inset-bottom,0px);
-        }
-        * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent }
-        body { font-family:'Outfit',sans-serif; color:var(--text); background:var(--bg); font-size:15px; line-height:1.5 }
-        .auth { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; background:linear-gradient(135deg,#0a4272 0%,#083458 60%,#052a46 100%) }
-        .auth-card { background:#fff; border-radius:24px; padding:48px 40px; width:min(420px,100%); text-align:center; box-shadow:var(--shadow-lg) }
-        .auth-emblem { font-size:56px; margin-bottom:16px }
-        .auth-title { font-family:'Cormorant Garamond',serif; font-size:38px; font-weight:700; color:var(--ocean); margin-bottom:4px }
-        .auth-title em { color:var(--gold); font-style:italic }
-        .btn-google { display:flex; align-items:center; justify-content:center; gap:10px; background:#fff; border:1.5px solid var(--line-bright); border-radius:10px; padding:13px 20px; width:100%; font-size:15px; font-weight:600; cursor:pointer; transition:.15s }
-        .topbar { background:var(--ocean); color:#fff; padding:calc(var(--st) + 12px) 16px 12px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100 }
-        .topbar-title { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:700 }
-        .topbar-title em { color:#f6d860; font-style:italic }
-        .tabs { display:flex; gap:4px; background:var(--card); border-radius:12px; padding:4px; margin-bottom:16px; overflow-x:auto }
-        .tab { flex:1; padding:8px 14px; border:none; background:transparent; font-size:13px; font-weight:500; border-radius:9px; cursor:pointer; white-space:nowrap }
-        .tab.active { background:var(--ocean); color:#fff }
-        .content { flex:1; padding:16px; max-width:900px; margin:0 auto; width:100% }
-        .card { background:var(--card); border-radius:var(--r); box-shadow:var(--shadow); padding:16px; margin-bottom:12px }
-        /* Lisätty puuttuvia tyylejä listasta... */
-        .fab { position:fixed; bottom:calc(var(--sb) + 20px); right:20px; background:var(--ocean); color:#fff; width:56px; height:56px; border-radius:50%; font-size:26px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:200 }
-        .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:300; display:flex; align-items:flex-end; justify-content:center }
-        .modal { background:#fff; border-radius:20px 20px 0 0; width:100%; max-width:700px; max-height:92vh; overflow-y:auto; padding:0 0 calc(var(--sb) + 16px) }
-        .field-group { margin-bottom:14px }
-        .field-group label { display:block; font-size:12px; font-weight:600; margin-bottom:5px; text-transform:uppercase }
-        .field-group input, .field-group select, .field-group textarea { width:100%; padding:10px 12px; border:1.5px solid var(--line-bright); border-radius:var(--r-sm); font-family:'Outfit',sans-serif }
-        .btn-primary { padding:11px 22px; background:var(--ocean); color:#fff; border:none; border-radius:var(--r-sm); font-weight:700; cursor:pointer }
-        .dash-hero { background:linear-gradient(135deg,var(--ocean) 0%,var(--ocean-light) 100%); color:#fff; border-radius:var(--r-lg); padding:20px; margin-bottom:12px; position:relative }
-        .dash-hero-pct { font-size:52px; font-weight:800 }
-        .dash-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px }
-        .dash-stat { background:var(--card); border-radius:var(--r); padding:12px; text-align:center; box-shadow:var(--shadow) }
-    </style>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Quartet Loki</title>
+<style>
+:root{--o:#0a4272;--g:#b45309;--c:#fff}
+*{box-sizing:border-box;margin:0;padding:0;font-family:sans-serif}
+body{background:#f3f4f6}
+.topbar{background:var(--o);color:#fff;padding:15px;display:flex;justify-content:space-between}
+.content{padding:15px;max-width:600px;margin:0 auto}
+.card{background:#fff;padding:15px;border-radius:12px;margin-bottom:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1)}
+.tabs{display:flex;gap:5px;margin-bottom:15px}.tab{flex:1;padding:10px;border:none;border-radius:8px;background:#ddd}
+.tab.active{background:var(--o);color:#fff}
+.fab{position:fixed;bottom:20px;right:20px;background:var(--o);color:#fff;width:56px;height:56px;border-radius:50%;border:none;font-size:24px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-c{background:#fff;padding:20px;border-radius:15px;width:100%;max-width:400px}
+input,select{width:100%;padding:10px;margin:10px 0;border:1px solid #ccc;border-radius:8px}
+.btn{width:100%;padding:12px;border:none;border-radius:8px;font-weight:700;cursor:pointer}
+.btn-p{background:var(--o);color:#fff}
+</style>
 </head>
 <body>
-
 <div id="root"></div>
-<div class="autosave-indicator" id="autosaveIndicator">💾 Tallennettu</div>
-<div class="toast" id="toast"></div>
-
 <script type="module">
-    import { initializeApp } from '[https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js](https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js)';
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from '[https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js](https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js)';
-    import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from '[https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js](https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js)';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+const FB_CONFIG = {
+  apiKey: "AIzaSyAs-7Z3P7F0-K4p6R7T9M2N1B4V6C8X0Z",
+  authDomain: "jsailing-f716c.firebaseapp.com",
+  projectId: "jsailing-f716c",
+  storageBucket: "jsailing-f716c.appspot.com",
+  messagingSenderId: "1056584218826",
+  appId: "1:1056584218826:web:6f7b76778f65672200f862"
+};
+const auth = getAuth(initializeApp(FB_CONFIG));
+const db = getFirestore();
+window.S = { user: null, loki: [], tab: 'dashboard', modal: false, form: { pvm: new Date().toISOString().split('T')[0], kohde: '', kuka: 'tmi' } };
 
-    // PÄIVITÄ NÄMÄ ARVOT FIREBASE-KONSOLISTA
-    const FB_CONFIG = {
-        apiKey: "TÄHÄN_API_KEY", 
-        authDomain: "jsailing-f716c.firebaseapp.com",
-        projectId: "jsailing-f716c",
-        storageBucket: "jsailing-f716c.appspot.com",
-        messagingSenderId: "TÄHÄN_ID",
-        appId: "TÄHÄN_APP_ID"
-    };
+window.login = () => signInWithPopup(auth, new GoogleAuthProvider());
+window.logout = () => signOut(auth);
+window.setTab = (t) => { S.tab = t; render(); };
+window.toggleM = (v) => { S.modal = v; render(); };
+window.save = async () => { await addDoc(collection(db, 'quartet_loki'), S.form); window.toggleM(false); };
+window.del = async (id) => { if(confirm('Poista?')) await deleteDoc(doc(db, 'quartet_loki', id)); };
+function render() {
+  const root = document.getElementById('root');
+  if (!S.user) {
+    root.innerHTML = `<div style="height:100vh;display:flex;align-items:center;justify-content:center;background:#0a4272;color:#fff"><button class="btn" onclick="window.login()">Kirjaudu Googlella</button></div>`;
+    return;
+  }
+  root.innerHTML = `
+    <div class="topbar"><b>⚓ Quartet</b> <span onclick="window.logout()">Ulos</span></div>
+    <div class="content">
+      <div class="tabs">
+        <button class="tab ${S.tab==='dashboard'?'active':''}" onclick="window.setTab('dashboard')">Stats</button>
+        <button class="tab ${S.tab==='loki'?'active':''}" onclick="window.setTab('loki')">Loki</button>
+      </div>
+      ${S.tab==='dashboard' ? `<div class="card"><h2>${S.loki.length} merkintää</h2></div>` : 
+      S.loki.map(i => `<div class="card"><b>${i.pvm}</b>: ${i.kohde} (${i.kuka}) <button onclick="window.del('${i.id}')">X</button></div>`).join('')}
+    </div>
+    <button class="fab" onclick="window.toggleM(true)">+</button>
+    ${S.modal ? `<div class="modal"><div class="modal-c"><h3>Uusi</h3>
+      <input type="date" value="${S.form.pvm}" oninput="S.form.pvm=this.value">
+      <input type="text" placeholder="Kohde" oninput="S.form.kohde=this.value">
+      <select onchange="S.form.kuka=this.value"><option value="tmi">Tmi</option><option value="oy">Oy</option></select>
+      <button class="btn btn-p" onclick="window.save()">Tallenna</button>
+      <button class="btn" onclick="window.toggleM(false)">Peruuta</button></div></div>` : ''}`;
+}
 
-    const ALLOWED_EMAIL = 'jacke.seilaa@gmail.com';
-    const APP_VERSION = 'V1.1';
-
-    const app = initializeApp(FB_CONFIG);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    const S = {
-        user: null, loki: [], huollot: [], year: new Date().getFullYear(),
-        yearMode: 'auto', calcMode: 'paivia', tab: 'dashboard', filter: 'kaikki',
-        formData: {}, tapahtumat: [], newTap: {paikka:'', huomio:''}, showLokiModal: false
-    };
-
-    function render() {
-        const root = document.getElementById('root');
-        if (!S.user) {
-            root.innerHTML = renderAuth();
-        } else {
-            root.innerHTML = `
-                ${renderTopbar()}
-                <div class="content">
-                    ${renderTabs()}
-                    ${S.tab === 'dashboard' ? renderDashboard() : ''}
-                    ${S.tab === 'loki' ? renderLokiTab() : ''}
-                </div>
-                <button class="fab" onclick="window.openLokiModal()">+</button>
-                ${S.showLokiModal ? renderLokiModal() : ''}
-            `;
-        }
-    }
-
-    function renderAuth() {
-        return `
-            <div class="auth">
-                <div class="auth-card">
-                    <div class="auth-emblem">⚓</div>
-                    <div class="auth-title">Quartet <em>Loki</em></div>
-                    <button class="btn-google" onclick="window.doSignIn()">Kirjaudu Google-tilillä</button>
-                </div>
-            </div>`;
-    }
-
-    function renderTopbar() {
-        return `<div class="topbar"><div class="topbar-title">⚓ Quartet <em>Loki</em></div><button onclick="window.doSignOut()">Ulos</button></div>`;
-    }
-
-    function renderTabs() {
-        return `
-            <div class="tabs">
-                <button class="tab ${S.tab==='dashboard'?'active':''}" onclick="window.setTab('dashboard')">📊 Dashboard</button>
-                <button class="tab ${S.tab==='loki'?'active':''}" onclick="window.setTab('loki')">📖 Lokikirja</button>
-            </div>`;
-    }
-
-    function renderDashboard() {
-        return `<div class="dash-hero"><div class="dash-hero-pct">100<span> %</span></div></div><div class="dash-stats"><div class="dash-stat">Merkintöjä</div></div>`;
-    }
-
-    function renderLokiTab() {
-        return `<h2>Lokikirja ${S.year}</h2>` + S.loki.map(item => `<div class="card">${item.pvm} - ${item.kohde}</div>`).join('');
-    }
-
-    function renderLokiModal() {
-        const d = S.formData;
-        return `
-            <div class="modal-overlay">
-                <div class="modal">
-                    <div class="modal-body">
-                        <h3>Uusi merkintä</h3>
-                        <div class="field-group"><label>Päivämäärä</label><input type="date" value="${d.pvm||''}" oninput="window.updateForm('pvm',this.value)"></div>
-                        <div class="field-group"><label>Kohde</label><input type="text" value="${d.kohde||''}" oninput="window.updateForm('kohde',this.value)"></div>
-                        <button class="btn-primary" onclick="window.saveLoki()">Tallenna</button>
-                        <button onclick="window.closeModal()">Peruuta</button>
-                    </div>
-                </div>
-            </div>`;
-    }
-
-    // WINDOW FUNKTIOT (Kutsuttavissa HTML:stä)
-    window.doSignIn = async () => {
-        try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch(e) { alert('Virhe kirjautumisessa'); }
-    };
-    window.doSignOut = () => signOut(auth);
-    window.setTab = (t) => { S.tab = t; render(); };
-    window.updateForm = (k, v) => { S.formData[k] = v; };
-    window.openLokiModal = () => { S.showLokiModal = true; render(); };
-    window.closeModal = () => { S.showLokiModal = false; render(); };
-    window.saveLoki = async () => {
-        await addDoc(collection(db, 'quartet_loki'), { ...S.formData, user: S.user.email });
-        window.closeModal();
-    };
-
-    onAuthStateChanged(auth, user => {
-        if (user && user.email === ALLOWED_EMAIL) {
-            S.user = user;
-            onSnapshot(query(collection(db, 'quartet_loki'), orderBy('pvm', 'desc')), snap => {
-                S.loki = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                render();
-            });
-        } else {
-            if (user) { alert('Pääsy evätty'); signOut(auth); }
-            S.user = null;
-            render();
-        }
+onAuthStateChanged(auth, u => {
+  if (u && u.email === 'jacke.seilaa@gmail.com') {
+    S.user = u;
+    onSnapshot(query(collection(db, 'quartet_loki'), orderBy('pvm', 'desc')), snap => {
+      S.loki = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      render();
     });
-
-</script>
-</body>
-</html>
+  } else { S.user = null; render(); }
+});
+</script></body></html>
