@@ -1,33 +1,39 @@
 <!DOCTYPE html>
 <html lang="fi">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Quartet Loki</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><title>Quartet Loki</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,700;1,700&family=Outfit:wght@400;800&display=swap" rel="stylesheet">
 <style>
-:root{--o:#0a4272;--g:#b45309;--c:#fff}
-*{box-sizing:border-box;margin:0;padding:0;font-family:sans-serif}
-body{background:#f3f4f6}
-.topbar{background:var(--o);color:#fff;padding:15px;display:flex;justify-content:space-between}
-.content{padding:15px;max-width:600px;margin:0 auto}
-.card{background:#fff;padding:15px;border-radius:12px;margin-bottom:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1)}
-.tabs{display:flex;gap:5px;margin-bottom:15px}.tab{flex:1;padding:10px;border:none;border-radius:8px;background:#ddd}
+:root{--o:#0a4272;--g:#b45309;--c:#fff;--bg:#f3f4f6;--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:#111}
+.auth{height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a4272 0%,#052a46 100%);padding:20px}
+.auth-c{background:#fff;padding:40px;border-radius:24px;text-align:center;width:100%;max-width:400px}
+.topbar{background:var(--o);color:#fff;padding:calc(var(--st) + 12px) 16px 12px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+.topbar b{font-family:'Cormorant Garamond',serif;font-size:22px}
+.content{padding:16px;max-width:800px;margin:0 auto}
+.tabs{display:flex;gap:4px;background:#fff;padding:4px;border-radius:12px;margin-bottom:16px}
+.tab{flex:1;padding:10px;border:none;background:none;font-size:13px;font-weight:600;border-radius:9px;cursor:pointer}
 .tab.active{background:var(--o);color:#fff}
-.fab{position:fixed;bottom:20px;right:20px;background:var(--o);color:#fff;width:56px;height:56px;border-radius:50%;border:none;font-size:24px}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:20px}
-.modal-c{background:#fff;padding:20px;border-radius:15px;width:100%;max-width:400px}
-input,select{width:100%;padding:10px;margin:10px 0;border:1px solid #ccc;border-radius:8px}
-.btn{width:100%;padding:12px;border:none;border-radius:8px;font-weight:700;cursor:pointer}
-.btn-p{background:var(--o);color:#fff}
+.dash-h{background:linear-gradient(135deg,var(--o),#1e5fa3);color:#fff;padding:24px;border-radius:20px;margin-bottom:12px;text-align:center}
+.dash-s{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.dash-i{background:#fff;padding:12px;border-radius:12px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+.card{background:#fff;padding:16px;border-radius:12px;margin-bottom:10px;border-left:4px solid #ddd}
+.card.tmi{border-left-color:#1d4ed8}.card.oy{border-left-color:#7c3aed}
+.fab{position:fixed;bottom:calc(var(--sb) + 20px);right:20px;background:var(--o);color:#fff;width:56px;height:56px;border-radius:50%;border:none;font-size:28px}
+.mod-o{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:flex-end;z-index:200}
+.mod{background:#fff;width:100%;border-radius:20px 20px 0 0;padding:24px;padding-bottom:calc(var(--sb) + 24px)}
+.btn{background:var(--o);color:#fff;width:100%;padding:14px;border:none;border-radius:10px;font-weight:700;margin-top:10px;cursor:pointer}
 </style>
 </head>
-<body>
-<div id="root"></div>
-<script type="module">
+<body><div id="root"></div><script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-const FB_CONFIG = {
-apiKey: "AIzaSyB7Dp5_5fN0Iko-4Jn1D2Dp6NNNih63UO0",
+
+const cfg = {
+  apiKey: "AIzaSyB7Dp5_5fN0Iko-4Jn1D2Dp6NNNih63UO0",
   authDomain: "jsailing-f716c.firebaseapp.com",
   projectId: "jsailing-f716c",
   storageBucket: "jsailing-f716c.firebasestorage.app",
@@ -35,56 +41,37 @@ apiKey: "AIzaSyB7Dp5_5fN0Iko-4Jn1D2Dp6NNNih63UO0",
   appId: "1:543523103696:web:439a312efa6aec398a8fd5"
 };
 
-const app = initializeApp(FB_CONFIG);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const provider = new GoogleAuthProvider();
-
+const auth = getAuth(initializeApp(cfg));
+const db = getFirestore();
+const prov = new GoogleAuthProvider();
 window.S = { user: null, loki: [], tab: 'dashboard', modal: false, form: { pvm: new Date().toISOString().split('T')[0], kohde: '', kuka: 'tmi' } };
 
-// TÄMÄ ON MUUTETTU: Redirect toimii varmemmin kuin Popup
-import { signInWithRedirect, getRedirectResult } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-window.login = () => signInWithRedirect(auth, provider);
-window.logout = () => signOut(auth);
-window.setTab = (t) => { S.tab = t; render(); };
-window.toggleM = (v) => { S.modal = v; render(); };
-window.save = async () => { await addDoc(collection(db, 'quartet_loki'), S.form); window.toggleM(false); };
-window.del = async (id) => { if(confirm('Poista?')) await deleteDoc(doc(db, 'quartet_loki', id)); };
-
-// Tarkistetaan paluu kirjautumisesta
-getRedirectResult(auth).catch(e => console.error(e));
+window.login=()=>signInWithRedirect(auth,prov); window.logout=()=>signOut(auth);
+window.setTab=(t)=>{S.tab=t;render()}; window.toggleM=(v)=>{S.modal=v;render()};
+window.save=async()=>{await addDoc(collection(db,'quartet_loki'),S.form);window.toggleM(false)};
+window.del=async(id)=>{if(confirm('Poista?'))await deleteDoc(doc(db,'quartet_loki',id))};
 function render() {
   const root = document.getElementById('root');
   if (!S.user) {
-    root.innerHTML = `<div style="height:100vh;display:flex;align-items:center;justify-content:center;background:#0a4272;color:#fff"><button class="btn" onclick="window.login()">Kirjaudu Googlella</button></div>`;
+    root.innerHTML = `<div class="auth"><div class="auth-c"><div style="font-size:50px">⚓</div><h1 style="font-family:'Cormorant Garamond'">Quartet Loki</h1><button class="btn" onclick="window.login()">Kirjaudu Googlella</button></div></div>`;
     return;
   }
+  const tmi = S.loki.filter(i=>i.kuka==='tmi').length, oy = S.loki.filter(i=>i.kuka==='oy').length;
   root.innerHTML = `
-    <div class="topbar"><b>⚓ Quartet</b> <span onclick="window.logout()">Ulos</span></div>
+    <div class="topbar"><b>⚓ Quartet Loki</b><span onclick="window.logout()" style="font-size:12px">Ulos</span></div>
     <div class="content">
-      <div class="tabs">
-        <button class="tab ${S.tab==='dashboard'?'active':''}" onclick="window.setTab('dashboard')">Stats</button>
-        <button class="tab ${S.tab==='loki'?'active':''}" onclick="window.setTab('loki')">Loki</button>
-      </div>
-      ${S.tab==='dashboard' ? `<div class="card"><h2>${S.loki.length} merkintää</h2></div>` : 
-      S.loki.map(i => `<div class="card"><b>${i.pvm}</b>: ${i.kohde} (${i.kuka}) <button onclick="window.del('${i.id}')">X</button></div>`).join('')}
+      <div class="tabs"><button class="tab ${S.tab==='dashboard'?'active':''}" onclick="window.setTab('dashboard')">Tilastot</button><button class="tab ${S.tab==='loki'?'active':''}" onclick="window.setTab('loki')">Lokikirja</button></div>
+      ${S.tab==='dashboard' ? `<div class="dash-h"><div style="font-size:48px;font-weight:800">${Math.round(((tmi+oy)/(S.loki.length||1))*100)}%</div></div><div class="dash-s"><div class="dash-i"><b>${S.loki.length}</b><p>Kaikki</p></div><div class="dash-i"><b>${tmi}</b><p>Tmi</p></div><div class="dash-i"><b>${oy}</b><p>Oy</p></div></div>` : 
+      S.loki.map(i => `<div class="card ${i.kuka}"><b>${new Date(i.pvm).toLocaleDateString('fi')}</b><br>${i.kohde} (${i.kuka})<br><span style="color:red;font-size:11px" onclick="window.del('${i.id}')">Poista</span></div>`).join('')}
     </div>
     <button class="fab" onclick="window.toggleM(true)">+</button>
-    ${S.modal ? `<div class="modal"><div class="modal-c"><h3>Uusi</h3>
-      <input type="date" value="${S.form.pvm}" oninput="S.form.pvm=this.value">
-      <input type="text" placeholder="Kohde" oninput="S.form.kohde=this.value">
-      <select onchange="S.form.kuka=this.value"><option value="tmi">Tmi</option><option value="oy">Oy</option></select>
-      <button class="btn btn-p" onclick="window.save()">Tallenna</button>
-      <button class="btn" onclick="window.toggleM(false)">Peruuta</button></div></div>` : ''}`;
+    ${S.modal ? `<div class="mod-o"><div class="mod"><h3>Uusi merkintä</h3><input type="date" value="${S.form.pvm}" oninput="S.form.pvm=this.value"><input type="text" placeholder="Kohde" oninput="S.form.kohde=this.value"><select onchange="S.form.kuka=this.value"><option value="tmi">Tmi</option><option value="oy">Oy</option></select><button class="btn" onclick="window.save()">Tallenna</button><button class="btn" style="background:#eee;color:#333" onclick="window.toggleM(false)">Peruuta</button></div></div>` : ''}`;
 }
 
 onAuthStateChanged(auth, u => {
   if (u && u.email === 'jacke.seilaa@gmail.com') {
-    S.user = u;
-    onSnapshot(query(collection(db, 'quartet_loki'), orderBy('pvm', 'desc')), snap => {
-      S.loki = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      render();
-    });
+    S.user = u; onSnapshot(query(collection(db, 'quartet_loki'), orderBy('pvm', 'desc')), snap => { S.loki = snap.docs.map(d => ({ id: d.id, ...d.data() })); render(); });
   } else { S.user = null; render(); }
 });
+getRedirectResult(auth).catch(console.error); render();
 </script></body></html>
