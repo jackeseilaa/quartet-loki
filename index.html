@@ -27,23 +27,32 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 const FB_CONFIG = {
-  apiKey: "AIzaSyAs-7Z3P7F0-K4p6R7T9M2N1B4V6C8X0Z",
+apiKey: "AIzaSyB7Dp5_5fN0Iko-4Jn1D2Dp6NNNih63UO0",
   authDomain: "jsailing-f716c.firebaseapp.com",
   projectId: "jsailing-f716c",
-  storageBucket: "jsailing-f716c.appspot.com",
-  messagingSenderId: "1056584218826",
-  appId: "1:1056584218826:web:6f7b76778f65672200f862"
+  storageBucket: "jsailing-f716c.firebasestorage.app",
+  messagingSenderId: "543523103696",
+  appId: "1:543523103696:web:439a312efa6aec398a8fd5"
 };
-const auth = getAuth(initializeApp(FB_CONFIG));
-const db = getFirestore();
+
+const app = initializeApp(FB_CONFIG);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+
 window.S = { user: null, loki: [], tab: 'dashboard', modal: false, form: { pvm: new Date().toISOString().split('T')[0], kohde: '', kuka: 'tmi' } };
 
-window.login = () => signInWithPopup(auth, new GoogleAuthProvider());
+// TÄMÄ ON MUUTETTU: Redirect toimii varmemmin kuin Popup
+import { signInWithRedirect, getRedirectResult } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+window.login = () => signInWithRedirect(auth, provider);
 window.logout = () => signOut(auth);
 window.setTab = (t) => { S.tab = t; render(); };
 window.toggleM = (v) => { S.modal = v; render(); };
 window.save = async () => { await addDoc(collection(db, 'quartet_loki'), S.form); window.toggleM(false); };
 window.del = async (id) => { if(confirm('Poista?')) await deleteDoc(doc(db, 'quartet_loki', id)); };
+
+// Tarkistetaan paluu kirjautumisesta
+getRedirectResult(auth).catch(e => console.error(e));
 function render() {
   const root = document.getElementById('root');
   if (!S.user) {
