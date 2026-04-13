@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="Quartet Loki"/>
 <meta name="theme-color" content="#0a4272"/>
-<title>Quartet Loki V1.1 — s/y Quartet</title>
+<title>Quartet Loki V1.2 — s/y Quartet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -86,7 +86,6 @@ input::placeholder{color:var(--text-light)}
 .badge-oma{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;}
 .badge-huolto{background:var(--amber-bg);color:#92400e;border:1px solid var(--amber-border);}
 
-/* USAGE BANNER */
 .usage-banner{background:linear-gradient(135deg,#0a4272 0%,#1e40af 100%);color:#fff;border-radius:16px;padding:24px 24px 20px;margin-bottom:16px;box-shadow:0 4px 16px rgba(10,66,114,.3);}
 .usage-banner-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;opacity:.8;margin-bottom:6px;}
 .usage-percent{font-family:'Cormorant Garamond',serif;font-size:64px;font-weight:700;line-height:1;letter-spacing:-2px;}
@@ -109,7 +108,6 @@ input::placeholder{color:var(--text-light)}
 .stat-val{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;color:var(--ocean);line-height:1;margin:4px 0;}
 .stat-label{font-size:11px;color:var(--text-muted);font-weight:800;text-transform:uppercase;letter-spacing:.5px}
 
-/* HUOLTOWIDGET */
 .huolto-widget{background:#fff;border:1.5px solid var(--amber-border);border-radius:var(--radius);padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow);}
 .huolto-widget-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .huolto-widget-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#92400e;}
@@ -119,7 +117,6 @@ input::placeholder{color:var(--text-light)}
 .hw-lbl{font-size:10px;color:var(--text-light);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:2px;}
 .huolto-widget-desc{font-size:12px;color:var(--text-muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--line);}
 
-/* LOKIKIRJA */
 .log-item{padding:14px 0;border-top:1px solid var(--line);display:flex;gap:14px;justify-content:space-between;}
 .log-item:first-child{border-top:none}
 .log-date{flex-shrink:0;background:var(--ocean);color:#fff;border-radius:8px;padding:8px 10px;text-align:center;min-width:54px;}
@@ -131,7 +128,6 @@ input::placeholder{color:var(--text-light)}
 .log-meta{font-size:12px;color:var(--text-muted);line-height:1.5;}
 .log-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
 
-/* TAPAHTUMAT */
 .tapahtumat-box{margin-top:8px;padding:10px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--line);}
 .tap-box-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-bottom:6px;}
 .tap-row{display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-top:1px solid var(--line);}
@@ -141,7 +137,6 @@ input::placeholder{color:var(--text-light)}
 .tap-huomio{font-size:12px;color:var(--text-muted);}
 .tap-gps{font-size:10px;color:var(--text-light);}
 
-/* TAPAHTUMAT EDITORI */
 .tap-editor{background:#f8fafc;border:1.5px solid var(--line);border-radius:10px;padding:12px;margin-top:8px;}
 .tap-editor-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line);}
 .tap-editor-row:last-child{border-bottom:none}
@@ -157,18 +152,15 @@ input::placeholder{color:var(--text-light)}
 .tap-add-btn{background:var(--green-bg);color:var(--green);border:1.5px solid var(--green-border);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;font-family:'Outfit',sans-serif;cursor:pointer;flex-shrink:0;}
 .tap-hint{font-size:11px;color:var(--text-light);margin-top:6px;line-height:1.5;}
 
-/* CALC ROW */
 .calc-row{background:var(--blue-bg);border:1px solid var(--blue-border);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#1e40af;display:flex;gap:10px;align-items:center;}
 .calc-row strong{font-size:15px;font-weight:800;}
 
-/* IMPORT */
 .import-dropzone{border:2px dashed var(--line-bright);border-radius:12px;padding:28px;text-align:center;cursor:pointer;transition:.15s;}
 .import-dropzone:hover{border-color:var(--ocean);background:var(--blue-bg);}
 .import-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
 .import-table th{background:#f3f4f6;padding:6px 8px;text-align:left;font-weight:700;border-bottom:1px solid var(--line);}
 .import-table td{padding:5px 8px;border-bottom:1px solid var(--line);color:var(--text-muted);}
 
-/* AUTOSAVE */
 .autosave-toast{position:fixed;bottom:calc(var(--safe-bottom)+14px);left:50%;transform:translateX(-50%);background:rgba(22,101,52,.92);color:#fff;padding:7px 18px;border-radius:999px;font-size:12px;font-weight:600;display:none;z-index:300;box-shadow:0 2px 8px rgba(0,0,0,.2);white-space:nowrap;}
 .autosave-toast.show{display:block;}
 
@@ -214,7 +206,7 @@ const FIREBASE_CONFIG={
   appId:"1:543523103696:web:439a312efa6aec398a8fd5"
 };
 const ALLOWED_EMAIL="jacke.seilaa@gmail.com";
-const APP_VERSION="V1.1";
+const APP_VERSION="V1.2";
 
 const VUOKRALAINEN_OPTS=[
   {value:"tmi",label:"J Sailing (Tmi)",desc:"Koulutus, tutkinto, charter — kulut Tmi:n vähennyksiin"},
@@ -234,7 +226,7 @@ const KAYTTO_TYYPPI_OPTS={
   oy:[
     {value:"oy-vuokraus",label:"Oy-vuokraus"},
     {value:"oy-edustus",label:"Oy:n edustustilaisuus"},
-    {value:"oy-toimisto",label:"Oy:n toimistotyö"}   // ← UUSI
+    {value:"oy-toimisto",label:"Oy:n toimistotyö"}
   ],
   oma:[
     {value:"vapaa-aika",label:"Vapaa-aika"},
@@ -246,7 +238,6 @@ const fbApp=initializeApp(FIREBASE_CONFIG);
 const auth=getAuth(fbApp);
 const db=getFirestore(fbApp);
 
-// ── STATE ──
 const state={
   tab:"dashboard",user:null,
   loki:[],huollot:[],
@@ -268,7 +259,6 @@ function fmtDate(d){return d?new Date(d+"T00:00:00").toLocaleDateString("fi-FI")
 function num(v){return Number(v||0);}
 function nowTime(){const n=new Date();return String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0");}
 
-// ── FIRESTORE ──
 async function fsAdd(col,data){
   state.syncing=true;rsi();
   try{const r=await addDoc(collection(db,col),{...data,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});return r.id;}
@@ -299,7 +289,6 @@ function startListeners(){
 }
 function stopListeners(){unsubList.forEach(u=>u());unsubList.length=0;}
 
-// ── LASKELMAT ──
 function getLokiVuodelle(v){return state.loki.filter(l=>String(l.pvm||"").slice(0,4)===String(v));}
 function laskeYrityskaytto(vuosi,tapa){
   let tmi=0,oy=0,oma=0;
@@ -345,7 +334,6 @@ function viimaHuolto(){
   const fromKirja=state.huollot.map(h=>({...h}));
   return [...fromLoki,...fromKirja].sort((a,b)=>(b.pvm||"").localeCompare(a.pvm||""))[0]||null;
 }
-// Palauttaa edellisen merkinnän loppulukemat
 function edellisetLukemat(){
   if(!state.loki.length)return{kt:null,lokilukema:null};
   const sorted=[...state.loki].sort((a,b)=>(b.pvm||"").localeCompare(a.pvm||""));
@@ -353,7 +341,6 @@ function edellisetLukemat(){
   return{kt:v.konetunnitLoppu||null,lokilukema:v.veneenLokiAlku||null};
 }
 
-// ── AUTOSAVE 15s ──
 function triggerAutosave(){
   clearTimeout(state.autosaveTimer);
   state.autosaveTimer=setTimeout(()=>{
@@ -366,7 +353,6 @@ function triggerAutosave(){
   },15000);
 }
 
-// ── GPS ──
 async function haeGPS(){
   return new Promise((res,rej)=>{
     if(!navigator.geolocation){rej(new Error("GPS ei saatavilla"));return;}
@@ -405,7 +391,60 @@ async function lisaaTapahtuma(paikka,huomio){
   render();
 }
 
-// ── RENDER ──
+// ── VARMUUSKOPIOT ──
+window.exportData=async()=>{
+  const backup={
+    loki:state.loki,
+    huollot:state.huollot,
+    exported:new Date().toISOString(),
+    appVersion:APP_VERSION
+  };
+  const json=JSON.stringify(backup,null,2);
+  const blob=new Blob([json],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=`Quartet-Loki-backup-${today()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+window.importData=()=>{
+  document.getElementById("restoreFile").click();
+};
+
+window.handleRestoreFile=async(e)=>{
+  const file=e.target.files[0];
+  if(!file)return;
+  try{
+    const text=await file.text();
+    const backup=JSON.parse(text);
+    if(!backup.loki||!backup.huollot){alert("Virheellinen varmuuskopiotiedosto.");return;}
+    if(!confirm("Palautetaanko varmuuskopion tiedot? Tämä korvaa nykyiset tiedot.\n\nLokit: "+backup.loki.length+"\nHuollot: "+backup.huollot.length)){return;}
+    
+    state.syncing=true;rsi();
+    // Poista nykyiset tiedot
+    for(const doc of state.loki){await fsDel("quartet_loki",doc.id);}
+    for(const doc of state.huollot){await fsDel("quartet_huollot",doc.id);}
+    
+    // Lisää varmuuskopiotiedot
+    for(const l of backup.loki){
+      const{id,...data}=l;
+      await fsAdd("quartet_loki",data);
+    }
+    for(const h of backup.huollot){
+      const{id,...data}=h;
+      await fsAdd("quartet_huollot",data);
+    }
+    state.syncing=false;rsi();
+    alert("✅ Varmuuskopion tiedot palautettu!");
+  }catch(err){
+    console.error(err);
+    alert("Virhe varmuuskopion palauttamisessa: "+err.message);
+  }
+  e.target.value="";
+};
+
 function render(){
   document.getElementById("app").innerHTML=
     renderTopBar()+renderNavTabs()+
@@ -443,7 +482,6 @@ function renderTab(){
   return"";
 }
 
-// ─── DASHBOARD ───
 function renderDashboard(){
   const usage=laskeYrityskaytto(state.vuosi,state.laskentaTapa);
   const konet=konetunnitYhteenveto(state.vuosi);
@@ -471,6 +509,21 @@ function renderDashboard(){
         <button class="usage-method-tab ${state.laskentaTapa==="tunnit"?"active":""}" data-method="tunnit">⚙️ Konetunnit</button>
         <button class="usage-method-tab ${state.laskentaTapa==="mailit"?"active":""}" data-method="mailit">⛵ Mailit</button>
       </div>
+    </div>
+
+    <div class="card">
+      <div class="row-between">
+        <div>
+          <div class="card-title">💾 Varmuuskopiot</div>
+          <div class="card-sub">Lataa tai palauta lokikirjan tiedot</div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:14px;gap:8px">
+        <button class="btn btn-primary" data-action="export-data">⬇️ Lataa varmuuskopion</button>
+        <button class="btn btn-secondary" data-action="import-data">⬆️ Palauta varmuuskopion</button>
+      </div>
+      <input type="file" id="restoreFile" accept=".json" style="display:none" onchange="handleRestoreFile(event)">
+      <div class="infobox infobox-blue" style="margin-top:12px">💡 Varmuuskopiot sisältävät kaikki lokimerkinnät ja huollot. Lataa säännöllisesti, palauta tarvittaessa.</div>
     </div>
 
     <div class="huolto-widget">
@@ -513,7 +566,6 @@ function renderDashboard(){
   `;
 }
 
-// ─── LOKIKIRJA ───
 function renderLoki(){
   const lokit=state.loki.slice().filter(l=>String(l.pvm||"").slice(0,4)===String(state.vuosi))
     .sort((a,b)=>(b.pvm||"").localeCompare(a.pvm||""));
@@ -584,7 +636,6 @@ function renderLokiItem(l){
   </div>`;
 }
 
-// ─── HUOLTOKIRJA ───
 function renderHuolto(){
   const huollot=state.huollot.slice().sort((a,b)=>(b.pvm||"").localeCompare(a.pvm||""));
   return`<div class="card">
@@ -620,7 +671,6 @@ function renderHuolto(){
   </div>`;
 }
 
-// ─── TUO DATA ───
 function renderTuo(){
   return`<div class="card">
     <div class="card-title">📥 Tuo lokikirjadata</div>
@@ -672,7 +722,6 @@ function renderTuo(){
   </div>`;
 }
 
-// ─── MODAALIT ───
 function renderModal(){
   if(state.modal==="loki")return renderLokiModal();
   if(state.modal==="huolto")return renderHuoltoModal();
@@ -688,7 +737,6 @@ function renderLokiModal(){
   const v=(f,def="")=>{if(d[f]!==undefined)return d[f];if(l&&l[f]!==undefined&&l[f]!==null)return l[f];return def;};
   const tyyppiOpts=vuokralainen?(KAYTTO_TYYPPI_OPTS[vuokralainen]||[]):[];
 
-  // Reaaliaikainen laskenta
   const ktA=num(v("konetunnitAlku"));const ktL=num(v("konetunnitLoppu"));
   const ktAjettu=ktL>ktA?(ktL-ktA).toFixed(2):null;
   const tapArr=state.tapahtumat||[];
@@ -831,7 +879,6 @@ function renderHuoltoModal(){
   </div></div>`;
 }
 
-// ─── AUTH ───
 function renderAuthScreen(err){
   document.getElementById("app").innerHTML=`<div class="auth-screen"><div class="auth-card">
     <div class="auth-emblem">⛵</div>
@@ -850,7 +897,6 @@ function renderAuthScreen(err){
   });
 }
 
-// ─── EVENT BINDING ───
 function bind(){
   document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{state.tab=b.dataset.tab;render();});
   document.querySelectorAll("[data-year]").forEach(b=>b.onclick=()=>{state.vuosi=parseInt(b.dataset.year);render();});
@@ -863,7 +909,6 @@ function bind(){
     render();
   });
 
-  // Autosave trigger
   document.querySelectorAll("input,select,textarea").forEach(el=>{
     el.addEventListener("input",()=>triggerAutosave());
   });
@@ -880,6 +925,9 @@ function bind(){
         state.draft=null;state.tapahtumat=[];render();return;
       }
 
+      if(a==="export-data"){exportData();return;}
+      if(a==="import-data"){importData();return;}
+
       if(a==="new-loki"){
         state.modal="loki";state.editId=null;
         const prev=edellisetLukemat();
@@ -887,7 +935,6 @@ function bind(){
         if(prev.kt!==null)state.draft.konetunnitAlku=prev.kt;
         if(prev.lokilukema!==null)state.draft.veneenLokiAlku=prev.lokilukema;
         state.tapahtumat=[];
-        // Palauta mahdollinen draft
         try{
           const ds=localStorage.getItem("quartet_draft");
           if(ds){const dp=JSON.parse(ds);if(confirm("Löytyi tallentamaton luonnos. Jatketaanko siitä?")){state.draft=dp;state.tapahtumat=JSON.parse(dp._tapahtumat||"[]");}else localStorage.removeItem("quartet_draft");}
@@ -981,7 +1028,6 @@ function saveFormToDraft(){
   });
 }
 
-// ─── GLOBAALIT ───
 window.tapEnter=()=>{
   const p=document.getElementById("tapPaikkaInp")?.value||state.newTapPaikka;
   const h=document.getElementById("tapHuomioInp")?.value||state.newTapHuomio;
@@ -1001,13 +1047,6 @@ window.calcUpdate=()=>{
   }else{row.style.display="none";}
 };
 
-// ─── CSV IMPORT ───
-// Tukee kahta formaattia:
-// 1) LOKIKIRJA_2025-formaatti (alkuperäinen lokikirja):
-//    Rivi 0: "Taulukko 1;..." (otsikko, ohitetaan)
-//    Rivi 1: "Päivämäärä;Miehistö;Veneen loki, aloitus;Aloitus Konetunnit;Lähtö aika;..." (sarakeheaderit)
-//    Rivi 2+: data
-// 2) Yleinen kvartetti-formaatti puolipistein erotettu
 function parseFiFloat(s){
   if(!s)return null;
   const v=parseFloat(String(s).trim().replace(',','.'));
@@ -1016,54 +1055,39 @@ function parseFiFloat(s){
 function parseFiDate(s){
   s=String(s||"").trim();
   if(!s)return null;
-  // dd.mm.yyyy
   const m=s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
   if(m)return`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
-  // yyyy-mm-dd jo valmiina
   if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;
   return null;
 }
 
 window.handleImportFile=async(e)=>{
   const file=e.target.files[0];if(!file)return;
-
-  // BOM-turvallinen luku
   const buf=await file.arrayBuffer();
   const raw=new Uint8Array(buf);
-  // poista UTF-8 BOM jos on
   const start=(raw[0]===0xEF&&raw[1]===0xBB&&raw[2]===0xBF)?3:0;
   const text=new TextDecoder('utf-8').decode(raw.slice(start));
-
   const lines=text.split(/\r?\n/);
-
-  // Tunnista formaatti: jos rivi 0 sisältää "Taulukko" tai rivi 1 sisältää "Päivämäärä", kyseessä alkuperäinen lokikirja
   const isLokikirja=(lines[0]||"").includes("Taulukko")||(lines[1]||"").toLowerCase().includes("ivm");
-
   let rows=[];
 
   if(isLokikirja){
-    // ── ALKUPERÄINEN LOKIKIRJA-FORMAATTI ──
-    // Sarakkeet: 0=pvm,1=miehisto,2=veneen_loki,3=konetunnit,4=lahto_aika,
-    //            5=lahtopaikka,6=reitti,7=saapumis_aika,8=saapumispaikka,
-    //            9=mailit,10=tuuli,11=tuulen_suunta,12=saatila,13=huomiot
     for(let i=2;i<lines.length;i++){
       const cols=lines[i].split(';');
       const pvmRaw=cols[0]?.trim()||"";
       const pvm=parseFiDate(pvmRaw);
       if(!pvm||!pvm.startsWith('2025'))continue;
-
       const lahtopaikka=(cols[5]||"").trim();
       const saapumispaikka=(cols[8]||"").trim();
       let reitti=(cols[6]||"").trim();
       if(!reitti&&lahtopaikka&&saapumispaikka)reitti=`${lahtopaikka} - ${saapumispaikka}`;
       else if(!reitti&&lahtopaikka)reitti=lahtopaikka;
-
       rows.push({
         pvm,
         miehisto:(cols[1]||"").trim(),
         veneenLokiAlku:parseFiFloat(cols[2]),
         konetunnitAlku:parseFiFloat(cols[3]),
-        konetunnitLoppu:null,  // alkuperäisessä vain yksi lukema per rivi
+        konetunnitLoppu:null,
         lahtoAika:(cols[4]||"").trim().replace(/[+\s]/g,''),
         lahtoPaikka:lahtopaikka,
         reitti,
@@ -1074,7 +1098,7 @@ window.handleImportFile=async(e)=>{
         tuulenSuunta:(cols[11]||"").trim(),
         saatila:(cols[12]||"").trim(),
         huomiot:(cols[13]||"").trim(),
-        vuokralainen:"",  // merkitään jälkikäteen
+        vuokralainen:"",
         kayttoTyyppi:"",
         tapahtumat:[],
         tuotu:true,
@@ -1083,7 +1107,6 @@ window.handleImportFile=async(e)=>{
       });
     }
   }else{
-    // ── YLEINEN FORMAATTI ──
     if(lines.length<2){alert("CSV-tiedosto on tyhjä.");return;}
     const headers=lines[0].split(";").map(h=>h.trim().toLowerCase()
       .replace(/[äå]/g,"a").replace(/ö/g,"o").replace(/\s+/g,"").replace(/,/g,""));
@@ -1097,8 +1120,8 @@ window.handleImportFile=async(e)=>{
         pvm,reitti,
         vuokralainen:["tmi","oy","oma"].includes(obj.vuokralainen)?obj.vuokralainen:"",
         kayttoTyyppi:obj.kayttotyyppi||obj.tyyppi||"",
-        konetunnitAlku:parseFiFloat(obj.konetunniталku||obj["konetunniталku"]||obj.konetunniалку),
-        konetunnitLoppu:parseFiFloat(obj.konetunnitloppu),
+        konetunnitAlku:parseFiFloat(obj.konetunnitAlku),
+        konetunnitLoppu:parseFiFloat(obj.konetunnitLoppu),
         mailit:parseFiFloat(obj.mailit),
         tuuli:obj.tuuli||"",tuulenSuunta:obj.tuulensuunta||"",
         saatila:obj.saatila||"",miehisto:obj.miehisto||"",huomiot:obj.huomiot||"",
@@ -1118,9 +1141,6 @@ async function doImport(rows){
   alert(`✅ Tuotiin ${ok} merkintää. Merkitse käyttötarkoitus (tmi/oy/oma) jokaiselle riville Muokkaa-painikkeella.`);
 }
 
-// ─── 2025 DEMO-DATA poistettu ─── oikea data tuodaan CSV:stä
-
-// ─── INIT ───
 onAuthStateChanged(auth,user=>{
   if(user){
     if(user.email!==ALLOWED_EMAIL){
