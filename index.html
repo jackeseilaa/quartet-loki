@@ -1761,17 +1761,21 @@
             },
 
             setupAutoBackup() {
-                // Auto-backup päivittäin
+                // Auto-backup päivittäin - tallennetaan suoraan viimeisimpään versioon
                 const runAutoBackup = () => {
-                    const backup = DB.backup();
-                    const today = new Date().toISOString().split('T')[0];
-                    localStorage.setItem('quartet_auto_backup_' + today, JSON.stringify(backup));
-                    localStorage.setItem('quartet_last_auto_backup', today);
-                    console.log('✅ Auto-backup created for ' + today);
-                    this.updateVersionInfo();
+                    try {
+                        const backup = DB.backup();
+                        const today = new Date().toISOString().split('T')[0];
 
-                    // Synkronoi iCloud:iin automaattisesti
-                    this.syncToICloud();
+                        // Tallenna päivän varmuuskopio
+                        localStorage.setItem('quartet_auto_backup_latest', JSON.stringify(backup));
+                        localStorage.setItem('quartet_auto_backup_date', today);
+
+                        console.log('✅ Auto-backup created: ' + today + ' - ' + backup.entries.length + ' entries');
+                        this.updateVersionInfo();
+                    } catch (err) {
+                        console.error('❌ Auto-backup error:', err);
+                    }
                 };
 
                 // Aja heti käynnistyksen yhteydessä
@@ -1783,23 +1787,26 @@
 
             restoreLatestAutoBackup() {
                 try {
-                    const lastBackupDate = localStorage.getItem('quartet_last_auto_backup');
-                    if (!lastBackupDate) {
-                        alert('❌ Ei saatavilla olevaa auto-varmuuskopiota.\n\nJärjestelmä luo ensimmäisen varmuuskopion 24 tunnin sisällä.');
-                        return;
-                    }
+                    const backupDate = localStorage.getItem('quartet_auto_backup_date');
+                    const backup = localStorage.getItem('quartet_auto_backup_latest');
 
-                    const backup = localStorage.getItem('quartet_auto_backup_' + lastBackupDate);
-                    if (!backup) {
-                        alert('❌ Auto-varmuuskopiota ei löytynyt päivämäärälle: ' + lastBackupDate);
+                    if (!backup || !backupDate) {
+                        alert('❌ Ei saatavilla olevaa auto-varmuuskopiota.\n\nJärjestelmä luo varmuuskopion hetki sitten.');
                         return;
                     }
 
                     const data = JSON.parse(backup);
-                    const count = data.entries?.length || 0;
+
+                    // Tarkista että data on oikea
+                    if (!data.entries || !Array.isArray(data.entries)) {
+                        alert('❌ Varmuuskopiossa on virhe - ei sisällä merkintöjä.');
+                        return;
+                    }
+
+                    const count = data.entries.length;
                     const locationCount = data.locations?.length || 0;
 
-                    if (confirm(`✅ Viimeisin auto-backup (${lastBackupDate})\n\n📝 Merkintöjä: ${count}\n📍 Paikkoja: ${locationCount}\n\nPalautetaanko?\n\n⚠️ Tämä korvaa nykyiset tiedot!`)) {
+                    if (confirm(`✅ Viimeisin auto-backup (${backupDate})\n\n📝 Merkintöjä: ${count}\n📍 Paikkoja: ${locationCount}\n\nPalautetaanko?\n\n⚠️ Tämä korvaa nykyiset tiedot!`)) {
                         DB.restore(data);
                         this.render();
                         this.updateVersionInfo();
@@ -1807,7 +1814,7 @@
                     }
                 } catch (err) {
                     console.error('❌ Auto-backup restore error:', err);
-                    alert('❌ Virhe varmuuskopion palauttamisessa:\n\n' + err.message);
+                    alert('❌ Virhe: ' + err.message + '\n\nKokeile "Palauta" -nappia tiedostosta.');
                 }
             },
 
