@@ -464,9 +464,9 @@
             }
 
             .nav-tabs, .year-selector, .action-buttons,
-            #newEntryBtn, #importDataBtn, #exportDataBtn,
-            #syncNowBtn, #loadFromICloudBtn, #backupBtn,
-            #restoreBtn, #clearAllBtn, .btn-secondary,
+            #newEntryBtn, #exportDataBtn,
+            #syncNowBtn, #backupBtn,
+            #clearAllBtn, .btn-secondary,
             .btn-warning, .edit-buttons {
                 display: none !important;
             }
@@ -557,7 +557,7 @@
                     <h2 style="margin-bottom: 12px; font-size: 1.1em;">Uusi Merkintä</h2>
                     <div class="action-buttons">
                         <button class="btn btn-primary" id="newEntryBtn">+ Merkintä</button>
-                        <button class="btn btn-secondary" id="importDataBtn">📥 Tuo</button>
+                        <label for="csvImportInput" class="btn btn-secondary" style="cursor: pointer; margin: 0; display: inline-block; flex: 1; min-width: 120px; text-align: center;">📥 Tuo</label>
                         <button class="btn btn-secondary" id="exportDataBtn">📤 Vie</button>
                     </div>
                 </div>
@@ -647,7 +647,7 @@
                     <p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">Lataa ja palauta varmuuskopiot.</p>
                     <div class="action-buttons">
                         <button class="btn btn-secondary" id="backupBtn">💾 Lataa backup</button>
-                        <button class="btn btn-secondary" id="restoreBtn">♻️ Palauta</button>
+                        <label for="jsonRestoreInput" class="btn btn-secondary" style="cursor: pointer; margin: 0; display: inline-block; flex: 1; min-width: 120px; text-align: center;">♻️ Palauta</label>
                     </div>
                 </div>
 
@@ -659,7 +659,7 @@
                         <span style="font-size: 0.85em; color: #666;" id="icloudStatusDetail">Synkronointi aktiivinen - Seuraava auto-sync: ~1h</span>
                     </div>
                     <button class="btn btn-success" id="syncNowBtn">🔄 Synkronoi nyt iCloud:iin</button>
-                    <button class="btn btn-secondary" id="loadFromICloudBtn">📥 Lataa iCloud:ista</button>
+                    <label for="jsonRestoreInput" class="btn btn-secondary" style="cursor: pointer; margin: 0; display: block; text-align: center;">📥 Lataa iCloud:ista</label>
                 </div>
 
                 <div class="form-section">
@@ -784,8 +784,9 @@
         </div>
     </div>
 
-    <input type="file" id="csvImportInput" style="display:none;" accept=".csv" />
-    <input type="file" id="jsonRestoreInput" style="display:none;" accept=".json" />
+    <!-- Hidden file inputs for iOS (triggered via labels) -->
+    <input type="file" id="csvImportInput" accept=".csv" style="display:none;" />
+    <input type="file" id="jsonRestoreInput" accept=".json" style="display:none;" />
 
     <script>
         // ==================== VERSIO & SYNC ====================
@@ -1107,11 +1108,20 @@
                     element.addEventListener('click', handler, { passive: false });
                 };
 
+                // Special handler for file inputs - don't preventDefault
+                const addFileInputListener = (element, callback) => {
+                    if (!element) return;
+                    const handler = (e) => {
+                        callback();
+                    };
+                    element.addEventListener('touchstart', handler, { passive: true });
+                    element.addEventListener('click', handler, { passive: true });
+                };
+
                 // Entry management
                 const newEntryBtn = document.getElementById('newEntryBtn');
                 const closeModalBtn = document.getElementById('closeModalBtn');
                 const saveEntryBtn = document.getElementById('saveEntryBtn');
-                const importDataBtn = document.getElementById('importDataBtn');
                 const exportDataBtn = document.getElementById('exportDataBtn');
                 const csvImportInput = document.getElementById('csvImportInput');
                 const kayttotarkoitusField = document.getElementById('entryKayttotarkoitus');
@@ -1119,7 +1129,6 @@
                 addTouchListener(newEntryBtn, () => this.openEntryModal());
                 addTouchListener(closeModalBtn, () => this.closeEntryModal());
                 addTouchListener(saveEntryBtn, () => this.saveEntry());
-                addTouchListener(importDataBtn, () => csvImportInput.click());
                 addTouchListener(exportDataBtn, () => this.exportData());
                 if (csvImportInput) csvImportInput.addEventListener('change', (e) => this.importData(e));
                 if (kayttotarkoitusField) kayttotarkoitusField.addEventListener('change', () => this.toggleVuokralainenField());
@@ -1132,7 +1141,6 @@
 
                 // Settings
                 const backupBtn = document.getElementById('backupBtn');
-                const restoreBtn = document.getElementById('restoreBtn');
                 const clearAllBtn = document.getElementById('clearAllBtn');
                 const jsonRestoreInput = document.getElementById('jsonRestoreInput');
                 const yearFilter = document.getElementById('yearFilter');
@@ -1140,10 +1148,6 @@
                 const syncNowBtn = document.getElementById('syncNowBtn');
 
                 addTouchListener(backupBtn, () => this.backup());
-                addTouchListener(restoreBtn, () => {
-                    jsonRestoreInput.value = '';
-                    jsonRestoreInput.click();
-                });
                 addTouchListener(clearAllBtn, () => this.clearAll());
                 addTouchListener(generateReportBtn, () => this.generateReport());
                 if (jsonRestoreInput) jsonRestoreInput.addEventListener('change', (e) => this.restore(e));
@@ -1165,14 +1169,7 @@
 
                 addTouchListener(syncNowBtn, () => this.syncToICloud());
 
-                const loadFromICloudBtn = document.getElementById('loadFromICloudBtn');
-                addTouchListener(loadFromICloudBtn, () => {
-                    const fileInput = document.createElement('input');
-                    fileInput.type = 'file';
-                    fileInput.accept = '.json';
-                    fileInput.addEventListener('change', (e) => this.restore(e));
-                    fileInput.click();
-                });
+                // File inputs handled directly via labels (iOS compatibility)
             },
 
             openEntryModal(id = null) {
