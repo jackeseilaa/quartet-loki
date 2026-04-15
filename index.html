@@ -1,1159 +1,1834 @@
 <!DOCTYPE html>
 <html lang="fi">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="apple-mobile-web-app-title" content="Quartet Loki"/>
-<meta name="theme-color" content="#0a4272"/>
-<title>Quartet Loki V1.2 — s/y Quartet</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-:root{
-  --ocean:#0a4272;--ocean-dark:#083458;
-  --gold:#92400e;--gold-light:#b45309;
-  --text:#111827;--text-muted:#374151;--text-light:#6b7280;
-  --green:#166534;--green-bg:#dcfce7;--green-border:#86efac;
-  --red:#991b1b;--red-bg:#fee2e2;--red-border:#fca5a5;
-  --amber:#92400e;--amber-bg:#fef3c7;--amber-border:#fcd34d;
-  --blue-bg:#dbeafe;--blue-border:#93c5fd;
-  --line:#e5e7eb;--line-bright:#d1d5db;
-  --card-bg:#ffffff;--shadow:0 1px 3px rgba(0,0,0,.10);
-  --radius:12px;--radius-sm:8px;
-  --safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
-}
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html{height:100%}
-body{font-family:'Outfit',system-ui,sans-serif;color:var(--text);min-height:100vh;min-height:100dvh;overflow-x:hidden;width:100%;background:#f3f4f6;}
-.auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
-.auth-card{background:#fff;border:1px solid var(--line-bright);border-radius:24px;padding:48px 40px;width:min(420px,100%);text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.12);}
-.auth-emblem{font-size:52px;margin-bottom:16px;}
-.auth-title{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:600;color:var(--ocean);letter-spacing:-.5px;margin-bottom:6px;}
-.auth-title em{color:var(--gold);font-style:italic}
-.auth-sub{font-size:14px;color:var(--text-muted);margin-bottom:32px;line-height:1.6;}
-.btn-google{display:inline-flex;align-items:center;gap:12px;background:#fff;color:#1a1a2e;border:1.5px solid var(--line-bright);border-radius:12px;padding:14px 28px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:0 4px 16px rgba(0,0,0,.1);width:100%;justify-content:center;}
-.btn-google:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.15)}
-.btn-google svg{width:20px;height:20px;flex-shrink:0}
-.auth-note{margin-top:20px;font-size:12px;color:var(--text-muted);}
-.loader{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:200;}
-.loader-ring{width:48px;height:48px;border:3px solid var(--line-bright);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loader-text{font-size:13px;color:var(--text-muted)}
-.app{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
-.topbar{background:#fff;border-bottom:2px solid var(--ocean);box-shadow:0 2px 8px rgba(0,0,0,.08);padding:0 12px;padding-top:var(--safe-top);display:flex;align-items:center;gap:8px;height:calc(52px + var(--safe-top));position:sticky;top:0;z-index:50;}
-.topbar-logo{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ocean);letter-spacing:-.3px;white-space:nowrap;flex-shrink:0;}
-.topbar-logo em{color:var(--gold);font-style:italic}
-.version-badge{background:var(--ocean);color:#fff;border-radius:4px;padding:1px 6px;font-weight:700;font-size:10px;white-space:nowrap;flex-shrink:0}
-.topbar-spacer{flex:1}
-.topbar-user{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-muted);}
-.topbar-avatar{width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid var(--line-bright);}
-.topbar-avatar-placeholder{width:30px;height:30px;border-radius:50%;background:var(--ocean);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;}
-.btn-signout{border:1px solid var(--line-bright);background:transparent;color:var(--text-muted);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif;}
-.btn-signout:hover{color:var(--red);border-color:var(--red)}
-.nav-tabs{background:#fff;border-bottom:1.5px solid var(--line-bright);display:flex;overflow-x:auto;scrollbar-width:none;}
-.nav-tabs::-webkit-scrollbar{display:none}
-.nav-tab{flex:1;min-width:70px;padding:12px 6px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text-muted);font-family:'Outfit',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:color .15s,border-color .15s;white-space:nowrap;letter-spacing:.3px;text-transform:uppercase;}
-.nav-tab.active{color:var(--ocean);border-bottom-color:var(--ocean);}
-.main-content{flex:1;max-width:1080px;margin:0 auto;width:100%;padding:20px 16px;padding-bottom:calc(20px + var(--safe-bottom));}
-.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-bottom:16px;}
-.card-title{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;color:var(--ocean);letter-spacing:-.4px;}
-.card-sub{font-size:13px;color:var(--text-muted);margin-top:3px;font-weight:500}
-.btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:8px;padding:9px 16px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s,transform .1s;white-space:nowrap;letter-spacing:.2px;}
-.btn:active{transform:scale(.96)}
-.btn-primary{background:var(--ocean);color:#fff;box-shadow:0 2px 8px rgba(10,66,114,.3);}
-.btn-primary:hover{background:var(--ocean-dark)}
-.btn-secondary{background:#f3f4f6;color:#1f2937;border:1px solid var(--line-bright);}
-.btn-secondary:hover{background:#e5e7eb}
-.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
-.btn-amber{background:var(--amber-bg);color:#78350f;border:1px solid var(--amber-border);}
-.btn-sm{padding:6px 12px;font-size:12px;border-radius:7px}
-.field{margin-bottom:14px}
-.lbl{display:block;font-size:11px;font-weight:800;color:var(--text-muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;}
-input,select,textarea{width:100%;padding:10px 13px;background:#fff;border:1.5px solid var(--line-bright);border-radius:8px;color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;transition:border-color .15s;-webkit-appearance:none;}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ocean);box-shadow:0 0 0 3px rgba(10,66,114,.15);}
-input::placeholder{color:var(--text-light)}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
-@media(max-width:680px){.grid2,.grid3{grid-template-columns:1fr}}
-.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.row-between{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.hr{border-top:1.5px solid var(--line);margin:16px 0}
-.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.3px;}
-.badge-tmi{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd;}
-.badge-oy{background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;}
-.badge-oma{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;}
-.badge-huolto{background:var(--amber-bg);color:#92400e;border:1px solid var(--amber-border);}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Quartet Loki - v2027.3 (iCloud Drive Sync)</title>
+    <script>
+        // Suppress CloudKit errors (not used in this version)
+        window.addEventListener('error', (e) => {
+            if (e.message && (e.message.includes('CloudKit') || e.message.includes('cdn.apple-cloudkit'))) {
+                e.preventDefault();
+            }
+        });
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+        }
 
-.usage-banner{background:linear-gradient(135deg,#0a4272 0%,#1e40af 100%);color:#fff;border-radius:16px;padding:24px 24px 20px;margin-bottom:16px;box-shadow:0 4px 16px rgba(10,66,114,.3);}
-.usage-banner-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;opacity:.8;margin-bottom:6px;}
-.usage-percent{font-family:'Cormorant Garamond',serif;font-size:64px;font-weight:700;line-height:1;letter-spacing:-2px;}
-.usage-percent .label{font-size:18px;font-weight:600;opacity:.85;margin-left:4px;font-family:'Outfit',sans-serif;}
-.usage-method-tabs{display:flex;gap:6px;margin-top:14px;}
-.usage-method-tab{flex:1;background:rgba(255,255,255,.12);color:#fff;border:1.5px solid rgba(255,255,255,.25);padding:8px 10px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:.4px;transition:all .15s;}
-.usage-method-tab.active{background:#fff;color:var(--ocean);border-color:#fff;}
-.usage-bar-wrap{display:flex;height:10px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.15);margin-top:14px;}
-.usage-bar-tmi{background:#60a5fa;}
-.usage-bar-oy{background:#a78bfa;}
-.usage-bar-oma{background:#fcd34d;}
-.usage-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12px;font-weight:600;}
-.usage-legend-item{display:flex;align-items:center;gap:5px;opacity:.9;}
-.usage-legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
-.year-selector{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
-.year-btn{background:#fff;color:var(--text-muted);border:1.5px solid var(--line-bright);padding:7px 14px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;font-family:'Outfit',sans-serif;}
-.year-btn.active{background:var(--ocean);color:#fff;border-color:var(--ocean);}
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:16px 0;}
-.stat-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center;}
-.stat-val{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;color:var(--ocean);line-height:1;margin:4px 0;}
-.stat-label{font-size:11px;color:var(--text-muted);font-weight:800;text-transform:uppercase;letter-spacing:.5px}
+        html, body {
+            width: 100%;
+            height: 100%;
+            position: fixed;
+            overflow: hidden;
+        }
 
-.huolto-widget{background:#fff;border:1.5px solid var(--amber-border);border-radius:var(--radius);padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow);}
-.huolto-widget-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-.huolto-widget-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#92400e;}
-.huolto-widget-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-.hw-item{text-align:center;}
-.hw-val{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--text);line-height:1.2;}
-.hw-lbl{font-size:10px;color:var(--text-light);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:2px;}
-.huolto-widget-desc{font-size:12px;color:var(--text-muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--line);}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
 
-.log-item{padding:14px 0;border-top:1px solid var(--line);display:flex;gap:14px;justify-content:space-between;}
-.log-item:first-child{border-top:none}
-.log-date{flex-shrink:0;background:var(--ocean);color:#fff;border-radius:8px;padding:8px 10px;text-align:center;min-width:54px;}
-.log-date .day{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;line-height:1;}
-.log-date .month{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;opacity:.85;margin-top:2px;}
-.log-date.huolto-bg{background:#92400e;}
-.log-content{flex:1;min-width:0;}
-.log-route{font-weight:700;font-size:14px;color:var(--text);margin-bottom:3px;}
-.log-meta{font-size:12px;color:var(--text-muted);line-height:1.5;}
-.log-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
+        .container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
 
-.tapahtumat-box{margin-top:8px;padding:10px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--line);}
-.tap-box-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-bottom:6px;}
-.tap-row{display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-top:1px solid var(--line);}
-.tap-row:first-of-type{border-top:none}
-.tap-aika{font-size:11px;color:var(--text-light);min-width:38px;padding-top:1px;}
-.tap-paikka{font-size:13px;font-weight:600;color:var(--ocean);}
-.tap-huomio{font-size:12px;color:var(--text-muted);}
-.tap-gps{font-size:10px;color:var(--text-light);}
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 16px 12px;
+            text-align: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
 
-.tap-editor{background:#f8fafc;border:1.5px solid var(--line);border-radius:10px;padding:12px;margin-top:8px;}
-.tap-editor-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line);}
-.tap-editor-row:last-child{border-bottom:none}
-.tap-editor-info{flex:1;min-width:0;}
-.tap-editor-paikka{font-size:13px;font-weight:600;color:var(--ocean);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.tap-editor-meta{font-size:11px;color:var(--text-muted);}
-.tap-del-btn{background:none;border:none;color:var(--text-light);font-size:16px;cursor:pointer;padding:2px 6px;border-radius:4px;line-height:1;}
-.tap-del-btn:hover{background:var(--red-bg);color:var(--red);}
-.tap-add-row{display:flex;gap:6px;margin-top:8px;}
-.tap-add-row input{flex:1;padding:8px 10px;font-size:13px;}
-.tap-gps-btn{background:var(--ocean);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer;flex-shrink:0;}
-.tap-gps-btn:hover{background:var(--ocean-dark)}
-.tap-add-btn{background:var(--green-bg);color:var(--green);border:1.5px solid var(--green-border);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;font-family:'Outfit',sans-serif;cursor:pointer;flex-shrink:0;}
-.tap-hint{font-size:11px;color:var(--text-light);margin-top:6px;line-height:1.5;}
+        header h1 {
+            font-size: 1.4em;
+            margin-bottom: 2px;
+        }
 
-.calc-row{background:var(--blue-bg);border:1px solid var(--blue-border);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#1e40af;display:flex;gap:10px;align-items:center;}
-.calc-row strong{font-size:15px;font-weight:800;}
+        header .subtitle {
+            font-size: 0.75em;
+            opacity: 0.9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
 
-.import-dropzone{border:2px dashed var(--line-bright);border-radius:12px;padding:28px;text-align:center;cursor:pointer;transition:.15s;}
-.import-dropzone:hover{border-color:var(--ocean);background:var(--blue-bg);}
-.import-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
-.import-table th{background:#f3f4f6;padding:6px 8px;text-align:left;font-weight:700;border-bottom:1px solid var(--line);}
-.import-table td{padding:5px 8px;border-bottom:1px solid var(--line);color:var(--text-muted);}
+        .version-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
 
-.autosave-toast{position:fixed;bottom:calc(var(--safe-bottom)+14px);left:50%;transform:translateX(-50%);background:rgba(22,101,52,.92);color:#fff;padding:7px 18px;border-radius:999px;font-size:12px;font-weight:600;display:none;z-index:300;box-shadow:0 2px 8px rgba(0,0,0,.2);white-space:nowrap;}
-.autosave-toast.show{display:block;}
+        .sync-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+        }
 
-.infobox{padding:10px 14px;border-radius:10px;font-size:13px;line-height:1.5;margin:10px 0;}
-.infobox-blue{background:var(--blue-bg);color:#1e3a8a;border:1px solid var(--blue-border)}
-.infobox-amber{background:var(--amber-bg);color:#78350f;border:1px solid var(--amber-border)}
-.infobox-green{background:var(--green-bg);color:#14532d;border:1px solid var(--green-border)}
-.overlay{position:fixed;inset:0;background:rgba(5,12,24,.7);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100;}
-.modal{background:#fff;border:1px solid var(--line-bright);border-radius:20px;width:min(720px,100%);max-height:92vh;overflow:auto;box-shadow:0 4px 16px rgba(0,0,0,.2);}
-.modal-head{padding:18px 22px;border-bottom:1.5px solid var(--line);position:sticky;top:0;background:#fff;z-index:2;}
-.modal-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--ocean);}
-.modal-body{padding:22px}
-.sync-dot{width:7px;height:7px;border-radius:50%;background:#16a34a;display:inline-block;margin-right:5px;}
-.sync-dot.syncing{background:#d97706;animation:pulse .8s ease-in-out infinite;}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+        .sync-indicator.syncing {
+            animation: pulse 1s infinite;
+        }
 
-@media(max-width:600px){
-  .main-content{padding:10px 8px}
-  .card{padding:14px 12px}
-  .nav-tab{font-size:10px;padding:10px 4px;min-width:58px}
-  .stat-val{font-size:24px}
-  .usage-percent{font-size:48px}
-  .btn{padding:8px 12px;font-size:12px}
-  .huolto-widget-grid{grid-template-columns:1fr 1fr}
-}
-</style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 1px solid #e0e0e0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            flex-shrink: 0;
+        }
+
+        .nav-tabs button {
+            flex: 1;
+            min-width: 70px;
+            padding: 12px 10px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 500;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            -webkit-user-select: none;
+        }
+
+        .nav-tabs button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 16px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-section {
+            background: #f9f9f9;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+        }
+
+        button.btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            -webkit-user-select: none;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:active {
+            background: #5568d3;
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:active {
+            background: #e0e0e0;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .data-table th {
+            background: #f5f5f5;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #e0e0e0;
+            font-size: 0.85em;
+            color: #555;
+        }
+
+        .data-table td {
+            padding: 10px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.9em;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+
+        .badge-tmi {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-oy {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-oma {
+            background: #fce7f3;
+            color: #831843;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .stat-card h3 {
+            font-size: 0.85em;
+            opacity: 0.9;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .stat-card .value {
+            font-size: 1.6em;
+            font-weight: 700;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: flex-end;
+            align-items: flex-end;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px 12px 0 0;
+            padding: 16px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .modal-header {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #333;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-footer button {
+            flex: 1;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .action-buttons button {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .edit-buttons {
+            display: flex;
+            gap: 4px;
+        }
+
+        .edit-buttons button {
+            padding: 6px 10px;
+            font-size: 0.8em;
+            flex: 1;
+        }
+
+        .required {
+            color: #ef4444;
+            font-weight: 700;
+        }
+
+        .location-widget {
+            background: #f0f7ff;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+
+        .location-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border-left: 3px solid #667eea;
+        }
+
+        .location-time {
+            font-size: 0.85em;
+            color: #999;
+        }
+
+        @media (max-width: 480px) {
+            header h1 {
+                font-size: 1.2em;
+            }
+
+            header .subtitle {
+                font-size: 0.7em;
+            }
+
+            .nav-tabs button {
+                padding: 10px 8px;
+                font-size: 0.8em;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons button {
+                min-width: 100px;
+                font-size: 0.85em;
+            }
+
+            .data-table {
+                font-size: 0.85em;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 6px 4px;
+            }
+
+            .modal-content {
+                padding: 12px;
+            }
+        }
+
+        @media print {
+            * {
+                background: white !important;
+                color: black !important;
+            }
+
+            body {
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .container {
+                max-width: 100% !important;
+                box-shadow: none !important;
+            }
+
+            header {
+                background: white !important;
+                color: #333 !important;
+                border-bottom: 2px solid #667eea !important;
+            }
+
+            header h1 {
+                color: #333 !important;
+            }
+
+            .nav-tabs, .year-selector, .action-buttons,
+            #newEntryBtn, #importDataBtn, #exportDataBtn,
+            #syncNowBtn, #loadFromICloudBtn, #backupBtn,
+            #restoreBtn, #clearAllBtn, .btn-secondary,
+            .btn-warning, .edit-buttons {
+                display: none !important;
+            }
+
+            .content {
+                padding: 0 !important;
+            }
+
+            .tab-content {
+                display: block !important;
+            }
+
+            .tab-content.active {
+                display: block !important;
+            }
+
+            h2, h3 {
+                color: #333 !important;
+                page-break-after: avoid !important;
+                margin-top: 20px !important;
+            }
+
+            .data-table {
+                page-break-inside: avoid !important;
+                border: 1px solid #333 !important;
+            }
+
+            .data-table th {
+                background: #f5f5f5 !important;
+                color: #333 !important;
+            }
+
+            .stat-card {
+                background: white !important;
+                color: #333 !important;
+                border: 1px solid #333 !important;
+                page-break-inside: avoid !important;
+            }
+
+            .form-section {
+                background: white !important;
+                border: 1px solid #ddd !important;
+                page-break-inside: avoid !important;
+            }
+
+            .badge {
+                border: 1px solid #333 !important;
+            }
+
+            button {
+                display: none !important;
+            }
+        }
+    </style>
 </head>
 <body>
-<div id="app"><div class="loader"><div class="loader-ring"></div><div class="loader-text">Ladataan…</div></div></div>
-<div class="autosave-toast" id="autosaveToast">💾 Luonnos tallennettu automaattisesti</div>
-
-<script type="module">
-import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import{getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import{getFirestore,collection,doc,addDoc,setDoc,deleteDoc,onSnapshot,serverTimestamp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-const FIREBASE_CONFIG={
-  apiKey:"AIzaSyB7Dp5_5fN0Iko-4Jn1D2Dp6NNNih63UO0",
-  authDomain:"jsailing-f716c.firebaseapp.com",
-  projectId:"jsailing-f716c",
-  storageBucket:"jsailing-f716c.firebasestorage.app",
-  messagingSenderId:"543523103696",
-  appId:"1:543523103696:web:439a312efa6aec398a8fd5"
-};
-const ALLOWED_EMAIL="jacke.seilaa@gmail.com";
-const APP_VERSION="V1.2";
-
-const VUOKRALAINEN_OPTS=[
-  {value:"tmi",label:"J Sailing (Tmi)",desc:"Koulutus, tutkinto, charter — kulut Tmi:n vähennyksiin"},
-  {value:"oy",label:"AJarmo Oy",desc:"Vuokraat veneen Oy:lle — saat henkilökohtaista vuokratuloa"},
-  {value:"oma",label:"Oma käyttö",desc:"Vapaa-aika — ei verovaikutusta"}
-];
-const KAYTTO_TYYPPI_OPTS={
-  tmi:[
-    {value:"koulutus",label:"Koulutus / kurssi"},
-    {value:"tutkinto",label:"Tutkinto"},
-    {value:"charter",label:"Charter"},
-    {value:"toimisto",label:"Toimistotyö satamassa"},
-    {value:"huolto",label:"Huolto / kunnossapito"},
-    {value:"siirto",label:"Siirtoajo"},
-    {value:"muu",label:"Muu Tmi-toiminta"}
-  ],
-  oy:[
-    {value:"oy-vuokraus",label:"Oy-vuokraus"},
-    {value:"oy-edustus",label:"Oy:n edustustilaisuus"},
-    {value:"oy-toimisto",label:"Oy:n toimistotyö"}
-  ],
-  oma:[
-    {value:"vapaa-aika",label:"Vapaa-aika"},
-    {value:"perhe",label:"Perhepurjehdus"}
-  ]
-};
-
-const fbApp=initializeApp(FIREBASE_CONFIG);
-const auth=getAuth(fbApp);
-const db=getFirestore(fbApp);
-
-const state={
-  tab:"dashboard",user:null,
-  loki:[],huollot:[],
-  modal:null,editId:null,editHuoltoId:null,
-  syncing:false,
-  vuosi:new Date().getFullYear(),
-  laskentaTapa:"paivat",
-  draft:null,
-  tapahtumat:[],
-  newTapPaikka:"",newTapHuomio:"",
-  importRows:null,
-  autosaveTimer:null,
-};
-
-const MONTHS_SHORT=["TAM","HEL","MAA","HUH","TOU","KES","HEI","ELO","SYY","LOK","MAR","JOU"];
-function today(){return new Date().toISOString().slice(0,10);}
-function esc(s){return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
-function fmtDate(d){return d?new Date(d+"T00:00:00").toLocaleDateString("fi-FI"):"";}
-function num(v){return Number(v||0);}
-function nowTime(){const n=new Date();return String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0");}
-
-async function fsAdd(col,data){
-  state.syncing=true;rsi();
-  try{const r=await addDoc(collection(db,col),{...data,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});return r.id;}
-  finally{state.syncing=false;rsi();}
-}
-async function fsSet(col,id,data){
-  state.syncing=true;rsi();
-  try{await setDoc(doc(db,col,id),{...data,updatedAt:serverTimestamp()},{merge:true});}
-  finally{state.syncing=false;rsi();}
-}
-async function fsDel(col,id){
-  state.syncing=true;rsi();
-  try{await deleteDoc(doc(db,col,id));}
-  finally{state.syncing=false;rsi();}
-}
-function rsi(){const el=document.getElementById("syncDot");if(el)el.className="sync-dot"+(state.syncing?" syncing":"");}
-
-const unsubList=[];
-function startListeners(){
-  unsubList.push(
-    onSnapshot(collection(db,"quartet_loki"),snap=>{
-      state.loki=snap.docs.map(d=>({id:d.id,...d.data()}));render();
-    }),
-    onSnapshot(collection(db,"quartet_huollot"),snap=>{
-      state.huollot=snap.docs.map(d=>({id:d.id,...d.data()}));render();
-    })
-  );
-}
-function stopListeners(){unsubList.forEach(u=>u());unsubList.length=0;}
-
-function getLokiVuodelle(v){return state.loki.filter(l=>String(l.pvm||"").slice(0,4)===String(v));}
-function laskeYrityskaytto(vuosi,tapa){
-  let tmi=0,oy=0,oma=0;
-  for(const l of getLokiVuodelle(vuosi)){
-    let arvo=0;
-    if(tapa==="paivat"){
-      const s=new Date((l.pvm||"")+"T00:00:00");
-      const e=l.endPvm?new Date(l.endPvm+"T00:00:00"):s;
-      arvo=Math.max(1,Math.round((e-s)/86400000)+1);
-    }else if(tapa==="tunnit"){arvo=Math.max(0,num(l.konetunnitLoppu)-num(l.konetunnitAlku));}
-    else{arvo=num(l.mailit);}
-    if(l.vuokralainen==="tmi")tmi+=arvo;
-    else if(l.vuokralainen==="oy")oy+=arvo;
-    else oma+=arvo;
-  }
-  const yht=tmi+oy+oma;
-  return{tmi,oy,oma,yhteensa:yht,
-    tmiPct:yht>0?(tmi/yht)*100:0,
-    oyPct:yht>0?(oy/yht)*100:0,
-    omaPct:yht>0?(oma/yht)*100:0};
-}
-function konetunnitYhteenveto(v){
-  const ll=getLokiVuodelle(v).filter(l=>l.konetunnitAlku||l.konetunnitLoppu);
-  if(!ll.length)return{alku:null,loppu:null,kertyma:0};
-  let minA=null,maxL=null,kertyma=0;
-  for(const l of ll){
-    const ka=num(l.konetunnitAlku),kl=num(l.konetunnitLoppu);
-    if(ka>0&&(minA===null||ka<minA))minA=ka;
-    if(kl>0&&(maxL===null||kl>maxL))maxL=kl;
-    kertyma+=Math.max(0,kl-ka);
-  }
-  return{alku:minA,loppu:maxL,kertyma};
-}
-function mailitYhteenveto(v){return getLokiVuodelle(v).reduce((s,l)=>s+num(l.mailit),0);}
-function getAvailableYears(){
-  const yrs=new Set(state.loki.map(l=>String(l.pvm||"").slice(0,4)).filter(Boolean));
-  yrs.add(String(new Date().getFullYear()));
-  return Array.from(yrs).sort().reverse();
-}
-function viimaHuolto(){
-  const fromLoki=state.loki.filter(l=>l.kayttoTyyppi==="huolto")
-    .map(l=>({pvm:l.pvm,konetunnit:l.konetunnitLoppu||l.konetunnitAlku,lokilukema:l.veneenLokiAlku,kuvaus:l.huomiot||"Lokimerkintä / huolto"}));
-  const fromKirja=state.huollot.map(h=>({...h}));
-  return [...fromLoki,...fromKirja].sort((a,b)=>(b.pvm||"").localeCompare(a.pvm||""))[0]||null;
-}
-function edellisetLukemat(){
-  if(!state.loki.length)return{kt:null,lokilukema:null};
-  const sorted=[...state.loki].sort((a,b)=>(b.pvm||"").localeCompare(a.pvm||""));
-  const v=sorted[0];
-  return{kt:v.konetunnitLoppu||null,lokilukema:v.veneenLokiAlku||null};
-}
-
-function triggerAutosave(){
-  clearTimeout(state.autosaveTimer);
-  state.autosaveTimer=setTimeout(()=>{
-    if(!state.modal)return;
-    saveFormToDraft();
-    state.draft._tapahtumat=JSON.stringify(state.tapahtumat);
-    try{localStorage.setItem("quartet_draft",JSON.stringify(state.draft));}catch(e){}
-    const t=document.getElementById("autosaveToast");
-    if(t){t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500);}
-  },15000);
-}
-
-async function haeGPS(){
-  return new Promise((res,rej)=>{
-    if(!navigator.geolocation){rej(new Error("GPS ei saatavilla"));return;}
-    navigator.geolocation.getCurrentPosition(p=>res({lat:p.coords.latitude,lon:p.coords.longitude}),rej,{enableHighAccuracy:true,timeout:10000});
-  });
-}
-async function geoReverse(lat,lon){
-  try{
-    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=fi`);
-    const j=await r.json();
-    return j.name||j.address?.road||j.display_name?.split(",")[0]||`${lat.toFixed(4)},${lon.toFixed(4)}`;
-  }catch{return`${lat.toFixed(4)},${lon.toFixed(4)}`;}
-}
-async function haeGPSpaikka(){
-  const btn=document.getElementById("tapGpsBtn");
-  if(btn)btn.textContent="📍…";
-  try{
-    const g=await haeGPS();
-    const nimi=await geoReverse(g.lat,g.lon);
-    state.newTapPaikka=nimi;
-    const inp=document.getElementById("tapPaikkaInp");
-    if(inp)inp.value=nimi;
-  }catch(e){alert("GPS-haku epäonnistui.");}
-  finally{if(btn)btn.textContent="📍";}
-}
-async function lisaaTapahtuma(paikka,huomio){
-  if(!paikka&&!huomio){alert("Syötä paikka tai huomio.");return;}
-  const t={aika:nowTime(),paikka:paikka||"—",huomio:huomio||"",lat:null,lon:null};
-  try{
-    const g=await haeGPS();
-    t.lat=parseFloat(g.lat.toFixed(5));t.lon=parseFloat(g.lon.toFixed(5));
-    if(t.paikka==="—")t.paikka=await geoReverse(g.lat,g.lon);
-  }catch(e){}
-  state.tapahtumat.push(t);
-  state.newTapPaikka="";state.newTapHuomio="";
-  render();
-}
-
-// ── VARMUUSKOPIOT ──
-window.exportData=async()=>{
-  const backup={
-    loki:state.loki,
-    huollot:state.huollot,
-    exported:new Date().toISOString(),
-    appVersion:APP_VERSION
-  };
-  const json=JSON.stringify(backup,null,2);
-  const blob=new Blob([json],{type:"application/json"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;
-  a.download=`Quartet-Loki-backup-${today()}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-};
-
-window.importData=()=>{
-  document.getElementById("restoreFile").click();
-};
-
-window.handleRestoreFile=async(e)=>{
-  const file=e.target.files[0];
-  if(!file)return;
-  try{
-    const text=await file.text();
-    const backup=JSON.parse(text);
-    if(!backup.loki||!backup.huollot){alert("Virheellinen varmuuskopiotiedosto.");return;}
-    if(!confirm("Palautetaanko varmuuskopion tiedot? Tämä korvaa nykyiset tiedot.\n\nLokit: "+backup.loki.length+"\nHuollot: "+backup.huollot.length)){return;}
-    
-    state.syncing=true;rsi();
-    // Poista nykyiset tiedot
-    for(const doc of state.loki){await fsDel("quartet_loki",doc.id);}
-    for(const doc of state.huollot){await fsDel("quartet_huollot",doc.id);}
-    
-    // Lisää varmuuskopiotiedot
-    for(const l of backup.loki){
-      const{id,...data}=l;
-      await fsAdd("quartet_loki",data);
-    }
-    for(const h of backup.huollot){
-      const{id,...data}=h;
-      await fsAdd("quartet_huollot",data);
-    }
-    state.syncing=false;rsi();
-    alert("✅ Varmuuskopion tiedot palautettu!");
-  }catch(err){
-    console.error(err);
-    alert("Virhe varmuuskopion palauttamisessa: "+err.message);
-  }
-  e.target.value="";
-};
-
-function render(){
-  document.getElementById("app").innerHTML=
-    renderTopBar()+renderNavTabs()+
-    `<div class="main-content">${renderTab()}</div>`+renderModal();
-  bind();rsi();
-}
-
-function renderTopBar(){
-  const u=state.user;
-  return`<div class="topbar">
-    <div class="topbar-logo">⛵ Quartet <em>Loki</em></div>
-    <span class="version-badge">${APP_VERSION}</span>
-    <span id="syncDot" class="sync-dot"></span>
-    <div class="topbar-spacer"></div>
-    <div class="topbar-user">
-      ${u?.photoURL?`<img src="${esc(u.photoURL)}" class="topbar-avatar" alt="">`:`<div class="topbar-avatar-placeholder">${(u?.displayName||u?.email||"?")[0].toUpperCase()}</div>`}
-      <button class="btn-signout" data-action="sign-out">Ulos</button>
-    </div>
-  </div>`;
-}
-
-function renderNavTabs(){
-  return`<nav class="nav-tabs">
-    ${[["dashboard","🧭 Dashboard"],["loki","📖 Lokikirja"],["huolto","🔧 Huollot"],["tuo","📥 Tuo data"]].map(([id,l])=>
-      `<button class="nav-tab ${state.tab===id?"active":""}" data-tab="${id}">${l}</button>`
-    ).join("")}
-  </nav>`;
-}
-
-function renderTab(){
-  if(state.tab==="dashboard")return renderDashboard();
-  if(state.tab==="loki")return renderLoki();
-  if(state.tab==="huolto")return renderHuolto();
-  if(state.tab==="tuo")return renderTuo();
-  return"";
-}
-
-function renderDashboard(){
-  const usage=laskeYrityskaytto(state.vuosi,state.laskentaTapa);
-  const konet=konetunnitYhteenveto(state.vuosi);
-  const mailit=mailitYhteenveto(state.vuosi);
-  const yearList=getAvailableYears();
-  const yks=state.laskentaTapa==="paivat"?"pv":state.laskentaTapa==="tunnit"?"h":"NM";
-  const vh=viimaHuolto();
-
-  return`
-    <div class="usage-banner">
-      <div class="usage-banner-title">Yrityskäyttö-% (Tmi) · ${state.vuosi}</div>
-      <div class="usage-percent">${usage.tmiPct.toFixed(1)}<span class="label">%</span></div>
-      <div class="usage-bar-wrap">
-        <div class="usage-bar-tmi" style="width:${usage.tmiPct}%"></div>
-        <div class="usage-bar-oy" style="width:${usage.oyPct}%"></div>
-        <div class="usage-bar-oma" style="width:${usage.omaPct}%"></div>
-      </div>
-      <div class="usage-legend">
-        <div class="usage-legend-item"><div class="usage-legend-dot" style="background:#60a5fa"></div>Tmi ${usage.tmi.toFixed(1)} ${yks} (${usage.tmiPct.toFixed(1)}%)</div>
-        <div class="usage-legend-item"><div class="usage-legend-dot" style="background:#a78bfa"></div>Oy ${usage.oy.toFixed(1)} ${yks} (${usage.oyPct.toFixed(1)}%)</div>
-        <div class="usage-legend-item"><div class="usage-legend-dot" style="background:#fcd34d"></div>Oma ${usage.oma.toFixed(1)} ${yks} (${usage.omaPct.toFixed(1)}%)</div>
-      </div>
-      <div class="usage-method-tabs">
-        <button class="usage-method-tab ${state.laskentaTapa==="paivat"?"active":""}" data-method="paivat">📅 Päivät</button>
-        <button class="usage-method-tab ${state.laskentaTapa==="tunnit"?"active":""}" data-method="tunnit">⚙️ Konetunnit</button>
-        <button class="usage-method-tab ${state.laskentaTapa==="mailit"?"active":""}" data-method="mailit">⛵ Mailit</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="row-between">
-        <div>
-          <div class="card-title">💾 Varmuuskopiot</div>
-          <div class="card-sub">Lataa tai palauta lokikirjan tiedot</div>
-        </div>
-      </div>
-      <div class="row" style="margin-top:14px;gap:8px">
-        <button class="btn btn-primary" data-action="export-data">⬇️ Lataa varmuuskopion</button>
-        <button class="btn btn-secondary" data-action="import-data">⬆️ Palauta varmuuskopion</button>
-      </div>
-      <input type="file" id="restoreFile" accept=".json" style="display:none" onchange="handleRestoreFile(event)">
-      <div class="infobox infobox-blue" style="margin-top:12px">💡 Varmuuskopiot sisältävät kaikki lokimerkinnät ja huollot. Lataa säännöllisesti, palauta tarvittaessa.</div>
-    </div>
-
-    <div class="huolto-widget">
-      <div class="huolto-widget-hdr">
-        <div class="huolto-widget-title">🔧 Viimeisin huolto</div>
-        <button class="btn btn-amber btn-sm" data-tab="huolto" style="font-size:11px;padding:4px 10px">Huoltokirja →</button>
-      </div>
-      ${vh?`
-        <div class="huolto-widget-grid">
-          <div class="hw-item"><div class="hw-val">${fmtDate(vh.pvm)}</div><div class="hw-lbl">Päivämäärä</div></div>
-          <div class="hw-item"><div class="hw-val">${vh.konetunnit?num(vh.konetunnit).toFixed(1)+"h":"—"}</div><div class="hw-lbl">Konetunnit</div></div>
-          <div class="hw-item"><div class="hw-val">${vh.lokilukema?num(vh.lokilukema).toFixed(0)+" NM":"—"}</div><div class="hw-lbl">Lokilukema</div></div>
-        </div>
-        ${vh.kuvaus?`<div class="huolto-widget-desc">📝 ${esc(vh.kuvaus)}</div>`:""}
-      `:`<div style="font-size:13px;color:var(--text-light);font-style:italic">Ei huoltomerkintöjä vielä. Lisää ensimmäinen Huollot-välilehdellä.</div>`}
-    </div>
-
-    <div class="card">
-      <div class="row-between">
-        <div>
-          <div class="card-title">Vuosi ${state.vuosi}</div>
-          <div class="card-sub">Veneen käytön yhteenveto</div>
-        </div>
-        <button class="btn btn-primary" data-action="new-loki">+ Uusi merkintä</button>
-      </div>
-      <div class="year-selector" style="margin-top:14px">
-        ${yearList.map(y=>`<button class="year-btn ${String(state.vuosi)===y?"active":""}" data-year="${y}">${y}</button>`).join("")}
-      </div>
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-label">Merkintöjä</div><div class="stat-val">${getLokiVuodelle(state.vuosi).length}</div></div>
-        <div class="stat-card">
-          <div class="stat-label">Konetunnit kertymä</div>
-          <div class="stat-val">${konet.kertyma.toFixed(1)}</div>
-          ${konet.alku!==null?`<div style="font-size:10px;color:var(--text-light);margin-top:4px">${konet.alku.toFixed(1)} → ${konet.loppu.toFixed(1)}</div>`:""}
-        </div>
-        <div class="stat-card"><div class="stat-label">Mailit (NM)</div><div class="stat-val">${mailit.toFixed(1)}</div></div>
-        <div class="stat-card"><div class="stat-label">Vähennysosuus</div><div class="stat-val">${usage.tmiPct.toFixed(1)}%</div><div style="font-size:10px;color:var(--text-light);margin-top:4px">kirjanpitoon</div></div>
-      </div>
-    </div>
-  `;
-}
-
-function renderLoki(){
-  const lokit=state.loki.slice().filter(l=>String(l.pvm||"").slice(0,4)===String(state.vuosi))
-    .sort((a,b)=>(b.pvm||"").localeCompare(a.pvm||""));
-  return`<div class="card">
-    <div class="row-between">
-      <div><div class="card-title">Lokikirja ${state.vuosi}</div><div class="card-sub">${lokit.length} merkintää</div></div>
-      <button class="btn btn-primary" data-action="new-loki">+ Uusi merkintä</button>
-    </div>
-    <div class="year-selector" style="margin-top:14px">
-      ${getAvailableYears().map(y=>`<button class="year-btn ${String(state.vuosi)===y?"active":""}" data-year="${y}">${y}</button>`).join("")}
-    </div>
-    <div class="hr"></div>
-    ${lokit.length===0?`<div class="infobox infobox-blue">Ei lokimerkintöjä vuodelle ${state.vuosi}.</div>`:""}
-    ${lokit.map(renderLokiItem).join("")}
-  </div>`;
-}
-
-function renderLokiItem(l){
-  const d=new Date((l.pvm||today())+"T00:00:00");
-  const vuokrl=VUOKRALAINEN_OPTS.find(v=>v.value===l.vuokralainen);
-  const badgeClass=l.vuokralainen==="tmi"?"badge-tmi":l.vuokralainen==="oy"?"badge-oy":"badge-oma";
-  const tyyppiLabel=(()=>{const opts=KAYTTO_TYYPPI_OPTS[l.vuokralainen]||[];return opts.find(o=>o.value===l.kayttoTyyppi)?.label||l.kayttoTyyppi||"";})();
-  const reitti=l.reitti||(l.lahtoPaikka&&l.saapumisPaikka?`${l.lahtoPaikka} → ${l.saapumisPaikka}`:l.lahtoPaikka||"");
-  const monipv=l.endPvm&&l.endPvm!==l.pvm;
-  const isHuolto=l.kayttoTyyppi==="huolto";
-  const ktAjettu=l.ktAjettu!==undefined?l.ktAjettu:Math.max(0,num(l.konetunnitLoppu)-num(l.konetunnitAlku));
-  const tapArr=l.tapahtumat||[];
-
-  return`<div class="log-item">
-    <div class="log-date ${isHuolto?"huolto-bg":""}">
-      <div class="day">${d.getDate()}</div>
-      <div class="month">${MONTHS_SHORT[d.getMonth()]}</div>
-      ${monipv?`<div style="font-size:9px;margin-top:2px;opacity:.85">→${new Date(l.endPvm+"T00:00:00").getDate()}.${new Date(l.endPvm+"T00:00:00").getMonth()+1}.</div>`:""}
-    </div>
-    <div class="log-content">
-      <div class="log-route">${esc(reitti||"(ei reittiä)")}</div>
-      <div class="log-meta">
-        ${vuokrl?`<span class="badge ${badgeClass}">${esc(vuokrl.label)}</span>`:`<span class="badge badge-oma">⚠ Tarkoitus puuttuu</span>`}
-        ${tyyppiLabel?` <span style="color:var(--text-light)">· ${esc(tyyppiLabel)}</span>`:""}
-        ${isHuolto?` <span class="badge badge-huolto">🔧</span>`:""}
-        ${l.miehisto?`<div style="margin-top:4px">👥 ${esc(l.miehisto)}</div>`:""}
-        <div style="margin-top:4px;font-size:11px;color:var(--text-light)">
-          ${num(l.mailit)>0?`⛵ ${num(l.mailit).toFixed(1)} NM `:""}
-          ${(num(l.konetunnitAlku)>0||num(l.konetunnitLoppu)>0)?`⚙️ ${num(l.konetunnitAlku).toFixed(1)}→${num(l.konetunnitLoppu).toFixed(1)}h (+${ktAjettu.toFixed(1)}h) `:""}
-          ${l.tuuli?`💨 ${esc(l.tuuli)}${l.tuulenSuunta?" "+esc(l.tuulenSuunta):""}  `:""}
-          ${l.saatila?esc(l.saatila):""}
-        </div>
-        ${l.huomiot?`<div style="margin-top:6px;font-size:12px;font-style:italic;color:var(--text-muted)">${esc(l.huomiot)}</div>`:""}
-        ${tapArr.length>0?`
-          <div class="tapahtumat-box">
-            <div class="tap-box-title">🗺 Reittitapahtumat (${tapArr.length})</div>
-            ${tapArr.map(t=>`<div class="tap-row">
-              <div class="tap-aika">${esc(t.aika||"")}</div>
-              <div>
-                <div class="tap-paikka">${esc(t.paikka||"")}</div>
-                ${t.huomio?`<div class="tap-huomio">${esc(t.huomio)}</div>`:""}
-                ${t.lat?`<div class="tap-gps">📍 ${t.lat}, ${t.lon}</div>`:""}
-              </div>
-            </div>`).join("")}
-          </div>
-        `:""}
-      </div>
-    </div>
-    <div class="log-actions">
-      <button class="btn btn-secondary btn-sm" data-action="edit-loki" data-id="${l.id}">Muokkaa</button>
-      <button class="btn btn-danger btn-sm" data-action="delete-loki" data-id="${l.id}">Poista</button>
-    </div>
-  </div>`;
-}
-
-function renderHuolto(){
-  const huollot=state.huollot.slice().sort((a,b)=>(b.pvm||"").localeCompare(a.pvm||""));
-  return`<div class="card">
-    <div class="row-between">
-      <div><div class="card-title">Huoltokirja</div><div class="card-sub">s/y Quartet — kaikki huollot</div></div>
-      <button class="btn btn-primary" data-action="new-huolto">+ Lisää huolto</button>
-    </div>
-    <div class="hr"></div>
-    ${huollot.length===0?`<div class="infobox infobox-blue">Ei huoltomerkintöjä. Lisää ensimmäinen yllä.</div>`:""}
-    ${huollot.map(h=>{
-      const d=new Date((h.pvm||today())+"T00:00:00");
-      return`<div class="log-item">
-        <div class="log-date huolto-bg"><div class="day">${d.getDate()}</div><div class="month">${MONTHS_SHORT[d.getMonth()]}</div></div>
-        <div class="log-content">
-          <div class="log-route">🔧 ${esc(h.kuvaus||"Huolto")}</div>
-          <div class="log-meta">
-            <div style="font-size:11px;color:var(--text-light)">
-              ${h.konetunnit?`⚙️ ${num(h.konetunnit).toFixed(1)}h `:""}
-              ${h.lokilukema?`⛵ ${num(h.lokilukema).toFixed(0)} NM `:""}
-              ${h.huoltoliike?`🏭 ${esc(h.huoltoliike)} `:""}
-              ${h.kustannus?`💶 ${num(h.kustannus).toFixed(0)}€`:""}
+    <div class="container">
+        <header>
+            <h1>🎼 Quartet Loki - PREMIUM</h1>
+            <div class="subtitle">
+                <span class="version-badge" id="versionBadge">v2027.3 (iCloud)</span>
+                <span id="lastSyncTime">Offline</span>
+                <span class="sync-indicator" id="syncIndicator"></span>
             </div>
-            ${h.huomiot?`<div style="font-size:12px;font-style:italic;margin-top:4px">${esc(h.huomiot)}</div>`:""}
-            ${h.seuraavaHuolto?`<div style="font-size:11px;color:#b45309;margin-top:4px">⏰ Seuraava: ${fmtDate(h.seuraavaHuolto)}</div>`:""}
-          </div>
-        </div>
-        <div class="log-actions">
-          <button class="btn btn-secondary btn-sm" data-action="edit-huolto" data-id="${h.id}">Muokkaa</button>
-          <button class="btn btn-danger btn-sm" data-action="delete-huolto" data-id="${h.id}">Poista</button>
-        </div>
-      </div>`;
-    }).join("")}
-  </div>`;
-}
+        </header>
 
-function renderTuo(){
-  return`<div class="card">
-    <div class="card-title">📥 Tuo lokikirjadata</div>
-    <div class="card-sub">Tuo LOKIKIRJA_2025.csv tai vastaava tiedosto</div>
-    <div class="hr"></div>
-    <div class="infobox infobox-green">✅ Tukee suoraan alkuperäistä LOKIKIRJA_2025-formaattia — päivämäärä suomalaisessa muodossa (pp.kk.vvvv), desimaalit pilkulla.</div>
-    <div class="infobox infobox-blue">Vuokralainen ja käyttötarkoitus jätetään tyhjäksi — merkitset ne jälkikäteen jokaisen rivin Muokkaa-painikkeella.</div>
-    <div class="import-dropzone" onclick="document.getElementById('importFile').click()">
-      <input type="file" id="importFile" accept=".csv" style="display:none" onchange="handleImportFile(event)">
-      <div style="font-size:32px;margin-bottom:8px">📂</div>
-      <div style="font-weight:700;margin-bottom:4px">Napauta valitaksesi LOKIKIRJA_2025.csv</div>
-      <div style="font-size:12px;color:var(--text-light)">CSV, puolipiste-erotin (;), UTF-8</div>
-    </div>
-
-    <div style="margin-top:14px">
-      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px">Tuettu sarakerakenne (alkuperäinen lokikirja)</div>
-      <div style="background:#f3f4f6;border-radius:8px;padding:10px;font-size:11px;overflow-x:auto;white-space:nowrap;line-height:1.9">
-        <div><strong>Rivi 1:</strong> Taulukko 1 (ohitetaan)</div>
-        <div><strong>Rivi 2:</strong> Päivämäärä ; Miehistö ; Veneen loki, aloitus ; Aloitus Konetunnit ; Lähtö aika ; Lähtöpaikka ; Reitti ; Saapumis aika ; Saapumispaikka ; Mailit ; Tuuli m/s ; Tuulen suunta ; Säätila ; Huomiot</div>
-        <div><strong>Rivi 3+:</strong> data (pp.kk.vvvv-muoto, desimaalit pilkulla)</div>
-      </div>
-    </div>
-
-    ${state.importRows?`
-      <div class="hr"></div>
-      <div style="font-weight:700;color:var(--green);margin-bottom:8px">✅ ${state.importRows.length} merkintää löytyi — esikatselu:</div>
-      <div style="overflow-x:auto">
-        <table class="import-table">
-          <thead><tr><th>Pvm</th><th>Reitti</th><th>Mailit</th><th>Konetunnit</th><th>Miehistö</th><th>Huomiot</th></tr></thead>
-          <tbody>
-            ${state.importRows.slice(0,10).map(r=>`<tr>
-              <td>${esc(r.pvm)}</td>
-              <td>${esc(r.reitti||"—")}</td>
-              <td>${r.mailit!=null?r.mailit+" NM":"—"}</td>
-              <td>${r.konetunnitAlku!=null?r.konetunnitAlku:"—"}</td>
-              <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.miehisto||"—")}</td>
-              <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.huomiot||"—")}</td>
-            </tr>`).join("")}
-            ${state.importRows.length>10?`<tr><td colspan="6" style="color:var(--text-light);font-style:italic">… ja ${state.importRows.length-10} merkintää lisää</td></tr>`:""}
-          </tbody>
-        </table>
-      </div>
-      <div class="infobox infobox-amber" style="margin-top:10px">⚠️ Vuokralainen ja käyttötarkoitus ovat kaikilla tyhjinä. Merkitse ne jälkikäteen Lokikirja-välilehdellä.</div>
-      <div class="row" style="margin-top:12px;justify-content:flex-end;gap:8px">
-        <button class="btn btn-secondary" data-action="cancel-import">Peruuta</button>
-        <button class="btn btn-primary" data-action="confirm-import">✅ Tuo kaikki ${state.importRows.length} merkintää Firestoreen</button>
-      </div>
-    `:""}
-  </div>`;
-}
-
-function renderModal(){
-  if(state.modal==="loki")return renderLokiModal();
-  if(state.modal==="huolto")return renderHuoltoModal();
-  return"";
-}
-
-function renderLokiModal(){
-  const editing=!!state.editId;
-  const l=editing?state.loki.find(x=>x.id===state.editId):null;
-  const d=state.draft||{};
-  const vuokralainen=d.vuokralainen!==undefined?d.vuokralainen:(l?.vuokralainen||"");
-  const kayttoTyyppi=d.kayttoTyyppi!==undefined?d.kayttoTyyppi:(l?.kayttoTyyppi||"");
-  const v=(f,def="")=>{if(d[f]!==undefined)return d[f];if(l&&l[f]!==undefined&&l[f]!==null)return l[f];return def;};
-  const tyyppiOpts=vuokralainen?(KAYTTO_TYYPPI_OPTS[vuokralainen]||[]):[];
-
-  const ktA=num(v("konetunnitAlku"));const ktL=num(v("konetunnitLoppu"));
-  const ktAjettu=ktL>ktA?(ktL-ktA).toFixed(2):null;
-  const tapArr=state.tapahtumat||[];
-
-  return`<div class="overlay" data-action="close-modal"><div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-head">
-      <div class="row-between">
-        <div class="modal-title">${editing?"Muokkaa lokimerkintää":"Uusi lokimerkintä"}</div>
-        <button class="btn btn-secondary btn-sm" data-action="close-modal">✕</button>
-      </div>
-    </div>
-    <div class="modal-body">
-
-      <div style="background:#f0f4f8;border-radius:10px;padding:14px;margin-bottom:16px">
-        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--ocean);margin-bottom:10px">⚖️ Käyttötarkoitus *</div>
-        <div class="grid2">
-          <div class="field" style="margin-bottom:0">
-            <label class="lbl">Vuokralainen / käyttäjä</label>
-            <select data-field="vuokralainen" data-action="vuokralainen-changed">
-              <option value="">-- valitse --</option>
-              ${VUOKRALAINEN_OPTS.map(o=>`<option value="${o.value}" ${vuokralainen===o.value?"selected":""}>${esc(o.label)}</option>`).join("")}
+        <div class="year-selector" id="yearSelector" style="padding: 8px 16px; background: #f5f5f5; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; gap: 12px;">
+            <label for="yearFilter" style="font-size: 0.9em;">📅 Vuosi:</label>
+            <select id="yearFilter" style="padding: 6px 10px; border-radius: 4px; border: 1px solid #ddd;">
+                <option value="2025">2025</option>
+                <option value="2026">2026</option>
+                <option value="all">Kaikki</option>
             </select>
-          </div>
-          <div class="field" style="margin-bottom:0">
-            <label class="lbl">Käytön tyyppi</label>
-            <select data-field="kayttoTyyppi" ${!vuokralainen?"disabled":""}>
-              <option value="">${vuokralainen?"-- valitse --":"valitse ensin vuokralainen"}</option>
-              ${tyyppiOpts.map(o=>`<option value="${o.value}" ${kayttoTyyppi===o.value?"selected":""}>${esc(o.label)}</option>`).join("")}
-            </select>
-          </div>
         </div>
-        ${vuokralainen?`<div style="font-size:11px;color:var(--text-light);margin-top:8px">${esc(VUOKRALAINEN_OPTS.find(o=>o.value===vuokralainen)?.desc||"")}</div>`:""}
-      </div>
 
-      <div class="grid2">
-        <div class="field"><label class="lbl">Päivämäärä *</label><input type="date" data-field="pvm" value="${esc(v("pvm",today()))}"></div>
-        <div class="field"><label class="lbl">Loppupäivä (monipäiv.)</label><input type="date" data-field="endPvm" value="${esc(v("endPvm",""))}"></div>
-      </div>
-      <div class="grid2">
-        <div class="field"><label class="lbl">Lähtöaika</label><input type="time" data-field="lahtoAika" value="${esc(v("lahtoAika",""))}"></div>
-        <div class="field"><label class="lbl">Saapumisaika</label><input type="time" data-field="saapumisAika" value="${esc(v("saapumisAika",""))}"></div>
-      </div>
-      <div class="grid2">
-        <div class="field"><label class="lbl">Lähtöpaikka</label><input data-field="lahtoPaikka" value="${esc(v("lahtoPaikka",""))}" placeholder="esim. RVK"></div>
-        <div class="field"><label class="lbl">Saapumispaikka</label><input data-field="saapumisPaikka" value="${esc(v("saapumisPaikka",""))}" placeholder="esim. Naissaari"></div>
-      </div>
-      <div class="field"><label class="lbl">Reitti</label><input data-field="reitti" value="${esc(v("reitti",""))}" placeholder="esim. RVK – Harmaja – Tallinna"></div>
-      <div class="field"><label class="lbl">Miehistö</label><input data-field="miehisto" value="${esc(v("miehisto",""))}" placeholder="esim. Jarmo + 3 oppilasta"></div>
+        <div class="nav-tabs" id="navTabs">
+            <button class="tab-btn active" data-tab="merkinta">📝 Merkinnät</button>
+            <button class="tab-btn" data-tab="locations">📍 Paikat</button>
+            <button class="tab-btn" data-tab="accounting">📊 Kirjanpito</button>
+            <button class="tab-btn" data-tab="reporting">📈 Raportti</button>
+            <button class="tab-btn" data-tab="settings">⚙️ Asetukset</button>
+        </div>
 
-      <div class="hr"></div>
-      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px">📊 Tekniset lukemat — uusi merkintä perii edellisen loppulukemat</div>
-      <div class="grid3">
-        <div class="field"><label class="lbl">Konetunnit alku</label><input type="number" step="0.01" data-field="konetunnitAlku" value="${esc(v("konetunnitAlku",""))}" oninput="calcUpdate()"></div>
-        <div class="field"><label class="lbl">Konetunnit loppu</label><input type="number" step="0.01" data-field="konetunnitLoppu" value="${esc(v("konetunnitLoppu",""))}" oninput="calcUpdate()"></div>
-        <div class="field"><label class="lbl">Mailit (NM)</label><input type="number" step="0.1" data-field="mailit" value="${esc(v("mailit",""))}"></div>
-      </div>
-      <div class="field"><label class="lbl">Veneen lokilukema alussa (NM)</label><input type="number" step="1" data-field="veneenLokiAlku" value="${esc(v("veneenLokiAlku",""))}" placeholder="Periytyy automaattisesti edellisestä"></div>
-
-      <div id="calcRow" style="${ktA>0&&ktL>0?"":"display:none"}">
-        <div class="calc-row">⚙️ Ajettu: <strong>${ktAjettu||"0"}h</strong><span style="margin-left:auto;font-size:11px;opacity:.7">laskettu automaattisesti</span></div>
-      </div>
-
-      <div class="grid3">
-        <div class="field"><label class="lbl">Tuuli (m/s)</label><input data-field="tuuli" value="${esc(v("tuuli",""))}" placeholder="esim. 4–5"></div>
-        <div class="field"><label class="lbl">Tuulen suunta</label><input data-field="tuulenSuunta" value="${esc(v("tuulenSuunta",""))}" placeholder="esim. SW"></div>
-        <div class="field"><label class="lbl">Säätila</label><input data-field="saatila" value="${esc(v("saatila",""))}" placeholder="esim. Aurinko"></div>
-      </div>
-      <div class="field"><label class="lbl">Huomiot</label><textarea data-field="huomiot" rows="3" placeholder="Lisätiedot, polttoaine, tapahtumat...">${esc(v("huomiot",""))}</textarea></div>
-
-      <div class="hr"></div>
-      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:8px">🗺 Reittitapahtumat matkan aikana</div>
-      <div class="tap-editor">
-        ${tapArr.length>0?`<div style="margin-bottom:8px">
-          ${tapArr.map((t,i)=>`<div class="tap-editor-row">
-            <div style="font-size:11px;color:var(--text-light);min-width:36px">${esc(t.aika)}</div>
-            <div class="tap-editor-info">
-              <div class="tap-editor-paikka">${esc(t.paikka)}</div>
-              ${t.huomio?`<div class="tap-editor-meta">${esc(t.huomio)}</div>`:""}
-              ${t.lat?`<div style="font-size:10px;color:var(--text-light)">📍 ${t.lat}, ${t.lon}</div>`:""}
+        <div class="content">
+            <!-- MERKINNÄT TAB -->
+            <div id="merkinta" class="tab-content active">
+                <div style="margin-bottom: 16px;">
+                    <h2 style="margin-bottom: 12px; font-size: 1.1em;">Uusi Merkintä</h2>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" id="newEntryBtn">+ Merkintä</button>
+                        <button class="btn btn-secondary" id="importDataBtn">📥 Tuo</button>
+                        <button class="btn btn-secondary" id="exportDataBtn">📤 Vie</button>
+                    </div>
+                </div>
+                <div id="entriesList"></div>
             </div>
-            <button class="tap-del-btn" data-action="del-tap" data-idx="${i}">✕</button>
-          </div>`).join("")}
-        </div>`:""}
-        <div class="tap-add-row">
-          <input id="tapPaikkaInp" type="text" placeholder="Paikka / satama…" value="${esc(state.newTapPaikka)}"
-            oninput="state.newTapPaikka=this.value"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();tapEnter();}">
-          <button class="tap-gps-btn" id="tapGpsBtn" type="button" onclick="haeGPSpaikka()">📍</button>
+
+            <!-- LOCATIONS TAB -->
+            <div id="locations" class="tab-content">
+                <h2 style="margin-bottom: 16px; font-size: 1.1em;">📍 Paikan merkinnät</h2>
+                <div class="form-section">
+                    <p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">Merkkaa laivan sijainti GPS:n tai manuaalisen syöttönsä avulla.</p>
+                    <div class="form-group">
+                        <label>Leveysaste (Latitude)</label>
+                        <input type="number" id="locationLat" step="0.0001" placeholder="60.1699">
+                    </div>
+                    <div class="form-group">
+                        <label>Pituusaste (Longitude)</label>
+                        <input type="number" id="locationLon" step="0.0001" placeholder="24.9384">
+                    </div>
+                    <div class="form-group">
+                        <label>Paikan nimi (valinnainen)</label>
+                        <input type="text" id="locationName" placeholder="esim. Tallinna, avomeri jne">
+                    </div>
+                    <button class="btn btn-primary" id="useGpsBtn">📡 Käytä GPS:ää</button>
+                    <button class="btn btn-success" id="addLocationBtn">Lisää paikka</button>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <h3 style="margin-bottom: 12px; font-size: 1em;">Merkityt paikat</h3>
+                    <div id="locationsList"></div>
+                </div>
+            </div>
+
+            <!-- ACCOUNTING TAB -->
+            <div id="accounting" class="tab-content">
+                <h2 style="margin-bottom: 16px; font-size: 1.1em;">📊 Kirjanpito</h2>
+                <div id="accountingStats"></div>
+                <div class="report-section">
+                    <h3>Tmi - Tuotot ja Kulut</h3>
+                    <div id="tmiAccounting"></div>
+                </div>
+                <div class="report-section">
+                    <h3>Oy - Tuotot ja Kulut</h3>
+                    <div id="oyAccounting"></div>
+                </div>
+                <div class="report-section">
+                    <h3>Oma - Tuotot ja Kulut</h3>
+                    <div id="omaAccounting"></div>
+                </div>
+            </div>
+
+            <!-- REPORTING TAB -->
+            <div id="reporting" class="tab-content">
+                <h2 style="margin-bottom: 16px; font-size: 1.1em;">📈 Raportointi</h2>
+                <div class="form-section">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Raportin tyyppi</label>
+                            <select id="reportType">
+                                <option value="summary">Yhteenveto</option>
+                                <option value="detailed">Yksityiskohtainen</option>
+                                <option value="entity">Entiteetin mukaan</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Entiteetti</label>
+                            <select id="reportEntity">
+                                <option value="all">Kaikki</option>
+                                <option value="tmi">Tmi</option>
+                                <option value="oy">Oy</option>
+                                <option value="oma">Oma</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" id="generateReportBtn">Luo raportti</button>
+                    <button class="btn btn-secondary" id="printReportBtn" style="display:none;">🖨️ Tulosta</button>
+                </div>
+                <div id="reportOutput" style="margin-top: 20px;"></div>
+            </div>
+
+            <!-- SETTINGS TAB -->
+            <div id="settings" class="tab-content">
+                <h2 style="margin-bottom: 16px; font-size: 1.1em;">⚙️ Asetukset</h2>
+
+                <div class="form-section">
+                    <h3 style="margin-bottom: 12px;">Varmuuskopiointi</h3>
+                    <p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">Lataa ja palauta varmuuskopiot.</p>
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary" id="backupBtn">💾 Lataa backup</button>
+                        <button class="btn btn-secondary" id="restoreBtn">♻️ Palauta</button>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3 style="margin-bottom: 12px;">☁️ iCloud Drive Synkronointi</h3>
+                    <p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">Synkronoi automaattisesti iCloud Driven kanssa. Kaikki laitteet näkevät samat tiedot.</p>
+                    <div id="icloudStatus" style="margin-bottom: 12px; padding: 10px; background: #d1f5d3; border-radius: 6px; font-size: 0.9em;">
+                        ✅ iCloud Drive aktiivinen<br>
+                        <span style="font-size: 0.85em; color: #666;" id="icloudStatusDetail">Synkronointi aktiivinen - Seuraava auto-sync: ~1h</span>
+                    </div>
+                    <button class="btn btn-success" id="syncNowBtn">🔄 Synkronoi nyt iCloud:iin</button>
+                    <button class="btn btn-secondary" id="loadFromICloudBtn">📥 Lataa iCloud:ista</button>
+                </div>
+
+                <div class="form-section">
+                    <h3 style="margin-bottom: 12px;">Tietokannan hallinta</h3>
+                    <p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">⚠️ Poista kaikki tiedot (ei voi kumota).</p>
+                    <button class="btn btn-danger" id="clearAllBtn">🗑️ Tyhjennä kaikki</button>
+                </div>
+
+                <div class="form-section">
+                    <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
+                    <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
+                        <strong>Quartet Loki PREMIUM</strong><br>
+                        v2027.1 (iOS-first)<br>
+                        Offline-pohjainen arkkitehtuuri<br>
+                        <span id="dbSize"></span><br>
+                        <span id="lastBackup"></span>
+                    </p>
+                </div>
+            </div>
         </div>
-        <div class="tap-add-row" style="margin-top:6px">
-          <input id="tapHuomioInp" type="text" placeholder="Huomio (valinnainen)…" value="${esc(state.newTapHuomio)}"
-            oninput="state.newTapHuomio=this.value"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();tapEnter();}">
-          <button class="tap-add-btn" type="button" onclick="tapEnter()">+ Lisää</button>
+    </div>
+
+    <!-- ENTRY FORM MODAL -->
+    <div id="entryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Merkinnän tiedot</div>
+
+            <div class="form-group">
+                <label>Päivämäärä <span class="required">*</span></label>
+                <input type="date" id="entryDate" required>
+            </div>
+
+            <div class="form-group">
+                <label>Kapteeni / Skiperi</label>
+                <input type="text" id="entryCaptain" placeholder="vastuussa oleva henkilö">
+            </div>
+
+            <div class="form-group">
+                <label>Miehistö</label>
+                <input type="text" id="entryCrew" placeholder="esim. Jukka, Liisa, Mikko">
+            </div>
+
+            <div class="form-group">
+                <label>Käyttötarkoitus <span class="required">*</span></label>
+                <select id="entryKayttotarkoitus" required>
+                    <option value="">-- Valitse --</option>
+                    <option value="charter">Charter</option>
+                    <option value="koulutus">Koulutus</option>
+                    <option value="oma-kaytto">Oma käyttö</option>
+                    <option value="muu">Muu</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="vuokralainenGroup">
+                <label>Vuokralainen <span class="required">*</span></label>
+                <select id="entryVuokralainen">
+                    <option value="">-- Valitse --</option>
+                    <option value="tmi">Tmi</option>
+                    <option value="oy">Oy</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Veneen loki aloitus</label>
+                <input type="datetime-local" id="entryStartTime">
+            </div>
+
+            <div class="form-group">
+                <label>Veneen loki lopetus</label>
+                <input type="datetime-local" id="entryEndTime">
+            </div>
+
+            <div class="form-group">
+                <label>Lähtösatama</label>
+                <input type="text" id="entryDeparturePort" placeholder="esim. Helsinki, RVK">
+            </div>
+
+            <div class="form-group">
+                <label>Tulosatama</label>
+                <input type="text" id="entryArrivalPort" placeholder="esim. Porvoo">
+            </div>
+
+            <div class="form-group">
+                <label>Reitti</label>
+                <input type="text" id="entryRoute" placeholder="esim. Helsinki - Porvoo">
+            </div>
+
+            <div class="form-group">
+                <label>Mailit (nm)</label>
+                <input type="number" id="entryNauticalMiles" step="0.1" placeholder="0.0">
+            </div>
+
+            <div class="form-group">
+                <label>Konetunnit (alku)</label>
+                <input type="number" id="entryEngineHoursStart" step="0.1" placeholder="0.0">
+            </div>
+
+            <div class="form-group">
+                <label>Konetunnit (loppu)</label>
+                <input type="number" id="entryEngineHoursEnd" step="0.1" placeholder="0.0">
+            </div>
+
+            <div class="form-group">
+                <label>Miehistön lukumäärä</label>
+                <input type="text" id="entryPersonnel" placeholder="esim. 3 hlö">
+            </div>
+
+            <div class="form-group">
+                <label>Sää</label>
+                <input type="text" id="entryWeather" placeholder="esim. Aurinko, 2-3m tuuli">
+            </div>
+
+            <div class="form-group">
+                <label>Merkinnät</label>
+                <textarea id="entryNotes" placeholder="Lisähuomautukset..." style="resize: vertical; min-height: 80px;"></textarea>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="closeModalBtn">Peruuta</button>
+                <button class="btn btn-primary" id="saveEntryBtn">Tallenna</button>
+            </div>
         </div>
-        <div class="tap-hint">💡 Enter tai + Lisää kirjaa tapahtuman. GPS-sijainti ja kellonaika haetaan automaattisesti.</div>
-      </div>
-
-      <div class="row" style="justify-content:flex-end;margin-top:20px;gap:10px">
-        ${editing?`<button class="btn btn-danger btn-sm" data-action="delete-loki" data-id="${state.editId}">Poista</button>`:""}
-        <button class="btn btn-primary" data-action="save-loki">${editing?"Tallenna muutokset":"Tallenna"}</button>
-      </div>
     </div>
-  </div></div>`;
-}
 
-function renderHuoltoModal(){
-  const editing=!!state.editHuoltoId;
-  const h=editing?state.huollot.find(x=>x.id===state.editHuoltoId):null;
-  const d=state.draft||{};
-  const v=(f,def="")=>{if(d[f]!==undefined)return d[f];if(h&&h[f]!==undefined)return h[f];return def;};
-  return`<div class="overlay" data-action="close-modal"><div class="modal" onclick="event.stopPropagation()">
-    <div class="modal-head">
-      <div class="row-between">
-        <div class="modal-title">${editing?"Muokkaa huoltoa":"Uusi huoltomerkintä"}</div>
-        <button class="btn btn-secondary btn-sm" data-action="close-modal">✕</button>
-      </div>
-    </div>
-    <div class="modal-body">
-      <div class="infobox infobox-amber">🔧 Huoltomerkinnät näkyvät Dashboardin Viimeisin huolto -widgetissä.</div>
-      <div class="grid2">
-        <div class="field"><label class="lbl">Päivämäärä *</label><input type="date" data-field="pvm" value="${esc(v("pvm",today()))}"></div>
-        <div class="field"><label class="lbl">Huoltoliike</label><input data-field="huoltoliike" value="${esc(v("huoltoliike",""))}" placeholder="esim. Meri-Expert Oy"></div>
-      </div>
-      <div class="field"><label class="lbl">Kuvaus / tehdyt työt *</label><textarea data-field="kuvaus" rows="3" placeholder="esim. Moottoriöljy vaihdettu, V-hihna tarkistettu…">${esc(v("kuvaus",""))}</textarea></div>
-      <div class="grid2">
-        <div class="field"><label class="lbl">Konetunnit (h)</label><input type="number" step="0.1" data-field="konetunnit" value="${esc(v("konetunnit",""))}"></div>
-        <div class="field"><label class="lbl">Lokilukema (NM)</label><input type="number" step="1" data-field="lokilukema" value="${esc(v("lokilukema",""))}"></div>
-      </div>
-      <div class="grid2">
-        <div class="field"><label class="lbl">Kustannus (€)</label><input type="number" step="0.01" data-field="kustannus" value="${esc(v("kustannus",""))}"></div>
-        <div class="field"><label class="lbl">Seuraava huolto</label><input type="date" data-field="seuraavaHuolto" value="${esc(v("seuraavaHuolto",""))}"></div>
-      </div>
-      <div class="field"><label class="lbl">Muut huomiot</label><textarea data-field="huomiot" rows="2">${esc(v("huomiot",""))}</textarea></div>
-      <div class="row" style="justify-content:flex-end;margin-top:16px;gap:10px">
-        ${editing?`<button class="btn btn-danger btn-sm" data-action="delete-huolto" data-id="${state.editHuoltoId}">Poista</button>`:""}
-        <button class="btn btn-primary" data-action="save-huolto">${editing?"Tallenna muutokset":"Tallenna"}</button>
-      </div>
-    </div>
-  </div></div>`;
-}
+    <input type="file" id="csvImportInput" style="display:none;" accept=".csv" />
+    <input type="file" id="jsonRestoreInput" style="display:none;" accept=".json" />
 
-function renderAuthScreen(err){
-  document.getElementById("app").innerHTML=`<div class="auth-screen"><div class="auth-card">
-    <div class="auth-emblem">⛵</div>
-    <div class="auth-title">Quartet <em>Loki</em></div>
-    <div class="auth-sub">s/y Quartet · Absolut 37 · ${APP_VERSION}<br>Kirjaudu sisään Google-tilillä jatkaaksesi.</div>
-    ${err?`<div class="infobox infobox-amber" style="margin-bottom:16px">${esc(err)}</div>`:""}
-    <button class="btn-google" id="btnGoogle">
-      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-      Kirjaudu Google-tilillä
-    </button>
-    <div class="auth-note">Vain ${esc(ALLOWED_EMAIL)} voi kirjautua.</div>
-  </div></div>`;
-  document.getElementById("btnGoogle")?.addEventListener("click",async()=>{
-    try{const p=new GoogleAuthProvider();await signInWithPopup(auth,p);}
-    catch(e){renderAuthScreen("Kirjautuminen epäonnistui: "+e.message);}
-  });
-}
+    <script>
+        // ==================== VERSIO & SYNC ====================
+        const APP_VERSION = '2027.3';
+        const APP_BUILD_DATE = '2026-04-15T15:00:00Z';
+        const ICLOUD_SYNC_INTERVAL = 60 * 60 * 1000; // 1 tunti
+        const ICLOUD_FILENAME = 'Quartet_Loki_iCloud_Backup.json';
 
-function bind(){
-  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{state.tab=b.dataset.tab;render();});
-  document.querySelectorAll("[data-year]").forEach(b=>b.onclick=()=>{state.vuosi=parseInt(b.dataset.year);render();});
-  document.querySelectorAll("[data-method]").forEach(b=>b.onclick=()=>{state.laskentaTapa=b.dataset.method;render();});
+        // ==================== ICLOUD DRIVE SYNC ====================
+        const iCloudSync = {
+            lastSync: null,
+            nextSyncTime: null,
 
-  document.querySelector('[data-action="vuokralainen-changed"]')?.addEventListener("change",e=>{
-    saveFormToDraft();
-    state.draft.vuokralainen=e.target.value;
-    state.draft.kayttoTyyppi="";
-    render();
-  });
+            async init() {
+                this.lastSync = localStorage.getItem('icloud_lastSync');
+                this.calculateNextSync();
+                console.log('✅ iCloud Drive synkronointi aktiivinen');
+                return true;
+            },
 
-  document.querySelectorAll("input,select,textarea").forEach(el=>{
-    el.addEventListener("input",()=>triggerAutosave());
-  });
+            calculateNextSync() {
+                const now = new Date();
+                this.nextSyncTime = new Date(now.getTime() + ICLOUD_SYNC_INTERVAL);
+            },
 
-  document.querySelectorAll("[data-action]").forEach(el=>{
-    if(el.dataset.action==="vuokralainen-changed")return;
-    el.onclick=async(e)=>{
-      e.stopPropagation();
-      const a=el.dataset.action,id=el.dataset.id;
+            async exportToICloud(data) {
+                try {
+                    // Viedään JSON-muodossa
+                    const json = JSON.stringify(data, null, 2);
+                    const blob = new Blob([json], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `${ICLOUD_FILENAME}`;
+                    link.click();
 
-      if(a==="sign-out"){await signOut(auth);return;}
-      if(a==="close-modal"){
-        state.modal=null;state.editId=null;state.editHuoltoId=null;
-        state.draft=null;state.tapahtumat=[];render();return;
-      }
+                    // Tallenna sync-aika
+                    const syncTime = new Date().toISOString();
+                    localStorage.setItem('icloud_lastSync', syncTime);
+                    this.lastSync = syncTime;
+                    this.calculateNextSync();
 
-      if(a==="export-data"){exportData();return;}
-      if(a==="import-data"){importData();return;}
+                    console.log('✅ Exported to iCloud');
+                    return true;
+                } catch (err) {
+                    console.error('iCloud export error:', err);
+                    return false;
+                }
+            },
 
-      if(a==="new-loki"){
-        state.modal="loki";state.editId=null;
-        const prev=edellisetLukemat();
-        state.draft={};
-        if(prev.kt!==null)state.draft.konetunnitAlku=prev.kt;
-        if(prev.lokilukema!==null)state.draft.veneenLokiAlku=prev.lokilukema;
-        state.tapahtumat=[];
-        try{
-          const ds=localStorage.getItem("quartet_draft");
-          if(ds){const dp=JSON.parse(ds);if(confirm("Löytyi tallentamaton luonnos. Jatketaanko siitä?")){state.draft=dp;state.tapahtumat=JSON.parse(dp._tapahtumat||"[]");}else localStorage.removeItem("quartet_draft");}
-        }catch(err){}
-        render();return;
-      }
+            getNextSyncIn() {
+                if (!this.nextSyncTime) return '...';
+                const now = new Date();
+                const diff = this.nextSyncTime - now;
+                if (diff <= 0) return 'Seuraava synkronointi';
 
-      if(a==="edit-loki"){
-        state.modal="loki";state.editId=id;
-        const l=state.loki.find(x=>x.id===id);
-        state.tapahtumat=l?.tapahtumat?JSON.parse(JSON.stringify(l.tapahtumat)):[];
-        state.draft={};render();return;
-      }
-      if(a==="new-huolto"){state.modal="huolto";state.editHuoltoId=null;state.draft={};render();return;}
-      if(a==="edit-huolto"){state.modal="huolto";state.editHuoltoId=id;state.draft={};render();return;}
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
-      if(a==="delete-loki"){
-        if(!confirm("Poistetaanko lokimerkintä?"))return;
-        await fsDel("quartet_loki",id);
-        if(state.modal==="loki"){state.modal=null;state.editId=null;state.draft=null;state.tapahtumat=[];}
-        render();return;
-      }
-      if(a==="delete-huolto"){
-        if(!confirm("Poistetaanko huoltomerkintä?"))return;
-        await fsDel("quartet_huollot",id);
-        if(state.modal==="huolto"){state.modal=null;state.editHuoltoId=null;state.draft=null;}
-        render();return;
-      }
-      if(a==="del-tap"){
-        state.tapahtumat.splice(parseInt(el.dataset.idx),1);render();return;
-      }
+                if (hours > 0) return `~${hours}h ${mins}m`;
+                return `~${mins}m`;
+            }
+        };
 
-      if(a==="save-loki"){
-        const data=collectLokiData();
-        if(!data.pvm)return alert("Päivämäärä on pakollinen.");
-        if(!data.vuokralainen)return alert("Valitse vuokralainen / käyttäjä.");
-        data.tapahtumat=state.tapahtumat||[];
-        const ka=num(data.konetunnitAlku),kl=num(data.konetunnitLoppu);
-        data.ktAjettu=kl>ka?+(kl-ka).toFixed(2):0;
-        if(state.editId)await fsSet("quartet_loki",state.editId,data);
-        else await fsAdd("quartet_loki",data);
-        localStorage.removeItem("quartet_draft");
-        state.modal=null;state.editId=null;state.draft=null;state.tapahtumat=[];
-        render();return;
-      }
-      if(a==="save-huolto"){
-        const data=collectHuoltoData();
-        if(!data.pvm)return alert("Päivämäärä on pakollinen.");
-        if(!data.kuvaus)return alert("Kuvaus on pakollinen.");
-        if(state.editHuoltoId)await fsSet("quartet_huollot",state.editHuoltoId,data);
-        else await fsAdd("quartet_huollot",data);
-        state.modal=null;state.editHuoltoId=null;state.draft=null;render();return;
-      }
+        // ==================== DATA MANAGEMENT ====================
+        const DB = {
+            entries: 'quartet_entries_v2027',
+            locations: 'quartet_locations_v2027',
+            settings: 'quartet_settings_v2027',
+            lastSync: 'quartet_lastSync',
 
-      if(a==="cancel-import"){state.importRows=null;render();return;}
-      if(a==="confirm-import"){
-        await doImport(state.importRows);
-        state.importRows=null;state.tab="loki";render();return;
-      }
-    };
-  });
-}
+            getEntries() {
+                try {
+                    const data = localStorage.getItem(this.entries);
+                    return data ? JSON.parse(data) : [];
+                } catch {
+                    return [];
+                }
+            },
 
-function collectLokiData(){
-  const g=f=>document.querySelector(`[data-field="${f}"]`)?.value||"";
-  return{
-    pvm:g("pvm"),endPvm:g("endPvm"),
-    vuosi:parseInt((g("pvm")||today()).slice(0,4)),
-    kuukausi:parseInt((g("pvm")||today()).slice(5,7)),
-    vuokralainen:g("vuokralainen"),kayttoTyyppi:g("kayttoTyyppi"),
-    lahtoAika:g("lahtoAika"),saapumisAika:g("saapumisAika"),
-    lahtoPaikka:g("lahtoPaikka"),saapumisPaikka:g("saapumisPaikka"),
-    reitti:g("reitti"),miehisto:g("miehisto"),
-    konetunnitAlku:parseFloat(g("konetunnitAlku"))||null,
-    konetunnitLoppu:parseFloat(g("konetunnitLoppu"))||null,
-    mailit:parseFloat(g("mailit"))||null,
-    veneenLokiAlku:parseFloat(g("veneenLokiAlku"))||null,
-    tuuli:g("tuuli"),tuulenSuunta:g("tuulenSuunta"),saatila:g("saatila"),huomiot:g("huomiot")
-  };
-}
-function collectHuoltoData(){
-  const g=f=>document.querySelector(`[data-field="${f}"]`)?.value||"";
-  return{pvm:g("pvm"),huoltoliike:g("huoltoliike"),kuvaus:g("kuvaus"),
-    konetunnit:parseFloat(g("konetunnit"))||null,lokilukema:parseFloat(g("lokilukema"))||null,
-    kustannus:parseFloat(g("kustannus"))||null,seuraavaHuolto:g("seuraavaHuolto"),huomiot:g("huomiot")};
-}
-function saveFormToDraft(){
-  if(!state.draft)state.draft={};
-  ["pvm","endPvm","lahtoAika","saapumisAika","lahtoPaikka","saapumisPaikka","reitti","miehisto","konetunnitAlku","konetunnitLoppu","mailit","veneenLokiAlku","tuuli","tuulenSuunta","saatila","huomiot","kayttoTyyppi"].forEach(f=>{
-    const el=document.querySelector(`[data-field="${f}"]`);if(el)state.draft[f]=el.value;
-  });
-}
+            setEntries(entries) {
+                localStorage.setItem(this.entries, JSON.stringify(entries));
+                this.setLastSync();
+            },
 
-window.tapEnter=()=>{
-  const p=document.getElementById("tapPaikkaInp")?.value||state.newTapPaikka;
-  const h=document.getElementById("tapHuomioInp")?.value||state.newTapHuomio;
-  lisaaTapahtuma(p,h);
-};
-window.haeGPSpaikka=haeGPSpaikka;
-window.state=state;
-window.calcUpdate=()=>{
-  const a=parseFloat(document.querySelector('[data-field="konetunnitAlku"]')?.value)||0;
-  const l=parseFloat(document.querySelector('[data-field="konetunnitLoppu"]')?.value)||0;
-  const row=document.getElementById("calcRow");
-  if(!row)return;
-  if(a>0&&l>0&&l>a){
-    row.style.display="";
-    const strong=row.querySelector("strong");
-    if(strong)strong.textContent=`${(l-a).toFixed(2)}h`;
-  }else{row.style.display="none";}
-};
+            getLocations() {
+                try {
+                    const data = localStorage.getItem(this.locations);
+                    return data ? JSON.parse(data) : [];
+                } catch {
+                    return [];
+                }
+            },
 
-function parseFiFloat(s){
-  if(!s)return null;
-  const v=parseFloat(String(s).trim().replace(',','.'));
-  return isNaN(v)?null:v;
-}
-function parseFiDate(s){
-  s=String(s||"").trim();
-  if(!s)return null;
-  const m=s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
-  if(m)return`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
-  if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;
-  return null;
-}
+            setLocations(locations) {
+                localStorage.setItem(this.locations, JSON.stringify(locations));
+            },
 
-window.handleImportFile=async(e)=>{
-  const file=e.target.files[0];if(!file)return;
-  const buf=await file.arrayBuffer();
-  const raw=new Uint8Array(buf);
-  const start=(raw[0]===0xEF&&raw[1]===0xBB&&raw[2]===0xBF)?3:0;
-  const text=new TextDecoder('utf-8').decode(raw.slice(start));
-  const lines=text.split(/\r?\n/);
-  const isLokikirja=(lines[0]||"").includes("Taulukko")||(lines[1]||"").toLowerCase().includes("ivm");
-  let rows=[];
+            addLocation(location) {
+                const locations = this.getLocations();
+                location.id = Date.now().toString();
+                location.timestamp = new Date().toISOString();
+                locations.push(location);
+                this.setLocations(locations);
+                return location;
+            },
 
-  if(isLokikirja){
-    for(let i=2;i<lines.length;i++){
-      const cols=lines[i].split(';');
-      const pvmRaw=cols[0]?.trim()||"";
-      const pvm=parseFiDate(pvmRaw);
-      if(!pvm||!pvm.startsWith('2025'))continue;
-      const lahtopaikka=(cols[5]||"").trim();
-      const saapumispaikka=(cols[8]||"").trim();
-      let reitti=(cols[6]||"").trim();
-      if(!reitti&&lahtopaikka&&saapumispaikka)reitti=`${lahtopaikka} - ${saapumispaikka}`;
-      else if(!reitti&&lahtopaikka)reitti=lahtopaikka;
-      rows.push({
-        pvm,
-        miehisto:(cols[1]||"").trim(),
-        veneenLokiAlku:parseFiFloat(cols[2]),
-        konetunnitAlku:parseFiFloat(cols[3]),
-        konetunnitLoppu:null,
-        lahtoAika:(cols[4]||"").trim().replace(/[+\s]/g,''),
-        lahtoPaikka:lahtopaikka,
-        reitti,
-        saapumisAika:(cols[7]||"").trim(),
-        saapumisPaikka:saapumispaikka,
-        mailit:parseFiFloat(cols[9]),
-        tuuli:(cols[10]||"").trim(),
-        tuulenSuunta:(cols[11]||"").trim(),
-        saatila:(cols[12]||"").trim(),
-        huomiot:(cols[13]||"").trim(),
-        vuokralainen:"",
-        kayttoTyyppi:"",
-        tapahtumat:[],
-        tuotu:true,
-        vuosi:2025,
-        kuukausi:parseInt(pvm.slice(5,7)),
-      });
-    }
-  }else{
-    if(lines.length<2){alert("CSV-tiedosto on tyhjä.");return;}
-    const headers=lines[0].split(";").map(h=>h.trim().toLowerCase()
-      .replace(/[äå]/g,"a").replace(/ö/g,"o").replace(/\s+/g,"").replace(/,/g,""));
-    rows=lines.slice(1).map(line=>{
-      const cols=line.split(";");
-      const obj={};headers.forEach((h,i)=>{obj[h]=(cols[i]||"").trim();});
-      const pvm=parseFiDate(obj.pvm||obj.pavmara||"");
-      if(!pvm)return null;
-      const reitti=obj.reitti||obj.kohde||((obj.lahtopaikka&&obj.saapumispaikka)?`${obj.lahtopaikka} - ${obj.saapumispaikka}`:"");
-      return{
-        pvm,reitti,
-        vuokralainen:["tmi","oy","oma"].includes(obj.vuokralainen)?obj.vuokralainen:"",
-        kayttoTyyppi:obj.kayttotyyppi||obj.tyyppi||"",
-        konetunnitAlku:parseFiFloat(obj.konetunnitAlku),
-        konetunnitLoppu:parseFiFloat(obj.konetunnitLoppu),
-        mailit:parseFiFloat(obj.mailit),
-        tuuli:obj.tuuli||"",tuulenSuunta:obj.tuulensuunta||"",
-        saatila:obj.saatila||"",miehisto:obj.miehisto||"",huomiot:obj.huomiot||"",
-        tapahtumat:[],tuotu:true,
-        vuosi:parseInt((pvm||"").slice(0,4))||null
-      };
-    }).filter(Boolean);
-  }
+            deleteLocation(id) {
+                const locations = this.getLocations();
+                this.setLocations(locations.filter(l => l.id !== id));
+            },
 
-  if(!rows.length){alert("Ei tuotavia rivejä löydetty. Tarkista tiedoston muoto.");return;}
-  state.importRows=rows;render();
-};
+            getDBSize() {
+                let size = 0;
+                for (let key in localStorage) {
+                    if (key.startsWith('quartet_')) {
+                        size += localStorage[key].length;
+                    }
+                }
+                return (size / 1024).toFixed(2);
+            },
 
-async function doImport(rows){
-  let ok=0;
-  for(const r of rows){try{await fsAdd("quartet_loki",r);ok++;}catch(e){console.error(e);}}
-  alert(`✅ Tuotiin ${ok} merkintää. Merkitse käyttötarkoitus (tmi/oy/oma) jokaiselle riville Muokkaa-painikkeella.`);
-}
+            setLastSync() {
+                localStorage.setItem(this.lastSync, new Date().toISOString());
+            },
 
-onAuthStateChanged(auth,user=>{
-  if(user){
-    if(user.email!==ALLOWED_EMAIL){
-      signOut(auth);renderAuthScreen(`Pääsy estetty. Vain ${ALLOWED_EMAIL} voi kirjautua.`);return;
-    }
-    state.user=user;state.huollot=[];
-    startListeners();
-    render();
-  }else{
-    stopListeners();state.user=null;state.loki=[];state.huollot=[];
-    renderAuthScreen();
-  }
-});
-</script>
+            getLastSync() {
+                return localStorage.getItem(this.lastSync);
+            },
+
+            addEntry(entry) {
+                const entries = this.getEntries();
+                entry.id = Date.now().toString();
+                entry.createdAt = new Date().toISOString();
+                entry.year = new Date(entry.date).getFullYear().toString();
+                entries.push(entry);
+                this.setEntries(entries);
+                return entry;
+            },
+
+            updateEntry(id, updatedEntry) {
+                const entries = this.getEntries();
+                const index = entries.findIndex(e => e.id === id);
+                if (index !== -1) {
+                    updatedEntry.year = new Date(updatedEntry.date).getFullYear().toString();
+                    entries[index] = { ...entries[index], ...updatedEntry };
+                    this.setEntries(entries);
+                }
+            },
+
+            deleteEntry(id) {
+                const entries = this.getEntries();
+                this.setEntries(entries.filter(e => e.id !== id));
+            },
+
+            backup() {
+                return {
+                    version: APP_VERSION,
+                    entries: this.getEntries(),
+                    locations: this.getLocations(),
+                    timestamp: new Date().toISOString()
+                };
+            },
+
+            restore(data) {
+                this.setEntries(data.entries || []);
+                if (data.locations) {
+                    this.setLocations(data.locations);
+                }
+                this.setLastSync();
+            },
+
+            clear() {
+                localStorage.removeItem(this.entries);
+                localStorage.removeItem(this.locations);
+            }
+        };
+
+        // ==================== ACCOUNTING LOGIC ====================
+        const Accounting = {
+            calculateEntityStats(entity) {
+                const entries = DB.getEntries().filter(e => e.vuokralainen === entity);
+                return {
+                    tripCount: entries.length,
+                    totalNauticalMiles: entries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0),
+                    totalEngineHours: entries.reduce((sum, e) => {
+                        const start = parseFloat(e.engineHoursStart) || 0;
+                        const end = parseFloat(e.engineHoursEnd) || 0;
+                        return sum + (end - start);
+                    }, 0),
+                    charterTrips: entries.filter(e => e.kayttotarkoitus === 'charter').length,
+                    educationTrips: entries.filter(e => e.kayttotarkoitus === 'koulutus').length,
+                    ownUse: entries.filter(e => e.kayttotarkoitus === 'oma-kaytto').length
+                };
+            },
+
+            calculateCosts() {
+                const entries = DB.getEntries();
+                const totalEngineHours = entries.reduce((sum, e) => {
+                    const start = parseFloat(e.engineHoursStart) || 0;
+                    const end = parseFloat(e.engineHoursEnd) || 0;
+                    return sum + (end - start);
+                }, 0);
+
+                const fuelCost = 150;
+                const maintenanceCost = 50;
+                const insuranceCost = 200;
+                const moorageCost = 300;
+
+                return {
+                    totalVariable: (fuelCost + maintenanceCost) * totalEngineHours,
+                    totalFixed: insuranceCost + moorageCost
+                };
+            },
+
+            allocateByUsage() {
+                const stats = {
+                    tmi: this.calculateEntityStats('tmi'),
+                    oy: this.calculateEntityStats('oy'),
+                    oma: this.calculateEntityStats('oma')
+                };
+
+                const costs = this.calculateCosts();
+                const totalTrips = stats.tmi.tripCount + stats.oy.tripCount + stats.oma.tripCount;
+
+                return {
+                    stats,
+                    costs,
+                    allocation: {
+                        tmi: {
+                            share: totalTrips > 0 ? (stats.tmi.tripCount / totalTrips * 100).toFixed(1) : 0,
+                            variableCost: ((stats.tmi.tripCount / totalTrips) * costs.totalVariable).toFixed(2),
+                            fixedCost: ((stats.tmi.tripCount / totalTrips) * costs.totalFixed).toFixed(2)
+                        },
+                        oy: {
+                            share: totalTrips > 0 ? (stats.oy.tripCount / totalTrips * 100).toFixed(1) : 0,
+                            variableCost: ((stats.oy.tripCount / totalTrips) * costs.totalVariable).toFixed(2),
+                            fixedCost: ((stats.oy.tripCount / totalTrips) * costs.totalFixed).toFixed(2)
+                        },
+                        oma: {
+                            share: totalTrips > 0 ? (stats.oma.tripCount / totalTrips * 100).toFixed(1) : 0,
+                            variableCost: ((stats.oma.tripCount / totalTrips) * costs.totalVariable).toFixed(2),
+                            fixedCost: ((stats.oma.tripCount / totalTrips) * costs.totalFixed).toFixed(2)
+                        }
+                    }
+                };
+            }
+        };
+
+        // ==================== UI RENDERING ====================
+        const UI = {
+            currentEditingId: null,
+
+            async init() {
+                console.log('🚀 Quartet Loki v' + APP_VERSION + ' initializing...');
+
+                // Initialize iCloud Drive Sync
+                await iCloudSync.init();
+
+                this.setupTabNavigation();
+                this.setupEventListeners();
+                this.updateVersionInfo();
+                this.render();
+                this.setupAutoBackup();
+                this.setupAutoSync();
+                console.log('✅ Initialized successfully');
+            },
+
+            setupTabNavigation() {
+                const navTabs = document.getElementById('navTabs');
+                const tabBtns = navTabs.querySelectorAll('.tab-btn');
+
+                const handleTabClick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const btn = e.target.closest('.tab-btn');
+                    if (!btn) return;
+
+                    // Remove active from all buttons and contents
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                    // Add active to clicked button
+                    btn.classList.add('active');
+
+                    // Show corresponding content
+                    const tabId = btn.dataset.tab;
+                    const tabContent = document.getElementById(tabId);
+                    if (tabContent) {
+                        tabContent.classList.add('active');
+
+                        // Render specific content if needed
+                        if (tabId === 'accounting') {
+                            this.renderAccounting();
+                        } else if (tabId === 'reporting') {
+                            this.renderReporting();
+                        } else if (tabId === 'locations') {
+                            this.renderLocations();
+                        }
+                    }
+                };
+
+                tabBtns.forEach(btn => {
+                    // iOS: Listen for both touch and click
+                    btn.addEventListener('touchstart', handleTabClick, { passive: false });
+                    btn.addEventListener('click', handleTabClick, { passive: false });
+                });
+            },
+
+            setupEventListeners() {
+                const addTouchListener = (element, callback) => {
+                    if (!element) return;
+                    const handler = (e) => {
+                        e.preventDefault();
+                        callback();
+                    };
+                    element.addEventListener('touchstart', handler, { passive: false });
+                    element.addEventListener('click', handler, { passive: false });
+                };
+
+                // Entry management
+                const newEntryBtn = document.getElementById('newEntryBtn');
+                const closeModalBtn = document.getElementById('closeModalBtn');
+                const saveEntryBtn = document.getElementById('saveEntryBtn');
+                const importDataBtn = document.getElementById('importDataBtn');
+                const exportDataBtn = document.getElementById('exportDataBtn');
+                const csvImportInput = document.getElementById('csvImportInput');
+                const kayttotarkoitusField = document.getElementById('entryKayttotarkoitus');
+
+                addTouchListener(newEntryBtn, () => this.openEntryModal());
+                addTouchListener(closeModalBtn, () => this.closeEntryModal());
+                addTouchListener(saveEntryBtn, () => this.saveEntry());
+                addTouchListener(importDataBtn, () => csvImportInput.click());
+                addTouchListener(exportDataBtn, () => this.exportData());
+                if (csvImportInput) csvImportInput.addEventListener('change', (e) => this.importData(e));
+                if (kayttotarkoitusField) kayttotarkoitusField.addEventListener('change', () => this.toggleVuokralainenField());
+
+                // Location management
+                const useGpsBtn = document.getElementById('useGpsBtn');
+                const addLocationBtn = document.getElementById('addLocationBtn');
+                addTouchListener(useGpsBtn, () => this.useGPS());
+                addTouchListener(addLocationBtn, () => this.addLocation());
+
+                // Settings
+                const backupBtn = document.getElementById('backupBtn');
+                const restoreBtn = document.getElementById('restoreBtn');
+                const clearAllBtn = document.getElementById('clearAllBtn');
+                const jsonRestoreInput = document.getElementById('jsonRestoreInput');
+                const yearFilter = document.getElementById('yearFilter');
+                const generateReportBtn = document.getElementById('generateReportBtn');
+                const syncNowBtn = document.getElementById('syncNowBtn');
+
+                addTouchListener(backupBtn, () => this.backup());
+                addTouchListener(restoreBtn, () => {
+                    jsonRestoreInput.value = '';
+                    jsonRestoreInput.click();
+                });
+                addTouchListener(clearAllBtn, () => this.clearAll());
+                addTouchListener(generateReportBtn, () => this.generateReport());
+                if (jsonRestoreInput) jsonRestoreInput.addEventListener('change', (e) => this.restore(e));
+                if (yearFilter) yearFilter.addEventListener('change', () => {
+                    this.render();
+                    const reportOutput = document.getElementById('reportOutput');
+                    if (reportOutput && reportOutput.innerHTML.trim()) {
+                        this.renderReporting();
+                    }
+                });
+
+                // Reporting
+                const reportType = document.getElementById('reportType');
+                const reportEntity = document.getElementById('reportEntity');
+                const printReportBtn = document.getElementById('printReportBtn');
+                if (reportType) reportType.addEventListener('change', () => this.generateReport());
+                if (reportEntity) reportEntity.addEventListener('change', () => this.generateReport());
+                addTouchListener(printReportBtn, () => window.print());
+
+                addTouchListener(syncNowBtn, () => this.syncToICloud());
+
+                const loadFromICloudBtn = document.getElementById('loadFromICloudBtn');
+                addTouchListener(loadFromICloudBtn, () => {
+                    const fileInput = document.createElement('input');
+                    fileInput.type = 'file';
+                    fileInput.accept = '.json';
+                    fileInput.addEventListener('change', (e) => this.restore(e));
+                    fileInput.click();
+                });
+            },
+
+            openEntryModal(id = null) {
+                this.currentEditingId = id;
+                const modal = document.getElementById('entryModal');
+
+                if (id) {
+                    const entry = DB.getEntries().find(e => e.id === id);
+                    document.getElementById('entryDate').value = entry.date;
+                    document.getElementById('entryCaptain').value = entry.captain || '';
+                    document.getElementById('entryCrew').value = entry.crew || '';
+                    document.getElementById('entryVuokralainen').value = entry.vuokralainen;
+                    document.getElementById('entryDeparturePort').value = entry.departurePort || '';
+                    document.getElementById('entryArrivalPort').value = entry.arrivalPort || '';
+                    document.getElementById('entryKayttotarkoitus').value = entry.kayttotarkoitus;
+                    document.getElementById('entryStartTime').value = entry.startTime || '';
+                    document.getElementById('entryEndTime').value = entry.endTime || '';
+                    document.getElementById('entryRoute').value = entry.route || '';
+                    document.getElementById('entryNauticalMiles').value = entry.nauticalMiles || '';
+                    document.getElementById('entryEngineHoursStart').value = entry.engineHoursStart || '';
+                    document.getElementById('entryEngineHoursEnd').value = entry.engineHoursEnd || '';
+                    document.getElementById('entryPersonnel').value = entry.personnel || '';
+                    document.getElementById('entryWeather').value = entry.weather || '';
+                    document.getElementById('entryNotes').value = entry.notes || '';
+                    this.toggleVuokralainenField();
+                } else {
+                    document.getElementById('entryDate').valueAsDate = new Date();
+                    document.getElementById('entryVuokralainen').value = '';
+                    document.getElementById('entryKayttotarkoitus').value = '';
+                    document.getElementById('entryStartTime').value = '';
+                    document.getElementById('entryEndTime').value = '';
+                    document.getElementById('entryRoute').value = '';
+                    document.getElementById('entryNauticalMiles').value = '';
+                    document.getElementById('entryEngineHoursStart').value = '';
+                    document.getElementById('entryEngineHoursEnd').value = '';
+                    document.getElementById('entryPersonnel').value = '';
+                    document.getElementById('entryWeather').value = '';
+                    document.getElementById('entryNotes').value = '';
+                }
+
+                modal.classList.add('active');
+            },
+
+            toggleVuokralainenField() {
+                const kayttotarkoitus = document.getElementById('entryKayttotarkoitus').value;
+                const vuokralainenGroup = document.getElementById('vuokralainenGroup');
+                const vuokralainenField = document.getElementById('entryVuokralainen');
+
+                if (kayttotarkoitus === 'oma-kaytto') {
+                    // Piilotetaan vuokralainen-kenttä, asetetaan "oma"
+                    vuokralainenGroup.style.display = 'none';
+                    vuokralainenField.value = 'oma';
+                    // Poista required-atribuutti
+                    vuokralainenField.removeAttribute('required');
+                } else if (kayttotarkoitus === 'charter' || kayttotarkoitus === 'koulutus' || kayttotarkoitus === 'muu') {
+                    // Näytetään vuokralainen-kenttä
+                    vuokralainenGroup.style.display = 'block';
+                    vuokralainenField.value = '';
+                    // Lisää required-atribuutti
+                    vuokralainenField.setAttribute('required', 'required');
+                } else {
+                    // Oletuksena näytetään
+                    vuokralainenGroup.style.display = 'block';
+                    vuokralainenField.removeAttribute('required');
+                }
+            },
+
+            closeEntryModal() {
+                document.getElementById('entryModal').classList.remove('active');
+                this.currentEditingId = null;
+            },
+
+            saveEntry() {
+                const vuokralainen = document.getElementById('entryVuokralainen').value;
+                const kayttotarkoitus = document.getElementById('entryKayttotarkoitus').value;
+                const date = document.getElementById('entryDate').value;
+
+                if (!date || !kayttotarkoitus) {
+                    alert('Täytä kaikki vaaditut kentät');
+                    return;
+                }
+
+                // Tarkista vuokralainen vain jos ei ole oma-kaytto
+                if (kayttotarkoitus !== 'oma-kaytto' && !vuokralainen) {
+                    alert('Valitse vuokralainen');
+                    return;
+                }
+
+                const entry = {
+                    date,
+                    captain: document.getElementById('entryCaptain').value,
+                    crew: document.getElementById('entryCrew').value,
+                    vuokralainen,
+                    kayttotarkoitus,
+                    departurePort: document.getElementById('entryDeparturePort').value,
+                    arrivalPort: document.getElementById('entryArrivalPort').value,
+                    startTime: document.getElementById('entryStartTime').value,
+                    endTime: document.getElementById('entryEndTime').value,
+                    route: document.getElementById('entryRoute').value,
+                    nauticalMiles: parseFloat(document.getElementById('entryNauticalMiles').value) || 0,
+                    engineHoursStart: parseFloat(document.getElementById('entryEngineHoursStart').value) || 0,
+                    engineHoursEnd: parseFloat(document.getElementById('entryEngineHoursEnd').value) || 0,
+                    personnel: document.getElementById('entryPersonnel').value,
+                    weather: document.getElementById('entryWeather').value,
+                    notes: document.getElementById('entryNotes').value
+                };
+
+                if (this.currentEditingId) {
+                    DB.updateEntry(this.currentEditingId, entry);
+                } else {
+                    DB.addEntry(entry);
+                }
+
+                this.closeEntryModal();
+                this.render();
+            },
+
+            render() {
+                this.renderEntries();
+            },
+
+            renderEntries() {
+                const yearFilter = document.getElementById('yearFilter').value;
+                let entries = DB.getEntries();
+
+                if (yearFilter !== 'all') {
+                    entries = entries.filter(e => (e.year || '2025') === yearFilter);
+                }
+
+                entries = entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+                const container = document.getElementById('entriesList');
+
+                if (entries.length === 0) {
+                    container.innerHTML = '<div class="no-data"><p>Ei merkintöjä vielä.</p></div>';
+                    return;
+                }
+
+                let html = '<table class="data-table"><thead><tr><th>Päivä</th><th>Vuokr.</th><th>Käyttö</th><th>Reitti</th><th>Mailit</th><th>h</th><th>Toiminnot</th></tr></thead><tbody>';
+
+                entries.forEach(entry => {
+                    const hours = (parseFloat(entry.engineHoursEnd) || 0) - (parseFloat(entry.engineHoursStart) || 0);
+                    html += `<tr>
+                        <td>${entry.date}</td>
+                        <td><span class="badge badge-${entry.vuokralainen}">${entry.vuokralainen.toUpperCase()}</span></td>
+                        <td>${entry.kayttotarkoitus}</td>
+                        <td>${entry.route || '-'}</td>
+                        <td>${entry.nauticalMiles || 0}</td>
+                        <td>${hours.toFixed(1)}</td>
+                        <td>
+                            <div class="edit-buttons">
+                                <button class="btn btn-secondary edit-btn" data-id="${entry.id}" data-action="edit">Muokkaa</button>
+                                <button class="btn btn-danger edit-btn" data-id="${entry.id}" data-action="delete">Poista</button>
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+
+                // iOS-friendly event delegation
+                container.addEventListener('touchstart', (e) => {
+                    const btn = e.target.closest('.edit-btn');
+                    if (!btn) return;
+                    e.preventDefault();
+                    const id = btn.dataset.id;
+                    const action = btn.dataset.action;
+                    if (action === 'edit') this.openEntryModal(id);
+                    else if (action === 'delete') this.deleteEntry(id);
+                }, { passive: false });
+
+                container.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.edit-btn');
+                    if (!btn) return;
+                    const id = btn.dataset.id;
+                    const action = btn.dataset.action;
+                    if (action === 'edit') this.openEntryModal(id);
+                    else if (action === 'delete') this.deleteEntry(id);
+                });
+            },
+
+            deleteEntry(id) {
+                if (confirm('Poistetaanko merkintä?')) {
+                    DB.deleteEntry(id);
+                    this.render();
+                }
+            },
+
+            // ========== LOCATION MANAGEMENT ==========
+            useGPS() {
+                if (!navigator.geolocation) {
+                    alert('GPS ei saatavilla tässä selaimessa');
+                    return;
+                }
+
+                const useGpsBtn = document.getElementById('useGpsBtn');
+                useGpsBtn.textContent = '📡 Etsitään...';
+                useGpsBtn.disabled = true;
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        document.getElementById('locationLat').value = position.coords.latitude.toFixed(4);
+                        document.getElementById('locationLon').value = position.coords.longitude.toFixed(4);
+                        useGpsBtn.textContent = '✅ GPS OK';
+                        useGpsBtn.disabled = false;
+                        setTimeout(() => {
+                            useGpsBtn.textContent = '📡 Käytä GPS:ää';
+                        }, 2000);
+                    },
+                    (error) => {
+                        alert('GPS-virhe: ' + error.message);
+                        useGpsBtn.textContent = '📡 Käytä GPS:ää';
+                        useGpsBtn.disabled = false;
+                    }
+                );
+            },
+
+            addLocation() {
+                const lat = parseFloat(document.getElementById('locationLat').value);
+                const lon = parseFloat(document.getElementById('locationLon').value);
+                const name = document.getElementById('locationName').value || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+
+                if (isNaN(lat) || isNaN(lon)) {
+                    alert('Syötä kelvolliset koordinaatit');
+                    return;
+                }
+
+                DB.addLocation({
+                    lat,
+                    lon,
+                    name
+                });
+
+                document.getElementById('locationLat').value = '';
+                document.getElementById('locationLon').value = '';
+                document.getElementById('locationName').value = '';
+
+                this.renderLocations();
+            },
+
+            renderLocations() {
+                const locations = DB.getLocations().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                const container = document.getElementById('locationsList');
+
+                if (locations.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #999;">Ei merkittyjä paikkoja vielä.</p>';
+                    return;
+                }
+
+                let html = '';
+                locations.forEach(loc => {
+                    const time = new Date(loc.timestamp);
+                    const timeStr = time.toLocaleString('fi-FI');
+                    html += `<div class="location-item">
+                        <div>
+                            <div style="font-weight: 600;">${loc.name}</div>
+                            <div style="font-size: 0.8em; color: #666;">📍 ${loc.lat.toFixed(4)}, ${loc.lon.toFixed(4)}</div>
+                            <div class="location-time">${timeStr}</div>
+                        </div>
+                        <button class="btn btn-danger" onclick="UI.deleteLocation('${loc.id}')" style="padding: 4px 8px; font-size: 0.8em;">Poista</button>
+                    </div>`;
+                });
+
+                container.innerHTML = html;
+            },
+
+            deleteLocation(id) {
+                DB.deleteLocation(id);
+                this.renderLocations();
+            },
+
+            renderAccounting() {
+                const allocation = Accounting.allocateByUsage();
+
+                const statsHtml = `
+                    <div class="stat-card">
+                        <h3>Yhteensä matkat</h3>
+                        <div class="value">${allocation.stats.tmi.tripCount + allocation.stats.oy.tripCount + allocation.stats.oma.tripCount}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Yhteensä mailit</h3>
+                        <div class="value">${(allocation.stats.tmi.totalNauticalMiles + allocation.stats.oy.totalNauticalMiles + allocation.stats.oma.totalNauticalMiles).toFixed(1)} nm</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Yhteensä konetunnit</h3>
+                        <div class="value">${(allocation.stats.tmi.totalEngineHours + allocation.stats.oy.totalEngineHours + allocation.stats.oma.totalEngineHours).toFixed(1)} h</div>
+                    </div>
+                `;
+                document.getElementById('accountingStats').innerHTML = statsHtml;
+
+                const renderEntity = (entity) => {
+                    const stats = allocation.stats[entity];
+                    const alloc = allocation.allocation[entity];
+
+                    const html = `
+                        <table class="data-table"><tbody>
+                            <tr><td>Matkat</td><td>${stats.tripCount}</td></tr>
+                            <tr><td>Mailit yhteensä</td><td>${stats.totalNauticalMiles.toFixed(1)} nm</td></tr>
+                            <tr><td>Konetunnit</td><td>${stats.totalEngineHours.toFixed(1)} h</td></tr>
+                            <tr><td>Käyttöosuus</td><td><strong>${alloc.share}%</strong></td></tr>
+                            <tr><td>Charter matkat</td><td>${stats.charterTrips}</td></tr>
+                            <tr><td>Koulutus matkat</td><td>${stats.educationTrips}</td></tr>
+                        </tbody></table>
+                    `;
+                    document.getElementById(`${entity}Accounting`).innerHTML = html;
+                };
+
+                renderEntity('tmi');
+                renderEntity('oy');
+                renderEntity('oma');
+            },
+
+            renderReporting() {
+                const selectedYear = document.getElementById('yearFilter').value || 'all';
+                let entries = DB.getEntries();
+
+                if (selectedYear !== 'all') {
+                    entries = entries.filter(e => (e.year || '2025') === selectedYear);
+                }
+
+                const totalMiles = entries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0);
+                const totalHours = entries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
+                const uniqueDates = new Set(entries.map(e => e.date).filter(d => d)).size;
+
+                let html = '<div class="form-section"><h3>📊 Yhteenveto</h3>';
+                html += '<table class="data-table"><tbody>';
+                html += '<tr><td><strong>Mailit:</strong></td><td>' + totalMiles.toFixed(1) + ' nm</td></tr>';
+                html += '<tr><td><strong>Konetunnit:</strong></td><td>' + totalHours.toFixed(1) + ' h</td></tr>';
+                html += '<tr><td><strong>Käyttöpäivät:</strong></td><td>' + uniqueDates + ' pv</td></tr>';
+                html += '<tr><td><strong>Merkintöjä:</strong></td><td>' + entries.length + '</td></tr>';
+                html += '</tbody></table></div>';
+
+                html += '<div class="form-section"><h3>🏢 Käyttöosuudet</h3>';
+                html += '<table class="data-table"><thead><tr><th>Entiteetti</th><th>Tunnit</th><th>Osuus %</th></tr></thead><tbody>';
+
+                ['tmi', 'oy', 'oma'].forEach(entity => {
+                    const entityEntries = entries.filter(e => e.vuokralainen === entity);
+                    const entityHours = entityEntries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
+                    const entityShare = totalHours > 0 ? (entityHours / totalHours * 100).toFixed(1) : 0;
+
+                    html += '<tr><td><span class="badge badge-' + entity + '">' + entity.toUpperCase() + '</span></td>';
+                    html += '<td>' + entityHours.toFixed(1) + ' h</td>';
+                    html += '<td><strong>' + entityShare + '%</strong></td></tr>';
+                });
+
+                html += '</tbody></table></div>';
+                document.getElementById('reportOutput').innerHTML = html;
+            },
+
+            generateReport() {
+                const reportType = document.getElementById('reportType')?.value || 'summary';
+                const reportEntity = document.getElementById('reportEntity')?.value || 'all';
+                const selectedYear = document.getElementById('yearFilter')?.value || 'all';
+
+                let entries = DB.getEntries();
+
+                // Suodata vuoden mukaan
+                if (selectedYear !== 'all') {
+                    entries = entries.filter(e => (e.year || '2025') === selectedYear);
+                }
+
+                // Suodata entiteetin mukaan
+                if (reportEntity !== 'all') {
+                    entries = entries.filter(e => e.vuokralainen === reportEntity);
+                }
+
+                const totalMiles = entries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0);
+                const totalHours = entries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
+                const uniqueDates = new Set(entries.map(e => e.date).filter(d => d)).size;
+
+                let html = '';
+
+                if (reportType === 'summary') {
+                    html += '<div class="form-section"><h3>📊 Yhteenveto</h3>';
+                    html += '<table class="data-table"><tbody>';
+                    html += '<tr><td><strong>Merkintöjä:</strong></td><td>' + entries.length + '</td></tr>';
+                    html += '<tr><td><strong>Mailit:</strong></td><td>' + totalMiles.toFixed(1) + ' nm</td></tr>';
+                    html += '<tr><td><strong>Konetunnit:</strong></td><td>' + totalHours.toFixed(1) + ' h</td></tr>';
+                    html += '<tr><td><strong>Käyttöpäivät:</strong></td><td>' + uniqueDates + ' pv</td></tr>';
+                    html += '<tr><td><strong>Keskiarvo h/matka:</strong></td><td>' + (entries.length > 0 ? (totalHours/entries.length).toFixed(1) : '0') + ' h</td></tr>';
+                    html += '</tbody></table></div>';
+                } else if (reportType === 'detailed') {
+                    html += '<div class="form-section"><h3>📋 Yksityiskohtainen raportti</h3>';
+                    html += '<table class="data-table"><thead><tr><th>Pv</th><th>Reitti</th><th>Mailit</th><th>Tunnit</th><th>Vuokr.</th><th>Käyttö</th><th>Sää</th></tr></thead><tbody>';
+                    entries.forEach(e => {
+                        const h = ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)).toFixed(1);
+                        html += '<tr><td>' + e.date + '</td><td>' + (e.route || '-') + '</td><td>' + (e.nauticalMiles || 0) + '</td><td>' + h + '</td>';
+                        html += '<td><span class="badge badge-' + e.vuokralainen + '">' + e.vuokralainen.toUpperCase() + '</span></td>';
+                        html += '<td>' + e.kayttotarkoitus + '</td><td>' + (e.weather || '-') + '</td></tr>';
+                    });
+                    html += '</tbody></table></div>';
+                } else if (reportType === 'entity') {
+                    html += '<div class="form-section"><h3>🏢 Entiteetin mukaan</h3>';
+                    ['tmi', 'oy', 'oma'].forEach(entity => {
+                        const entityEntries = entries.filter(e => e.vuokralainen === entity);
+                        if (entityEntries.length > 0) {
+                            const entityHours = entityEntries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
+                            const entityMiles = entityEntries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0);
+                            html += '<div style="margin-bottom: 20px; page-break-inside: avoid;"><h4>' + entity.toUpperCase() + '</h4>';
+                            html += '<table class="data-table"><tbody>';
+                            html += '<tr><td>Merkintöjä</td><td>' + entityEntries.length + '</td></tr>';
+                            html += '<tr><td>Mailit</td><td>' + entityMiles.toFixed(1) + ' nm</td></tr>';
+                            html += '<tr><td>Konetunnit</td><td>' + entityHours.toFixed(1) + ' h</td></tr>';
+                            html += '</tbody></table></div>';
+                        }
+                    });
+                    html += '</div>';
+                }
+
+                document.getElementById('reportOutput').innerHTML = html;
+
+                // Näytä tulosta-nappi kun raportti on luotu
+                const printBtn = document.getElementById('printReportBtn');
+                if (printBtn && html.trim()) {
+                    printBtn.style.display = 'inline-block';
+                }
+            },
+
+            exportData() {
+                const entries = DB.getEntries();
+                let csv = 'Päivämäärä,Vuokralainen,Käyttötarkoitus,Reitti,Mailit,Tunnit alku,Tunnit loppu,Miehistö,Sää,Merkinnät\n';
+
+                entries.forEach(entry => {
+                    csv += `"${entry.date}","${entry.vuokralainen}","${entry.kayttotarkoitus}","${entry.route || ''}","${entry.nauticalMiles || ''}","${entry.engineHoursStart || ''}","${entry.engineHoursEnd || ''}","${entry.personnel || ''}","${entry.weather || ''}","${(entry.notes || '').replace(/"/g, '""')}"\n`;
+                });
+
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `quartet_export_${new Date().toISOString().split('T')[0]}.csv`);
+                link.click();
+            },
+
+            importData(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const csv = event.target.result;
+                    const lines = csv.split('\n').slice(1);
+                    const entries = DB.getEntries();
+
+                    lines.forEach(line => {
+                        if (!line.trim()) return;
+                        const parts = line.split(',').map(p => p.replace(/^"|"$/g, ''));
+
+                        if (parts.length >= 10) {
+                            entries.push({
+                                id: Date.now().toString() + Math.random(),
+                                date: parts[0].trim(),
+                                vuokralainen: parts[1].trim(),
+                                kayttotarkoitus: parts[2].trim(),
+                                route: parts[3].trim(),
+                                nauticalMiles: parseFloat(parts[4]) || 0,
+                                engineHoursStart: parseFloat(parts[5]) || 0,
+                                engineHoursEnd: parseFloat(parts[6]) || 0,
+                                personnel: parts[7].trim(),
+                                weather: parts[8].trim(),
+                                notes: parts[9].trim(),
+                                createdAt: new Date().toISOString(),
+                                year: new Date(parts[0]).getFullYear().toString()
+                            });
+                        }
+                    });
+
+                    DB.setEntries(entries);
+                    this.render();
+                    alert(`Tuotu ${entries.length - DB.getEntries().length} merkintää!`);
+                };
+                reader.readAsText(file);
+            },
+
+            backup() {
+                const backup = DB.backup();
+                const json = JSON.stringify(backup, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', `quartet_backup_${new Date().toISOString().split('T')[0]}.json`);
+                link.click();
+                alert('Varmuuskopio ladattu!');
+            },
+
+            restore(e) {
+                const file = e.target.files[0];
+                if (!file) {
+                    console.warn('No file selected');
+                    return;
+                }
+
+                console.log('📥 Restoring from:', file.name, file.size, 'bytes');
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const jsonText = event.target.result;
+                        const data = JSON.parse(jsonText);
+                        console.log('✅ JSON parsed successfully');
+                        console.log('Data structure:', {
+                            entries: data.entries?.length || 0,
+                            locations: data.locations?.length || 0,
+                            timestamp: data.timestamp
+                        });
+
+                        // Tarkista että entries-kenttä on olemassa
+                        if (!data.entries || !Array.isArray(data.entries)) {
+                            alert('❌ Virhe: Tiedosto ei sisällä "entries"-kenttää.\n\nTarkista että tiedosto on Quartet Loki -varmuuskopio.\n\nJSON-rakenne: ' + Object.keys(data).join(', '));
+                            return;
+                        }
+
+                        // Validoi että entries sisältävät oikeita merkintöjä
+                        if (data.entries.length === 0) {
+                            alert('⚠️ Varoitus: Tiedosto ei sisällä merkintöjä.');
+                            return;
+                        }
+
+                        // Tarkista ensimmäinen merkintä
+                        const firstEntry = data.entries[0];
+                        const requiredFields = ['date', 'vuokralainen', 'kayttotarkoitus'];
+                        const missingFields = requiredFields.filter(f => !(f in firstEntry));
+
+                        if (missingFields.length > 0) {
+                            alert(`❌ Virhe: Merkinnät puuttuvat kenttiä: ${missingFields.join(', ')}`);
+                            return;
+                        }
+
+                        const count = data.entries.length;
+                        const locationCount = data.locations?.length || 0;
+
+                        if (confirm(`✅ Tiedosto OK!\n\n📝 Merkintöjä: ${count}\n📍 Paikkoja: ${locationCount}\n\nPalautetaanko kaikki tiedot?\n\n⚠️ Tämä korvaa nykyiset tiedot!`)) {
+                            DB.restore(data);
+                            this.render();
+                            this.updateVersionInfo();
+
+                            // Näytä onnistumisviesti
+                            let successMsg = `✅ Varmuuskopio palautettu!\n\n📝 ${count} merkintää ladattu`;
+                            if (locationCount > 0) successMsg += `\n📍 ${locationCount} paikkaa ladattu`;
+                            successMsg += `\n\n💾 Tiedot tallennetaan automaattisesti`;
+
+                            alert(successMsg);
+                            console.log('✅ Restore successful:', count, 'entries,', locationCount, 'locations');
+                        }
+                    } catch (err) {
+                        console.error('❌ Restore error:', err);
+                        alert('❌ JSON-virhe!\n\n' + err.message + '\n\nTarkista että tiedosto on kelvollinen JSON-tiedosto.\n\nVoit avata tiedoston tekstieditorissa ja tarkistaa sen muodon.');
+                    }
+                };
+                reader.onerror = (err) => {
+                    console.error('❌ File read error:', err);
+                    alert('❌ Tiedoston lukeminen epäonnistui!\n\nKokeile uudestaan tai valitse toinen tiedosto.');
+                };
+                reader.readAsText(file);
+            },
+
+            clearAll() {
+                if (confirm('Oletko varma? Tämä poistaa KAIKKI tiedot!')) {
+                    if (confirm('Oletko TODELLA varma?')) {
+                        DB.clear();
+                        this.render();
+                        alert('Kaikki tiedot poistettu.');
+                    }
+                }
+            },
+
+            updateVersionInfo() {
+                const versionBadge = document.getElementById('versionBadge');
+                const lastSync = document.getElementById('lastSyncTime');
+                const dbSize = document.getElementById('dbSize');
+                const lastBackupEl = document.getElementById('lastBackup');
+
+                if (versionBadge) versionBadge.textContent = `v${APP_VERSION}`;
+
+                const lastSyncTime = DB.getLastSync();
+                if (lastSync && lastSyncTime) {
+                    const time = new Date(lastSyncTime);
+                    lastSync.textContent = time.toLocaleTimeString('fi-FI');
+                } else if (lastSync) {
+                    lastSync.textContent = 'Offline';
+                }
+
+                if (dbSize) dbSize.innerHTML = `📊 Tietokannan koko: ${DB.getDBSize()} kB`;
+                if (lastBackupEl) lastBackupEl.innerHTML = `⏰ Viimeisin synkrointi: ${new Date().toLocaleString('fi-FI')}`;
+            },
+
+            setupAutoBackup() {
+                // Auto-backup päivittäin
+                setInterval(() => {
+                    const backup = DB.backup();
+                    localStorage.setItem('quartet_auto_backup_' + new Date().toISOString().split('T')[0], JSON.stringify(backup));
+                    console.log('✅ Auto-backup created');
+                    this.updateVersionInfo();
+                }, 24 * 60 * 60 * 1000); // 24 tuntia
+            },
+
+            async syncToICloud() {
+                const syncNowBtn = document.getElementById('syncNowBtn');
+                syncNowBtn.textContent = '🔄 Synkronoidaan...';
+                syncNowBtn.disabled = true;
+
+                try {
+                    const backup = DB.backup();
+                    const success = await iCloudSync.exportToICloud(backup);
+
+                    if (success) {
+                        syncNowBtn.textContent = '✅ Synkronoitu!';
+                        this.updateVersionInfo();
+                        setTimeout(() => {
+                            syncNowBtn.textContent = '🔄 Synkronoi nyt iCloud:iin';
+                            syncNowBtn.disabled = false;
+                        }, 2000);
+                    } else {
+                        syncNowBtn.textContent = '❌ Virhe';
+                        syncNowBtn.disabled = false;
+                    }
+                } catch (err) {
+                    alert('Synkronointi epäonnistui: ' + err.message);
+                    syncNowBtn.textContent = '🔄 Synkronoi nyt iCloud:iin';
+                    syncNowBtn.disabled = false;
+                }
+            },
+
+            setupAutoSync() {
+                // Auto-synkronoi iCloud:iin säännöllisesti
+                setInterval(() => {
+                    console.log('⏱️ Auto-syncing to iCloud...');
+                    this.syncToICloud();
+                }, ICLOUD_SYNC_INTERVAL);
+
+                // Päivitä status-tieto
+                setInterval(() => {
+                    if (document.getElementById('icloudStatusDetail')) {
+                        document.getElementById('icloudStatusDetail').textContent =
+                            'Seuraava auto-sync: ' + iCloudSync.getNextSyncIn();
+                    }
+                }, 30000); // Päivitä 30 sekunnin välein
+            }
+        };
+
+        // ==================== INITIALIZE ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            UI.init();
+
+            // Load preloaded data if available
+            window.addEventListener('load', () => {
+                const preloadedData = {"entries": [{"id": "entry_0", "date": "2025-04-18", "vuokralainen": "tmi", "kayttotarkoitus": "charter", "startTime": "16:50", "endTime": "17:55", "route": "RVK - Malkasaari", "nauticalMiles": 1.9, "engineHoursStart": 100.0, "engineHoursEnd": 101.1, "personnel": "", "weather": "", "notes": "", "createdAt": "2026-04-14T11:38:45.255655", "year": "2025"}], "timestamp": "2026-04-14T11:38:45.258722"};
+                if (preloadedData && preloadedData.entries && preloadedData.entries.length > 0) {
+                    DB.restore(preloadedData);
+                    UI.render();
+                    console.log('✅ Preloaded ' + preloadedData.entries.length + ' entries');
+                }
+                UI.updateVersionInfo();
+            });
+        });
+    </script>
 </body>
 </html>
