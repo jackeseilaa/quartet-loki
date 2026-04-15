@@ -465,7 +465,7 @@
 
             .nav-tabs, .year-selector, .action-buttons,
             #newEntryBtn, #exportDataBtn,
-            #syncNowBtn, #backupBtn,
+            #syncNowBtn, #backupBtn, #restoreAutoBackupBtn,
             #clearAllBtn, .btn-secondary,
             .btn-warning, .edit-buttons {
                 display: none !important;
@@ -647,6 +647,7 @@
                     <p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">Lataa ja palauta varmuuskopiot.</p>
                     <div class="action-buttons">
                         <button class="btn btn-secondary" id="backupBtn">💾 Lataa backup</button>
+                        <button class="btn btn-success" id="restoreAutoBackupBtn">⚡ Viimeisin</button>
                         <label for="jsonRestoreInput" class="btn btn-secondary" style="cursor: pointer; margin: 0; display: inline-block; flex: 1; min-width: 120px; text-align: center;">♻️ Palauta</label>
                     </div>
                 </div>
@@ -1141,6 +1142,7 @@
 
                 // Settings
                 const backupBtn = document.getElementById('backupBtn');
+                const restoreAutoBackupBtn = document.getElementById('restoreAutoBackupBtn');
                 const clearAllBtn = document.getElementById('clearAllBtn');
                 const jsonRestoreInput = document.getElementById('jsonRestoreInput');
                 const yearFilter = document.getElementById('yearFilter');
@@ -1148,6 +1150,7 @@
                 const syncNowBtn = document.getElementById('syncNowBtn');
 
                 addTouchListener(backupBtn, () => this.backup());
+                addTouchListener(restoreAutoBackupBtn, () => this.restoreLatestAutoBackup());
                 addTouchListener(clearAllBtn, () => this.clearAll());
                 addTouchListener(generateReportBtn, () => this.generateReport());
                 if (jsonRestoreInput) jsonRestoreInput.addEventListener('change', (e) => this.restore(e));
@@ -1759,12 +1762,53 @@
 
             setupAutoBackup() {
                 // Auto-backup päivittäin
-                setInterval(() => {
+                const runAutoBackup = () => {
                     const backup = DB.backup();
-                    localStorage.setItem('quartet_auto_backup_' + new Date().toISOString().split('T')[0], JSON.stringify(backup));
-                    console.log('✅ Auto-backup created');
+                    const today = new Date().toISOString().split('T')[0];
+                    localStorage.setItem('quartet_auto_backup_' + today, JSON.stringify(backup));
+                    localStorage.setItem('quartet_last_auto_backup', today);
+                    console.log('✅ Auto-backup created for ' + today);
                     this.updateVersionInfo();
-                }, 24 * 60 * 60 * 1000); // 24 tuntia
+
+                    // Synkronoi iCloud:iin automaattisesti
+                    this.syncToICloud();
+                };
+
+                // Aja heti käynnistyksen yhteydessä
+                runAutoBackup();
+
+                // Aja sitten joka 24 tunti
+                setInterval(runAutoBackup, 24 * 60 * 60 * 1000);
+            },
+
+            restoreLatestAutoBackup() {
+                try {
+                    const lastBackupDate = localStorage.getItem('quartet_last_auto_backup');
+                    if (!lastBackupDate) {
+                        alert('❌ Ei saatavilla olevaa auto-varmuuskopiota.\n\nJärjestelmä luo ensimmäisen varmuuskopion 24 tunnin sisällä.');
+                        return;
+                    }
+
+                    const backup = localStorage.getItem('quartet_auto_backup_' + lastBackupDate);
+                    if (!backup) {
+                        alert('❌ Auto-varmuuskopiota ei löytynyt päivämäärälle: ' + lastBackupDate);
+                        return;
+                    }
+
+                    const data = JSON.parse(backup);
+                    const count = data.entries?.length || 0;
+                    const locationCount = data.locations?.length || 0;
+
+                    if (confirm(`✅ Viimeisin auto-backup (${lastBackupDate})\n\n📝 Merkintöjä: ${count}\n📍 Paikkoja: ${locationCount}\n\nPalautetaanko?\n\n⚠️ Tämä korvaa nykyiset tiedot!`)) {
+                        DB.restore(data);
+                        this.render();
+                        this.updateVersionInfo();
+                        alert(`✅ Varmuuskopio palautettu!\n\n📝 ${count} merkintää\n📍 ${locationCount} paikkaa`);
+                    }
+                } catch (err) {
+                    console.error('❌ Auto-backup restore error:', err);
+                    alert('❌ Virhe varmuuskopion palauttamisessa:\n\n' + err.message);
+                }
             },
 
             async syncToICloud() {
