@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.1 (Journey Tracking & GPS)</title>
+    <title>Quartet Loki - v2030.2 (Journey Tracking & GPS)</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -672,7 +672,7 @@
                 <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
                 <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                     <strong>Quartet Loki PREMIUM</strong><br>
-                    <span id="versionDetail">v2030.1 - GPS Merisää</span><br>
+                    <span id="versionDetail">v2030.2 - GPS Merisää</span><br>
                     Offline-pohjainen arkkitehtuuri<br>
                     <span id="dbSize"></span><br>
                     <span id="lastBackup"></span>
@@ -801,7 +801,7 @@
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.1';
+    const APP_VERSION = '2030.2';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     const ICLOUD_SYNC_INTERVAL = 60 * 60 * 1000; // 1 hour
@@ -1259,16 +1259,18 @@
                 return;
             }
 
-            let html = '<table class="data-table"><thead><tr><th>Päivä</th><th>Vuokr.</th><th>Reitti</th><th>Mailit</th><th>h</th><th>Toiminnot</th></tr></thead><tbody>';
+            let html = '<table class="data-table"><thead><tr><th>Päivä</th><th>Vuokr.</th><th>Reitti</th><th>Mailit</th><th>h</th><th>Sää</th><th>Toiminnot</th></tr></thead><tbody>';
 
             entries.forEach(entry => {
                 const hours = (parseFloat(entry.engineHoursEnd) || 0) - (parseFloat(entry.engineHoursStart) || 0);
+                const weatherDisplay = entry.weather ? entry.weather.substring(0, 30) : '—';
                 html += `<tr>
                     <td>${entry.date}</td>
                     <td><span class="badge badge-${entry.vuokralainen}">${entry.vuokralainen.toUpperCase()}</span></td>
                     <td>${entry.route || '-'}</td>
                     <td>${entry.nauticalMiles || 0}</td>
                     <td>${hours.toFixed(1)}</td>
+                    <td style="font-size: 0.85em; max-width: 150px; word-break: break-word;">${weatherDisplay}</td>
                     <td>
                         <div class="edit-buttons">
                             <button class="btn btn-secondary edit-btn" data-id="${entry.id}" data-action="edit">Muokkaa</button>
