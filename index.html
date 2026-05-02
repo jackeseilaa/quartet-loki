@@ -1,939 +1,1673 @@
 <!DOCTYPE html>
+
 <html lang="fi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2027.7 (Merisää GPS)</title>
-    <script>
-        window.addEventListener('error', (e) => {
-            if (e.message && (e.message.includes('CloudKit') || e.message.includes('cdn.apple-cloudkit'))) {
-                e.preventDefault();
-            }
-        });
-    </script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-        }
-
-        html, body {
-            width: 100%;
-            height: 100%;
-            position: fixed;
-            overflow: hidden;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            background: #f5f5f5;
-            color: #333;
-        }
-
-        .container {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            background: white;
-        }
-
-        header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 16px 16px 12px;
-            text-align: center;
-            flex-shrink: 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        header h1 {
-            font-size: 1.4em;
-            margin-bottom: 2px;
-        }
-
-        header .subtitle {
-            font-size: 0.75em;
-            opacity: 0.9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .version-badge {
-            background: rgba(255,255,255,0.2);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.8em;
-        }
-
-        .nav-tabs {
-            display: flex;
-            background: #f5f5f5;
-            border-bottom: 1px solid #e0e0e0;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            flex-shrink: 0;
-        }
-
-        .nav-tabs button {
-            flex: 1;
-            min-width: 70px;
-            padding: 12px 10px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 0.85em;
-            font-weight: 500;
-            color: #666;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s ease;
-            white-space: nowrap;
-        }
-
-        .nav-tabs button.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
-            background: rgba(102, 126, 234, 0.05);
-        }
-
-        .content {
-            flex: 1;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            padding: 16px;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .form-section {
-            background: #f9f9f9;
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            border-left: 4px solid #667eea;
-        }
-
-        .form-group {
-            margin-bottom: 14px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: #333;
-            font-size: 0.9em;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 16px;
-            font-family: inherit;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .input-with-button {
-            display: flex;
-            gap: 8px;
-            align-items: flex-end;
-        }
-
-        .input-with-button input {
-            flex: 1;
-        }
-
-        button.btn {
-            padding: 10px 16px;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.9em;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary:active {
-            background: #5568d3;
-        }
-
-        .btn-secondary {
-            background: #f0f0f0;
-            color: #333;
-        }
-
-        .btn-secondary:active {
-            background: #e0e0e0;
-        }
-
-        .btn-success {
-            background: #10b981;
-            color: white;
-        }
-
-        .btn-danger {
-            background: #ef4444;
-            color: white;
-        }
-
-        .btn-small {
-            padding: 6px 10px;
-            font-size: 0.8em;
-            min-width: auto;
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 16px;
-        }
-
-        .data-table th {
-            background: #f5f5f5;
-            padding: 10px;
-            text-align: left;
-            font-weight: 600;
-            border-bottom: 2px solid #e0e0e0;
-            font-size: 0.85em;
-            color: #555;
-        }
-
-        .data-table td {
-            padding: 10px;
-            border-bottom: 1px solid #f0f0f0;
-            font-size: 0.9em;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            font-weight: 500;
-            background: #dbeafe;
-            color: #1e40af;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            justify-content: flex-end;
-            align-items: flex-end;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 12px 12px 0 0;
-            padding: 16px;
-            width: 100%;
-            max-height: 85vh;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .modal-header {
-            font-size: 1.2em;
-            font-weight: 600;
-            margin-bottom: 16px;
-            color: #333;
-        }
-
-        .modal-footer {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .modal-footer button {
-            flex: 1;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 16px;
-        }
-
-        .action-buttons button {
-            flex: 1;
-            min-width: 120px;
-        }
-
-        .no-data {
-            text-align: center;
-            padding: 40px 20px;
-            color: #999;
-        }
-
-        .coords-display {
-            font-family: monospace;
-            font-size: 0.85em;
-            color: #666;
-            background: #f5f5f5;
-            padding: 8px;
-            border-radius: 4px;
-            margin-top: 4px;
-        }
-
-        .weather-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            margin-top: 8px;
-        }
-
-        .weather-option {
-            padding: 8px 12px;
-            background: #f0f0f0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            text-align: center;
-            font-size: 0.9em;
-            cursor: pointer;
-        }
-
-        .weather-option:active {
-            background: #667eea;
-            color: white;
-        }
-
-        .weather-status {
-            padding: 8px;
-            margin-top: 8px;
-            border-radius: 4px;
-            font-size: 0.85em;
-            display: none;
-        }
-
-        .weather-status.loading {
-            display: block;
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .weather-status.success {
-            display: block;
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .weather-status.error {
-            display: block;
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        @media (max-width: 480px) {
-            header h1 {
-                font-size: 1.2em;
-            }
-
-            .nav-tabs button {
-                padding: 10px 8px;
-                font-size: 0.8em;
-            }
-
-            .modal-content {
-                padding: 12px;
-            }
-        }
-    </style>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0, 
+viewport-fit=cover">
+ <meta name="apple-mobile-web-app-capable" content="yes">
+ <meta name="apple-mobile-web-app-status-bar-style" content="blacktranslucent">
+ <title>Quartet Loki - v2027.8 (Merisää GPS) - FIXED</title>
+ <script>
+ window.addEventListener('error', (e) => {
+ if (e.message && (e.message.includes('CloudKit') || 
+e.message.includes('cdn.apple-cloudkit'))) {
+ e.preventDefault();
+ }
+ });
+ </script>
+ <style>
+ * {
+ margin: 0;
+ padding: 0;
+ box-sizing: border-box;
+ -webkit-touch-callout: none;
+ -webkit-user-select: none;
+ }
+ html, body {
+ width: 100%;
+ height: 100%;
+ position: fixed;
+ overflow: hidden;
+ }
+ body {
+ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, 
+sans-serif;
+ background: #f5f5f5;
+ color: #333;
+ }
+ .container {
+ height: 100vh;
+ display: flex;
+ flex-direction: column;
+ background: white;
+ }
+ header {
+ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+ color: white;
+ padding: 16px 16px 12px;
+ text-align: center;
+ flex-shrink: 0;
+ box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+ }
+ header h1 {
+ font-size: 1.4em;
+ margin-bottom: 2px;
+ }
+ header .subtitle {
+ font-size: 0.75em;
+ opacity: 0.9;
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ gap: 8px;
+ flex-wrap: wrap;
+ }
+ .version-badge {
+ background: rgba(255,255,255,0.2);
+ padding: 2px 6px;
+ border-radius: 4px;
+ font-size: 0.8em;
+ }
+ .nav-tabs {
+ display: flex;
+ background: #f5f5f5;
+ border-bottom: 1px solid #e0e0e0;
+ overflow-x: auto;
+ -webkit-overflow-scrolling: touch;
+ flex-shrink: 0;
+ }
+ .nav-tabs button {
+ flex: 1;
+ min-width: 70px;
+ padding: 12px 10px;
+ background: none;
+ border: none;
+ cursor: pointer;
+ font-size: 0.85em;
+ font-weight: 500;
+ color: #666;
+ border-bottom: 3px solid transparent;
+ transition: all 0.3s ease;
+ white-space: nowrap;
+ }
+ .nav-tabs button.active {
+ color: #667eea;
+ border-bottom-color: #667eea;
+ background: rgba(102, 126, 234, 0.05);
+ }
+ .content {
+ flex: 1;
+ overflow-y: auto;
+ -webkit-overflow-scrolling: touch;
+ padding: 16px;
+ }
+ .tab-content {
+ display: none;
+ }
+ .tab-content.active {
+ display: block;
+ }
+ .form-section {
+ background: #f9f9f9;
+ padding: 16px;
+ border-radius: 8px;
+ margin-bottom: 16px;
+ border-left: 4px solid #667eea;
+ }
+ .form-group {
+ margin-bottom: 14px;
+ }
+ .form-group label {
+ display: block;
+ margin-bottom: 5px;
+ font-weight: 500;
+ color: #333;
+ font-size: 0.9em;
+ }
+ .form-group input,
+ .form-group select,
+ .form-group textarea {
+ width: 100%;
+ padding: 10px;
+ border: 1px solid #ddd;
+ border-radius: 6px;
+ font-size: 16px;
+ font-family: inherit;
+ }
+ .form-group input:focus,
+ .form-group select:focus,
+ .form-group textarea:focus {
+ outline: none;
+ border-color: #667eea;
+ box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+ }
+ .input-with-button {
+ display: flex;
+ gap: 8px;
+ align-items: flex-end;
+ }
+ .input-with-button input {
+ flex: 1;
+ }
+ button.btn {
+ padding: 10px 16px;
+ border: none;
+ border-radius: 6px;
+ font-size: 0.9em;
+ font-weight: 500;
+ cursor: pointer;
+ transition: all 0.2s ease;
+ }
+ .btn-primary {
+ background: #667eea;
+ color: white;
+ }
+ .btn-primary:active {
+ background: #5568d3;
+ }
+ .btn-secondary {
+ background: #f0f0f0;
+ color: #333;
+ }
+ .btn-secondary:active {
+ background: #e0e0e0;
+ }
+ .btn-success {
+ background: #10b981;
+ color: white;
+ }
+ .btn-danger {
+ background: #ef4444;
+ color: white;
+ }
+ .btn-small {
+ padding: 6px 10px;
+ font-size: 0.8em;
+ min-width: auto;
+ }
+ .data-table {
+ width: 100%;
+ border-collapse: collapse;
+ background: white;
+ border: 1px solid #e0e0e0;
+ border-radius: 8px;
+ overflow: hidden;
+ margin-bottom: 16px;
+ }
+ .data-table th {
+ background: #f5f5f5;
+ padding: 10px;
+ text-align: left;
+ font-weight: 600;
+ border-bottom: 2px solid #e0e0e0;
+ font-size: 0.85em;
+ color: #555;
+ }
+ .data-table td {
+ padding: 10px;
+ border-bottom: 1px solid #f0f0f0;
+ font-size: 0.9em;
+ }
+ .badge {
+ display: inline-block;
+ padding: 4px 8px;
+ border-radius: 12px;
+ font-size: 0.8em;
+ font-weight: 500;
+ background: #dbeafe;
+ color: #1e40af;
+ }
+ .modal {
+ display: none;
+ position: fixed;
+ top: 0;
+ left: 0;
+ right: 0;
+ bottom: 0;
+ background: rgba(0, 0, 0, 0.5);
+ z-index: 1000;
+ justify-content: flex-end;
+ align-items: flex-end;
+ }
+ .modal.active {
+ display: flex;
+ }
+ .modal-content {
+ background: white;
+ border-radius: 12px 12px 0 0;
+ padding: 16px;
+ width: 100%;
+ max-height: 85vh;
+ overflow-y: auto;
+ -webkit-overflow-scrolling: touch;
+ }
+ .modal-header {
+ font-size: 1.2em;
+ font-weight: 600;
+ margin-bottom: 16px;
+ color: #333;
+ }
+ .modal-footer {
+ display: flex;
+ gap: 10px;
+ margin-top: 20px;
+ }
+ .modal-footer button {
+ flex: 1;
+ }
+ .action-buttons {
+ display: flex;
+ gap: 8px;
+ flex-wrap: wrap;
+ margin-bottom: 16px;
+ }
+ .action-buttons button {
+ flex: 1;
+ min-width: 120px;
+ }
+ .no-data {
+ text-align: center;
+ padding: 40px 20px;
+ color: #999;
+ }
+ .coords-display {
+ font-family: monospace;
+ font-size: 0.85em;
+ color: #666;
+ background: #f5f5f5;
+ padding: 8px;
+ border-radius: 4px;
+ margin-top: 4px;
+ }
+ .weather-grid {
+ display: grid;
+ grid-template-columns: repeat(2, 1fr);
+ gap: 8px;
+ margin-top: 8px;
+ }
+ .weather-option {
+ padding: 8px 12px;
+ background: #f0f0f0;
+ border: 1px solid #ddd;
+ border-radius: 4px;
+ text-align: center;
+ font-size: 0.9em;
+ cursor: pointer;
+ }
+ .weather-option:active {
+ background: #667eea;
+ color: white;
+ }
+ .weather-status {
+ padding: 8px;
+ margin-top: 8px;
+ border-radius: 4px;
+ font-size: 0.85em;
+ display: none;
+ }
+ .weather-status.loading {
+ display: block;
+ background: #fef3c7;
+ color: #92400e;
+ }
+ .weather-status.success {
+ display: block;
+ background: #d1fae5;
+ color: #065f46;
+ }
+ .weather-status.error {
+ display: block;
+ background: #fee2e2;
+ color: #991b1b;
+ }
+ @media (max-width: 480px) {
+ header h1 {
+ font-size: 1.2em;
+ }
+ .nav-tabs button {
+ padding: 10px 8px;
+ font-size: 0.8em;
+ }
+ .modal-content {
+ padding: 12px;
+ }
+ }
+ </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🎼 Quartet Loki - PREMIUM</h1>
-            <div class="subtitle">
-                <span class="version-badge">v2027.7</span>
-                <span>Merisää GPS</span>
-            </div>
-        </header>
-
-        <div class="nav-tabs" id="navTabs">
-            <button class="tab-btn active" data-tab="merkinta">📝 Merkinnät</button>
-            <button class="tab-btn" data-tab="locations">📍 Paikat</button>
-            <button class="tab-btn" data-tab="settings">⚙️ Asetukset</button>
-        </div>
-
-        <div class="content">
-            <!-- MERKINNÄT TAB -->
-            <div id="merkinta" class="tab-content active">
-                <h2 style="margin-bottom: 12px; font-size: 1.1em;">Merkinnät</h2>
-                <div class="action-buttons">
-                    <button class="btn btn-primary" id="newEntryBtn">+ Merkintä</button>
-                    <button class="btn btn-secondary" id="exportDataBtn">📤 Vie</button>
-                </div>
-                <div id="entriesList"></div>
-            </div>
-
-            <!-- LOCATIONS TAB -->
-            <div id="locations" class="tab-content">
-                <h2 style="margin-bottom: 16px; font-size: 1.1em;">📍 Paikat</h2>
-
-                <div class="form-section">
-                    <h3 style="margin-bottom: 12px;">📡 GPS-PAIKKA</h3>
-                    <div class="form-group">
-                        <label>Leveysaste (Latitude)</label>
-                        <input type="text" id="locationLat" placeholder="60.2530N">
-                    </div>
-                    <div class="form-group">
-                        <label>Pituusaste (Longitude)</label>
-                        <input type="text" id="locationLon" placeholder="24.2530E">
-                    </div>
-                    <div class="form-group">
-                        <label>Paikan nimi</label>
-                        <input type="text" id="locationName" placeholder="esim. Helsinki">
-                    </div>
-                    <div class="action-buttons">
-                        <button class="btn btn-primary" id="useGpsBtn">📡 Käytä GPS:ää</button>
-                        <button class="btn btn-success" id="addLocationBtn">Lisää paikka</button>
-                    </div>
-                </div>
-
-                <div style="margin-top: 20px;">
-                    <h3 style="margin-bottom: 12px;">Merkityt paikat</h3>
-                    <div id="locationsList"></div>
-                </div>
-            </div>
-
-            <!-- SETTINGS TAB -->
-            <div id="settings" class="tab-content">
-                <h2 style="margin-bottom: 16px; font-size: 1.1em;">⚙️ Asetukset</h2>
-
-                <div class="form-section">
-                    <h3 style="margin-bottom: 12px;">Varmuuskopiointi</h3>
-                    <div class="action-buttons">
-                        <button class="btn btn-secondary" id="backupBtn">💾 Lataa</button>
-                        <button class="btn btn-success" id="restoreAutoBackupBtn">⚡ Palauta</button>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h3 style="margin-bottom: 12px;">Versio</h3>
-                    <p style="color: #666; font-size: 0.9em;">
-                        <strong>Quartet Loki v2027.7</strong><br>
-                        Merisää GPS-paikannuksella<br>
-                        <span id="dbSize"></span>
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ENTRY FORM MODAL -->
-    <div id="entryModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">Merkintä</div>
-
-            <div class="form-group">
-                <label>Päivämäärä *</label>
-                <input type="date" id="entryDate" required>
-            </div>
-
-            <div class="form-group">
-                <label>Kipari</label>
-                <input type="text" id="entryCaptain" placeholder="Jarmo Aaltonen">
-            </div>
-
-            <div class="form-group">
-                <label>Lähtösatama</label>
-                <div class="input-with-button">
-                    <input type="text" id="entryDeparturePort" placeholder="Helsinki">
-                    <button class="btn btn-secondary btn-small" id="depGpsBtn">📍 GPS</button>
-                </div>
-                <div class="coords-display" id="depCoordsDisplay" style="display:none;"></div>
-            </div>
-
-            <div class="form-group">
-                <label>Tulosatama</label>
-                <div class="input-with-button">
-                    <input type="text" id="entryArrivalPort" placeholder="Porvoo">
-                    <button class="btn btn-secondary btn-small" id="arrGpsBtn">📍 GPS</button>
-                </div>
-                <div class="coords-display" id="arrCoordsDisplay" style="display:none;"></div>
-            </div>
-
-            <div class="form-group">
-                <label>Reitti</label>
-                <input type="text" id="entryRoute" placeholder="Helsinki - Porvoo">
-            </div>
-
-            <div class="form-group">
-                <label>Mailit (nm)</label>
-                <input type="number" id="entryNauticalMiles" step="0.1" placeholder="0.0">
-            </div>
-
-            <div class="form-group">
-                <label>Sää</label>
-                <input type="text" id="entryWeather" placeholder="Selkeä, 2m tuuli">
-                <button class="btn btn-primary btn-small" id="fetchWeatherBtn" style="margin-top: 8px; width: 100%;">🌊 Hae merisää GPS:llä</button>
-                <div class="weather-status" id="weatherStatus"></div>
-            </div>
-
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="closeModalBtn">Peruuta</button>
-                <button class="btn btn-primary" id="saveEntryBtn">Tallenna</button>
-            </div>
-        </div>
-    </div>
-
-    <input type="file" id="csvImportInput" accept=".csv" style="display:none;" />
-    <input type="file" id="jsonRestoreInput" accept=".json" style="display:none;" />
-
-    <script>
-        const APP_VERSION = '2027.7';
-        const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
-
-        function convertDecimalToDDMMSS(decimal) {
-            const abs = Math.abs(parseFloat(decimal));
-            const dd = Math.floor(abs);
-            const mm = Math.floor((abs - dd) * 60);
-            const ss = Math.floor(((abs - dd) * 60 - mm) * 60);
-            return String(dd).padStart(2, '0') + String(mm).padStart(2, '0') + String(ss).padStart(2, '0');
-        }
-
-        // Merisään haku Open-Meteo API:sta
-        async function fetchMarineWeather(latitude, longitude) {
-            try {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=windspeed_10m,weathercode,temperature_2m&timezone=Europe/Helsinki&forecast_days=1`;
-
-                const response = await fetch(url);
-                if (!response.ok) throw new Error('Sää-haku epäonnistui');
-
-                const data = await response.json();
-                const hourly = data.hourly;
-
-                if (!hourly || !hourly.windspeed_10m || hourly.windspeed_10m.length === 0) {
-                    throw new Error('Sää-dataa ei saatavilla');
-                }
-
-                // Viimeisin tunti
-                const idx = hourly.windspeed_10m.length - 1;
-                const wind = hourly.windspeed_10m[idx];
-                const temp = hourly.temperature_2m[idx];
-                const weatherCode = hourly.weathercode[idx];
-
-                // Sää-koodi tulkinta
-                const weatherDescriptions = {
-                    0: 'Selkeä',
-                    1: 'Lähes selkeä',
-                    2: 'Pilvinen',
-                    3: 'Pilvinen',
-                    45: 'Sumu',
-                    48: 'Sumu',
-                    51: 'Drizzle',
-                    53: 'Drizzle',
-                    55: 'Drizzle',
-                    61: 'Sade',
-                    63: 'Sade',
-                    65: 'Kova sade',
-                    71: 'Lumi',
-                    73: 'Lumi',
-                    75: 'Kova lumi',
-                    77: 'Lumi',
-                    80: 'Sade',
-                    81: 'Kova sade',
-                    82: 'Erittäin kova sade',
-                    85: 'Lumi',
-                    86: 'Lumi',
-                    95: 'Ukkonen',
-                    96: 'Ukkonen',
-                    99: 'Ukkonen'
-                };
-
-                const weather = weatherDescriptions[weatherCode] || 'Tuntematon';
-                const windDesc = wind < 1 ? '0m' : wind < 2 ? '0-1m' : wind < 4 ? '1-2m' : wind < 6 ? '2-3m' : wind < 8 ? '3-4m' : wind < 10 ? '4-5m' : '5m+';
-
-                return `${weather}, ${windDesc} tuuli, ${temp}°C`;
-            } catch (error) {
-                throw new Error('Merisää-haku epäonnistui: ' + error.message);
-            }
-        }
-
-        const DB = {
-            entries: 'quartet_entries_v2027',
-            locations: 'quartet_locations_v2027',
-
-            getEntries() {
-                try {
-                    return JSON.parse(localStorage.getItem(this.entries) || '[]');
-                } catch {
-                    return [];
-                }
-            },
-
-            setEntries(entries) {
-                localStorage.setItem(this.entries, JSON.stringify(entries));
-            },
-
-            getLocations() {
-                try {
-                    return JSON.parse(localStorage.getItem(this.locations) || '[]');
-                } catch {
-                    return [];
-                }
-            },
-
-            setLocations(locations) {
-                localStorage.setItem(this.locations, JSON.stringify(locations));
-            },
-
-            addLocation(location) {
-                const locations = this.getLocations();
-                location.id = Date.now().toString();
-                location.timestamp = new Date().toISOString();
-                locations.push(location);
-                this.setLocations(locations);
-            },
-
-            addEntry(entry) {
-                const entries = this.getEntries();
-                entry.id = Date.now().toString();
-                entry.createdAt = new Date().toISOString();
-                entries.push(entry);
-                this.setEntries(entries);
-            },
-
-            backup() {
-                return {
-                    version: APP_VERSION,
-                    entries: this.getEntries(),
-                    locations: this.getLocations(),
-                    timestamp: new Date().toISOString()
-                };
-            },
-
-            restore(data) {
-                this.setEntries(data.entries || []);
-                if (data.locations) this.setLocations(data.locations);
-            }
-        };
-
-        const UI = {
-            currentEditingId: null,
-
-            init() {
-                console.log('🚀 Quartet Loki v' + APP_VERSION);
-                this.setupTabNavigation();
-                this.setupEventListeners();
-                this.render();
-            },
-
-            setupTabNavigation() {
-                document.querySelectorAll('.tab-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                        btn.classList.add('active');
-                        document.getElementById(btn.dataset.tab).classList.add('active');
-                    });
-                });
-            },
-
-            setupEventListeners() {
-                const addListener = (id, callback) => {
-                    const el = document.getElementById(id);
-                    if (el) {
-                        el.addEventListener('click', callback);
-                        el.addEventListener('touchstart', (e) => {
-                            e.preventDefault();
-                            callback();
-                        }, { passive: false });
-                    }
-                };
-
-                addListener('newEntryBtn', () => this.openEntryModal());
-                addListener('closeModalBtn', () => this.closeEntryModal());
-                addListener('saveEntryBtn', () => this.saveEntry());
-                addListener('exportDataBtn', () => this.exportData());
-                addListener('backupBtn', () => this.backup());
-                addListener('restoreAutoBackupBtn', () => this.restoreAutoBackup());
-                addListener('useGpsBtn', () => this.useGPS());
-                addListener('addLocationBtn', () => this.addLocation());
-                addListener('depGpsBtn', () => this.getGpsForField('entryDeparturePort', 'depCoordsDisplay'));
-                addListener('arrGpsBtn', () => this.getGpsForField('entryArrivalPort', 'arrCoordsDisplay'));
-                addListener('fetchWeatherBtn', () => this.fetchWeatherForEntry());
-            },
-
-            openEntryModal() {
-                document.getElementById('entryDate').valueAsDate = new Date();
-                document.getElementById('entryCaptain').value = DEFAULT_CAPTAIN;
-                document.getElementById('entryWeather').value = '';
-                document.getElementById('entryModal').classList.add('active');
-            },
-
-            closeEntryModal() {
-                document.getElementById('entryModal').classList.remove('active');
-            },
-
-            saveEntry() {
-                const date = document.getElementById('entryDate').value;
-                if (!date) {
-                    alert('Täytä päivämäärä');
-                    return;
-                }
-
-                const entry = {
-                    date,
-                    captain: document.getElementById('entryCaptain').value || DEFAULT_CAPTAIN,
-                    departurePort: document.getElementById('entryDeparturePort').value,
-                    arrivalPort: document.getElementById('entryArrivalPort').value,
-                    route: document.getElementById('entryRoute').value,
-                    nauticalMiles: parseFloat(document.getElementById('entryNauticalMiles').value) || 0,
-                    weather: document.getElementById('entryWeather').value
-                };
-
-                DB.addEntry(entry);
-                this.closeEntryModal();
-                this.render();
-            },
-
-            render() {
-                const entries = DB.getEntries();
-                const container = document.getElementById('entriesList');
-
-                if (entries.length === 0) {
-                    container.innerHTML = '<div class="no-data">Ei merkintöjä vielä.</div>';
-                    return;
-                }
-
-                let html = '<table class="data-table"><thead><tr><th>Päivä</th><th>Kipari</th><th>Reitti</th><th>Mailit</th></tr></thead><tbody>';
-
-                entries.forEach(entry => {
-                    html += `<tr>
-                        <td>${entry.date}</td>
-                        <td>${entry.captain}</td>
-                        <td>${entry.route || '-'}</td>
-                        <td>${entry.nauticalMiles}</td>
-                    </tr>`;
-                });
-
-                html += '</tbody></table>';
-                container.innerHTML = html;
-            },
-
-            useGPS() {
-                const btn = document.getElementById('useGpsBtn');
-                btn.textContent = '📡 Etsitään...';
-                btn.disabled = true;
-
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        const lat = convertDecimalToDDMMSS(pos.coords.latitude) + (pos.coords.latitude >= 0 ? 'N' : 'S');
-                        const lon = convertDecimalToDDMMSS(pos.coords.longitude) + (pos.coords.longitude >= 0 ? 'E' : 'W');
-                        document.getElementById('locationLat').value = lat;
-                        document.getElementById('locationLon').value = lon;
-                        btn.textContent = '✅ OK';
-                        setTimeout(() => {
-                            btn.textContent = '📡 Käytä GPS:ää';
-                            btn.disabled = false;
-                        }, 2000);
-                    },
-                    (err) => {
-                        alert('GPS-virhe: ' + err.message);
-                        btn.textContent = '📡 Käytä GPS:ää';
-                        btn.disabled = false;
-                    }
-                );
-            },
-
-            getGpsForField(fieldId, coordsDisplayId) {
-                const btn = event.target;
-                btn.textContent = '📡 Etsitään...';
-                btn.disabled = true;
-
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        const lat = convertDecimalToDDMMSS(pos.coords.latitude) + (pos.coords.latitude >= 0 ? 'N' : 'S');
-                        const lon = convertDecimalToDDMMSS(pos.coords.longitude) + (pos.coords.longitude >= 0 ? 'E' : 'W');
-
-                        document.getElementById(fieldId).value = document.getElementById(fieldId).value || '(GPS haettu)';
-                        document.getElementById(coordsDisplayId).textContent = `📍 ${lat} ${lon}`;
-                        document.getElementById(coordsDisplayId).style.display = 'block';
-
-                        btn.textContent = '✅ OK';
-                        setTimeout(() => {
-                            btn.textContent = '📍 GPS';
-                            btn.disabled = false;
-                        }, 2000);
-                    },
-                    (err) => {
-                        alert('GPS-virhe: ' + err.message);
-                        btn.textContent = '📍 GPS';
-                        btn.disabled = false;
-                    }
-                );
-            },
-
-            async fetchWeatherForEntry() {
-                const btn = document.getElementById('fetchWeatherBtn');
-                const status = document.getElementById('weatherStatus');
-
-                btn.textContent = '🌊 Haetaan...';
-                btn.disabled = true;
-                status.className = 'weather-status loading';
-                status.textContent = '⏳ Haetaan merisää...';
-
-                navigator.geolocation.getCurrentPosition(
-                    async (pos) => {
-                        try {
-                            const weather = await fetchMarineWeather(pos.coords.latitude, pos.coords.longitude);
-                            document.getElementById('entryWeather').value = weather;
-
-                            status.className = 'weather-status success';
-                            status.textContent = '✅ ' + weather;
-
-                            btn.textContent = '🌊 Hae merisää GPS:llä';
-                            btn.disabled = false;
-
-                            setTimeout(() => {
-                                status.className = '';
-                            }, 3000);
-                        } catch (error) {
-                            status.className = 'weather-status error';
-                            status.textContent = '❌ ' + error.message;
-                            btn.textContent = '🌊 Hae merisää GPS:llä';
-                            btn.disabled = false;
-                        }
-                    },
-                    (err) => {
-                        status.className = 'weather-status error';
-                        status.textContent = '❌ GPS-virhe: ' + err.message;
-                        btn.textContent = '🌊 Hae merisää GPS:llä';
-                        btn.disabled = false;
-                    }
-                );
-            },
-
-            addLocation() {
-                const lat = parseFloat(document.getElementById('locationLat').value);
-                const lon = parseFloat(document.getElementById('locationLon').value);
-                const name = document.getElementById('locationName').value || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-
-                if (isNaN(lat) || isNaN(lon)) {
-                    alert('Syötä koordinaatit');
-                    return;
-                }
-
-                DB.addLocation({ lat, lon, name });
-                document.getElementById('locationLat').value = '';
-                document.getElementById('locationLon').value = '';
-                document.getElementById('locationName').value = '';
-                this.renderLocations();
-            },
-
-            renderLocations() {
-                const locations = DB.getLocations();
-                const container = document.getElementById('locationsList');
-
-                if (locations.length === 0) {
-                    container.innerHTML = '<p style="text-align: center; color: #999;">Ei paikkoja.</p>';
-                    return;
-                }
-
-                let html = '';
-                locations.forEach(loc => {
-                    html += `<div style="padding: 8px; background: #f5f5f5; border-radius: 4px; margin-bottom: 8px;">
-                        <div style="font-weight: 600;">${loc.name}</div>
-                        <div style="font-size: 0.85em; color: #666;">📍 ${loc.lat.toFixed(4)}, ${loc.lon.toFixed(4)}</div>
-                    </div>`;
-                });
-
-                container.innerHTML = html;
-            },
-
-            exportData() {
-                const entries = DB.getEntries();
-                let csv = 'Päivä,Kipari,Reitti,Mailit,Sää\n';
-                entries.forEach(e => {
-                    csv += `"${e.date}","${e.captain}","${e.route}","${e.nauticalMiles}","${e.weather}"\n`;
-                });
-
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `quartet_${new Date().toISOString().split('T')[0]}.csv`;
-                link.click();
-            },
-
-            backup() {
-                const backup = DB.backup();
-                const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `quartet_backup_${new Date().toISOString().split('T')[0]}.json`;
-                link.click();
-                alert('Latautunut!');
-            },
-
-            restoreAutoBackup() {
-                try {
-                    const backup = localStorage.getItem('quartet_auto_backup_latest');
-                    if (!backup) {
-                        alert('Ei varmuuskopiota');
-                        return;
-                    }
-
-                    const data = JSON.parse(backup);
-                    if (confirm(`Palauta ${data.entries?.length || 0} merkintää?`)) {
-                        DB.restore(data);
-                        this.render();
-                        alert('✅ Palautettu!');
-                    }
-                } catch (err) {
-                    alert('Virhe: ' + err.message);
-                }
-            }
-        };
-
-        document.addEventListener('DOMContentLoaded', () => {
-            UI.init();
-        });
-    </script>
+ <div class="container">
+ <header>
+ <h1>🎯 Quartet Loki - PREMIUM</h1>
+ <div class="subtitle">
+ <span class="version-badge">v2027.8</span>
+ <span>Merisää GPS (FIXED)</span>
+ </div>
+ </header>
+ <div class="nav-tabs" id="navTabs">
+ <button class="tab-btn active" data-tab="merkinta">📝 Merkinnät</button>
+ <button class="tab-btn" data-tab="locations">📍 Paikat</button>
+ <button class="tab-btn" data-tab="settings">⚙️ Asetukset</button>
+ </div>
+ <div class="content">
+ <!-- MERKINNÄT TAB -->
+ <div id="merkinta" class="tab-content active">
+ <h2 style="margin-bottom: 12px; font-size: 1.1em;">Merkinnät</h2>
+ <div class="action-buttons">
+ <button class="btn btn-primary" id="newEntryBtn">+ Merkintä</button>
+ <button class="btn btn-secondary" id="exportDataBtn">📤 Vie</button>
+ </div>
+ <div id="entriesList"></div>
+ </div>
+ <!-- LOCATIONS TAB -->
+ <div id="locations" class="tab-content">
+ <h2 style="margin-bottom: 16px; font-size: 1.1em;">📍 Paikat</h2>
+ <div class="form-section">
+ <h3 style="margin-bottom: 12px;">🛰️ GPS-PAIKKA</h3>
+ <div class="form-group">
+ <label>Leveysaste (Latitude)</label>
+ <input type="text" id="locationLat" placeholder="60.2530">
+ </div>
+ <div class="form-group">
+ <label>Pituusaste (Longitude)</label>
+ <input type="text" id="locationLon" placeholder="24.2530">
+ </div>
+ <div class="form-group">
+ <label>Paikan nimi</label>
+ <input type="text" id="locationName" placeholder="esim. Helsinki">
+ </div>
+ <div class="action-buttons">
+ <button class="btn btn-primary" id="useGpsBtn">🛰️ Käytä GPS:ää</button>
+ <button class="btn btn-success" id="addLocationBtn">✅ Lisää paikka</button>
+ </div>
+ </div>
+ <div style="margin-top: 20px;">
+ <h3 style="margin-bottom: 12px;">Merkityt paikat</h3>
+ <div id="locationsList"></div>
+ </div>
+ </div>
+ <!-- SETTINGS TAB -->
+ <div id="settings" class="tab-content">
+ <h2 style="margin-bottom: 16px; font-size: 1.1em;">⚙️ Asetukset</h2>
+ <div class="form-section">
+ <h3 style="margin-bottom: 12px;">💾 Varmuuskopiointi</h3>
+ <div class="action-buttons">
+ <button class="btn btn-secondary" id="backupBtn">📥 Lataa</button>
+ <button class="btn btn-success" id="restoreAutoBackupBtn">⬆️ Palauta</button>
+ </div>
+ </div>
+ <div class="form-section">
+ <h3 style="margin-bottom: 12px;">📌 Versio</h3>
+ <p style="color: #666; font-size: 0.9em;">
+ <strong>Quartet Loki v2027.8</strong><br>
+ Merisää GPS-paikannuksella (FIXED)<br>
+ <span id="dbSize"></span>
+ </p>
+ </div>
+ </div>
+ </div>
+ </div>
+ <!-- ENTRY FORM MODAL -->
+ <div id="entryModal" class="modal">
+ <div class="modal-content">
+ <div class="modal-header">✍️ Merkintä</div>
+ <div class="form-group">
+ <label>Päivämäärä *</label>
+ <input type="date" id="entryDate" required>
+ </div>
+ <div class="form-group">
+ <label>Kipari</label>
+ <input type="text" id="entryCaptain" placeholder="Jarmo Aaltonen">
+ </div>
+ <div class="form-group">
+ <label>Lähtösatama</label>
+ <div class="input-with-button">
+ <input type="text" id="entryDeparturePort" placeholder="Helsinki">
+ <button class="btn btn-secondary btn-small gps-btn" data-field="entryDeparturePort" data-coords="depCoordsDisplay">🛰️ GPS</button>
+ </div>
+ <div class="coords-display" id="depCoordsDisplay" style="display:none;"></div>
+ </div>
+ <div class="form-group">
+ <label>Tulosatama</label>
+ <div class="input-with-button">
+ <input type="text" id="entryArrivalPort" placeholder="Porvoo">
+ <button class="btn btn-secondary btn-small gps-btn" data-field="entryArrivalPort" data-coords="arrCoordsDisplay">🛰️ GPS</button>
+ </div>
+ <div class="coords-display" id="arrCoordsDisplay" style="display:none;"></div>
+ </div>
+ <div class="form-group">
+ <label>Reitti</label>
+ <input type="text" id="entryRoute" placeholder="Helsinki - Porvoo">
+ </div>
+ <div class="form-group">
+ <label>Mailit (nm)</label>
+ <input type="number" id="entryNauticalMiles" step="0.1" placeholder="0.0">
+ </div>
+ <div class="form-group">
+ <label>Sää</label>
+ <input type="text" id="entryWeather" placeholder="Selkeä, 2m tuuli">
+ <button class="btn btn-primary btn-small" id="fetchWeatherBtn" style="margin-top: 8px; width: 100%;">☁️ Hae merisää GPS:llä</button>
+ <div class="weather-status" id="weatherStatus"></div>
+ </div>
+ <div class="modal-footer">
+ <button class="btn btn-secondary" id="closeModalBtn">Peruuta</button>
+ <button class="btn btn-primary" id="saveEntryBtn">💾 Tallenna</button>
+ </div>
+ </div>
+ </div>
+ <input type="file" id="csvImportInput" accept=".csv" style="display:none;">
+ <input type="file" id="jsonRestoreInput" accept=".json" style="display:none;">
+ <script>
+ const APP_VERSION = '2027.8';
+ const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
+ // ✅ KORJAUS 1: Koordinaattien muotoilu DMS-formaattiin (DD°MM'SS.S"H)
+ function formatCoordinates(decimal, isLongitude = false) {
+ const value = parseFloat(decimal);
+ const direction = isLongitude 
+ ? (value >= 0 ? 'E' : 'W')
+ : (value >= 0 ? 'N' : 'S');
+
+const abs = Math.abs(value);
+const degrees = Math.floor(abs);
+const minutesDecimal = (abs - degrees) * 60;
+const minutes = Math.floor(minutesDecimal);
+const seconds = ((minutesDecimal - minutes) * 60).toFixed(1);
+
+return `${String(degrees).padStart(2, '0')}°${String(minutes).padStart(2, '0')}'${String(parseFloat(seconds)).padStart(4, '0')}"${direction}`;
+}
+// Merisään haku Open-Meteo API:sta
+async function fetchMarineWeather(latitude, longitude) {
+try {
+const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=windspeed_10m,weathercode,temperature_2m&timezone=Europe/Helsinki&forecast_days=1`;
+const response = await fetch(url);
+if (!response.ok) throw new Error(‘Sää-haku epäonnistui’);
+const data = await response.json();
+const hourly = data.hourly;
+if (!hourly || !hourly.windspeed_10m || hourly.windspeed_10m.length === 0) {
+throw new Error(‘Sää-dataa ei saatavilla’);
+}
+const idx = hourly.windspeed_10m.length - 1;
+const wind = hourly.windspeed_10m[idx];
+const temp = hourly.temperature_2m[idx];
+const weatherCode = hourly.weathercode[idx];
+const weatherDescriptions = {
+0: ‘Selkeä’,
+1: ‘Lähes selkeä’,
+2: ‘Pilvinen’,
+3: ‘Pilvinen’,
+45: ‘Sumu’,
+48: ‘Sumu’,
+51: ‘Drizzle’,
+53: ‘Drizzle’,
+55: ‘Drizzle’,
+61: ‘Sade’,
+63: ‘Sade’,
+65: ‘Kova sade’,
+71: ‘Lumi’,
+73: ‘Lumi’,
+75: ‘Kova lumi’,
+77: ‘Lumi’,
+80: ‘Sade’,
+81: ‘Kova sade’,
+82: ‘Erittäin kova sade’,
+85: ‘Lumi’,
+86: ‘Lumi’,
+95: ‘Ukkonen’,
+96: ‘Ukkonen’,
+99: ‘Ukkonen’
+};
+const weather = weatherDescriptions[weatherCode] || ‘Tuntematon’;
+const windDesc = wind < 1 ? ‘0m’ : wind < 2 ? ‘0-1m’ : wind < 4 ? ‘1-2m’ : wind < 6 ? ‘2-3m’ : wind < 8 ? ‘3-4m’ : wind < 10 ? ‘4-5m’ : ‘5m+’;
+return `${weather}, ${windDesc} tuuli, ${temp}°C`;
+} catch (error) {
+throw new Error(‘Merisää-haku epäonnistui: ’ + error.message);
+}
+}
+const DB = {
+entries: ‘quartet_entries_v2027’,
+locations: ‘quartet_locations_v2027’,
+getEntries() {
+try {
+return JSON.parse(localStorage.getItem(this.entries) || ‘[]’);
+} catch {
+return [];
+}
+},
+setEntries(entries) {
+localStorage.setItem(this.entries, JSON.stringify(entries));
+},
+getLocations() {
+try {
+return JSON.parse(localStorage.getItem(this.locations) || ‘[]’);
+} catch {
+return [];
+}
+},
+setLocations(locations) {
+localStorage.setItem(this.locations, JSON.stringify(locations));
+},
+addLocation(location) {
+const locations = this.getLocations();
+location.id = Date.now().toString();
+location.timestamp = new Date().toISOString();
+locations.push(location);
+this.setLocations(locations);
+},
+addEntry(entry) {
+const entries = this.getEntries();
+entry.id = Date.now().toString();
+entry.createdAt = new Date().toISOString();
+entries.push(entry);
+this.setEntries(entries);
+},
+backup() {
+return {
+version: APP_VERSION,
+entries: this.getEntries(),
+locations: this.getLocations(),
+timestamp: new Date().toISOString()
+};
+},
+restore(data) {
+this.setEntries(data.entries || []);
+if (data.locations) this.setLocations(data.locations);
+}
+};
+const UI = {
+currentEditingId: null,
+init() {
+console.log(‘🛰️ Quartet Loki v’ + APP_VERSION);
+this.setupTabNavigation();
+this.setupEventListeners();
+this.render();
+},
+setupTabNavigation() {
+document.querySelectorAll(’.tab-btn’).forEach(btn => {
+btn.addEventListener(‘click’, (e) => {
+e.preventDefault();
+document.querySelectorAll(’.tab-btn’).forEach(b => b.classList.remove(‘active’));
+document.querySelectorAll(’.tab-content’).forEach(c => c.classList.remove(‘active’));
+btn.classList.add(‘active’);
+document.getElementById(btn.dataset.tab).classList.add(‘active’);
+});
+});
+},
+setupEventListeners() {
+const addListener = (id, callback) => {
+const el = document.getElementById(id);
+if (el) {
+el.addEventListener(‘click’, callback);
+el.addEventListener(‘touchstart’, (e) => {
+e.preventDefault();
+callback();
+}, { passive: false });
+}
+};
+addListener(‘newEntryBtn’, () => this.openEntryModal());
+addListener(‘closeModalBtn’, () => this.closeEntryModal());
+addListener(‘saveEntryBtn’, () => this.saveEntry());
+addListener(‘exportDataBtn’, () => this.exportData());
+addListener(‘backupBtn’, () => this.backup());
+addListener(‘restoreAutoBackupBtn’, () => this.restoreAutoBackup());
+addListener(‘useGpsBtn’, () => this.useGPS());
+addListener(‘addLocationBtn’, () => this.addLocation());
+addListener(‘fetchWeatherBtn’, () => this.fetchWeatherForEntry());
+// ✅ KORJAUS 2: GPS-napit modalissa käyttävät data-attribuutteja
+document.querySelectorAll(’.gps-btn’).forEach(btn => {
+btn.addEventListener(‘click’, (e) => {
+e.preventDefault();
+const fieldId = btn.dataset.field;
+const coordsDisplayId = btn.dataset.coords;
+this.getGpsForField(fieldId, coordsDisplayId, btn);
+});
+});
+},
+openEntryModal() {
+document.getElementById(‘entryDate’).valueAsDate = new Date();
+document.getElementById(‘entryCaptain’).value = DEFAULT_CAPTAIN;
+document.getElementById(‘entryWeather’).value = ‘’;
+document.getElementById(‘entryModal’).classList.add(‘active’);
+},
+closeEntryModal() {
+document.getElementById(‘entryModal’).classList.remove(‘active’);
+},
+saveEntry() {
+const date = document.getElementById(‘entryDate’).value;
+if (!date) {
+alert(‘⚠️ Täytä päivämäärä’);
+return;
+}
+const entry = {
+date,
+captain: document.getElementById(‘entryCaptain’).value || DEFAULT_CAPTAIN,
+departurePort: document.getElementById(‘entryDeparturePort’).value,
+arrivalPort: document.getElementById(‘entryArrivalPort’).value,
+route: document.getElementById(‘entryRoute’).value,
+nauticalMiles: parseFloat(document.getElementById(‘entryNauticalMiles’).value) || 0,
+weather: document.getElementById(‘entryWeather’).value
+};
+DB.addEntry(entry);
+this.closeEntryModal();
+this.render();
+},
+render() {
+const entries = DB.getEntries();
+const container = document.getElementById(‘entriesList’);
+if (entries.length === 0) {
+container.innerHTML = ‘<div class="no-data">📭 Ei merkintöjä vielä.</div>’;
+return;
+}
+let html = ‘<table class="data-table"><thead><tr><th>Päivä</th><th>Kipari</th><th>Reitti</th><th>Mailit</th></tr></thead><tbody>’;
+entries.forEach(entry => {
+html += `<tr>
+
+ <td>${entry.date}</td>
+ <td>${entry.captain}</td>
+ <td>${entry.route || '-'}</td>
+ <td>${entry.nauticalMiles}</td>
+ </tr>`;
+ });
+ html += '</tbody></table>';
+ container.innerHTML = html;
+ },
+ useGPS() {
+ const btn = document.getElementById('useGpsBtn');
+ btn.textContent = '⏳ Etsitään...';
+ btn.disabled = true;
+ navigator.geolocation.getCurrentPosition(
+ (pos) => {
+ const lat = formatCoordinates(pos.coords.latitude, false); // Leveysaste
+ const lon = formatCoordinates(pos.coords.longitude, true);  // Pituusaste
+ document.getElementById('locationLat').value = lat;
+ document.getElementById('locationLon').value = lon;
+ btn.textContent = '✅ OK';
+ setTimeout(() => {
+ btn.textContent = '🛰️ Käytä GPS:ää';
+ btn.disabled = false;
+ }, 2000);
+ },
+ (err) => {
+ alert('⚠️ GPS-virhe: ' + err.message + '\n\nOle hyvä ja varmista, että käytät HTTPS:ää tai localhost-kehitysympäristöä.');
+ btn.textContent = '🛰️ Käytä GPS:ää';
+ btn.disabled = false;
+ }
+ );
+ },
+ // ✅ KORJAUS 3: getGpsForField saa btn-parametrin
+ getGpsForField(fieldId, coordsDisplayId, btn) {
+ if (!btn) {
+ console.error('GPS-nappi ei löytynyt');
+ return;
+ }
+ btn.textContent = '⏳ Etsitään...';
+ btn.disabled = true;
+ navigator.geolocation.getCurrentPosition(
+ (pos) => {
+ // Tunnista onko leveysaste vai pituusaste nimen perusteella
+ const isLongitude = fieldId.includes('Lon') || fieldId.includes('arrival');
+ const lat = formatCoordinates(pos.coords.latitude, false);
+ const lon = formatCoordinates(pos.coords.longitude, true);
+ const coord = isLongitude ? lon : lat;
+
+document.getElementById(fieldId).value = document.getElementById(fieldId).value || coord;
+document.getElementById(coordsDisplayId).textContent = `📍 Lat: ${lat} | Lon: ${lon}`;
+document.getElementById(coordsDisplayId).style.display = ‘block’;
+btn.textContent = ‘✅ OK’;
+setTimeout(() => {
+btn.textContent = ‘🛰️ GPS’;
+btn.disabled = false;
+}, 2000);
+},
+(err) => {
+alert(’⚠️ GPS-virhe: ’ + err.message + ‘\n\nOle hyvä ja varmista:\n1) HTTPS-protokolla käytössä\n2) Paikallista pääsy sallittu\n3) Geolocation käytössä’);
+btn.textContent = ‘🛰️ GPS’;
+btn.disabled = false;
+}
+);
+},
+async fetchWeatherForEntry() {
+const btn = document.getElementById(‘fetchWeatherBtn’);
+const status = document.getElementById(‘weatherStatus’);
+btn.textContent = ‘⏳ Haetaan…’;
+btn.disabled = true;
+status.className = ‘weather-status loading’;
+status.textContent = ‘☁️ Haetaan merisää…’;
+navigator.geolocation.getCurrentPosition(
+async (pos) => {
+try {
+const weather = await fetchMarineWeather(pos.coords.latitude, pos.coords.longitude);
+document.getElementById(‘entryWeather’).value = weather;
+status.className = ‘weather-status success’;
+status.textContent = ’✅ ’ + weather;
+btn.textContent = ‘☁️ Hae merisää GPS:llä’;
+btn.disabled = false;
+setTimeout(() => {
+status.className = ‘’;
+}, 3000);
+} catch (error) {
+status.className = ‘weather-status error’;
+status.textContent = ’❌ ’ + error.message;
+btn.textContent = ‘☁️ Hae merisää GPS:llä’;
+btn.disabled = false;
+}
+},
+(err) => {
+status.className = ‘weather-status error’;
+status.textContent = ’❌ GPS-virhe: ’ + err.message;
+btn.textContent = ‘☁️ Hae merisää GPS:llä’;
+btn.disabled = false;
+}
+);
+},
+addLocation() {
+const lat = parseFloat(document.getElementById(‘locationLat’).value);
+const lon = parseFloat(document.getElementById(‘locationLon’).value);
+const name = document.getElementById(‘locationName’).value || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+if (isNaN(lat) || isNaN(lon)) {
+alert(‘⚠️ Syötä koordinaatit’);
+return;
+}
+DB.addLocation({ lat, lon, name });
+document.getElementById(‘locationLat’).value = ‘’;
+document.getElementById(‘locationLon’).value = ‘’;
+document.getElementById(‘locationName’).value = ‘’;
+this.renderLocations();
+},
+renderLocations() {
+const locations = DB.getLocations();
+const container = document.getElementById(‘locationsList’);
+if (locations.length === 0) {
+container.innerHTML = ‘<p style="text-align: center; color: #999;">📭 Ei paikkoja.</p>’;
+return;
+}
+let html = ‘’;
+locations.forEach(loc => {
+html += `<div style="padding: 8px; background: #f5f5f5; border-radius: 4px; margin-bottom: 8px;">
+
+ <div style="font-weight: 600;">📍 ${loc.name}</div>
+ <div style="font-size: 0.85em; color: #666;">${loc.lat.toFixed(4)}, ${loc.lon.toFixed(4)}</div>
+ </div>`;
+ });
+ container.innerHTML = html;
+ },
+ exportData() {
+ const entries = DB.getEntries();
+ let csv = 'Päivä,Kipari,Reitti,Mailit,Sää\n';
+ entries.forEach(e => {
+ csv += `"${e.date}","${e.captain}","${e.route}","${e.nauticalMiles}","${e.weather}"\n`;
+ });
+ const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+ const link = document.createElement('a');
+ link.href = URL.createObjectURL(blob);
+ link.download = `quartet_${new Date().toISOString().split('T')[0]}.csv`;
+ link.click();
+ },
+ backup() {
+ const backup = DB.backup();
+ const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+ const link = document.createElement('a');
+ link.href = URL.createObjectURL(blob);
+ link.download = `quartet_backup_${new Date().toISOString().split('T')[0]}.json`;
+ link.click();
+ alert('💾 Latautunut!');
+ },
+ restoreAutoBackup() {
+ try {
+ const backup = localStorage.getItem('quartet_auto_backup_latest');
+ if (!backup) {
+ alert('❌ Ei varmuuskopiota');
+ return;
+ }
+ const data = JSON.parse(backup);
+ if (confirm(`🔄 Palauta ${data.entries?.length || 0} merkintää?`)) {
+ DB.restore(data);
+ this.render();
+ alert('✅ Palautettu!');
+ }
+ } catch (err) {
+ alert('❌ Virhe: ' + err.message);
+ }
+ }
+ };
+ document.addEventListener('DOMContentLoaded', () => {
+ UI.init();
+ });
+ </script>
+</body>
+</html><!DOCTYPE html>
+
+<html lang="fi">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0, 
+viewport-fit=cover">
+ <meta name="apple-mobile-web-app-capable" content="yes">
+ <meta name="apple-mobile-web-app-status-bar-style" content="blacktranslucent">
+ <title>Quartet Loki - v2027.8 (Merisää GPS) - FIXED</title>
+ <script>
+ window.addEventListener('error', (e) => {
+ if (e.message && (e.message.includes('CloudKit') || 
+e.message.includes('cdn.apple-cloudkit'))) {
+ e.preventDefault();
+ }
+ });
+ </script>
+ <style>
+ * {
+ margin: 0;
+ padding: 0;
+ box-sizing: border-box;
+ -webkit-touch-callout: none;
+ -webkit-user-select: none;
+ }
+ html, body {
+ width: 100%;
+ height: 100%;
+ position: fixed;
+ overflow: hidden;
+ }
+ body {
+ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, 
+sans-serif;
+ background: #f5f5f5;
+ color: #333;
+ }
+ .container {
+ height: 100vh;
+ display: flex;
+ flex-direction: column;
+ background: white;
+ }
+ header {
+ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+ color: white;
+ padding: 16px 16px 12px;
+ text-align: center;
+ flex-shrink: 0;
+ box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+ }
+ header h1 {
+ font-size: 1.4em;
+ margin-bottom: 2px;
+ }
+ header .subtitle {
+ font-size: 0.75em;
+ opacity: 0.9;
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ gap: 8px;
+ flex-wrap: wrap;
+ }
+ .version-badge {
+ background: rgba(255,255,255,0.2);
+ padding: 2px 6px;
+ border-radius: 4px;
+ font-size: 0.8em;
+ }
+ .nav-tabs {
+ display: flex;
+ background: #f5f5f5;
+ border-bottom: 1px solid #e0e0e0;
+ overflow-x: auto;
+ -webkit-overflow-scrolling: touch;
+ flex-shrink: 0;
+ }
+ .nav-tabs button {
+ flex: 1;
+ min-width: 70px;
+ padding: 12px 10px;
+ background: none;
+ border: none;
+ cursor: pointer;
+ font-size: 0.85em;
+ font-weight: 500;
+ color: #666;
+ border-bottom: 3px solid transparent;
+ transition: all 0.3s ease;
+ white-space: nowrap;
+ }
+ .nav-tabs button.active {
+ color: #667eea;
+ border-bottom-color: #667eea;
+ background: rgba(102, 126, 234, 0.05);
+ }
+ .content {
+ flex: 1;
+ overflow-y: auto;
+ -webkit-overflow-scrolling: touch;
+ padding: 16px;
+ }
+ .tab-content {
+ display: none;
+ }
+ .tab-content.active {
+ display: block;
+ }
+ .form-section {
+ background: #f9f9f9;
+ padding: 16px;
+ border-radius: 8px;
+ margin-bottom: 16px;
+ border-left: 4px solid #667eea;
+ }
+ .form-group {
+ margin-bottom: 14px;
+ }
+ .form-group label {
+ display: block;
+ margin-bottom: 5px;
+ font-weight: 500;
+ color: #333;
+ font-size: 0.9em;
+ }
+ .form-group input,
+ .form-group select,
+ .form-group textarea {
+ width: 100%;
+ padding: 10px;
+ border: 1px solid #ddd;
+ border-radius: 6px;
+ font-size: 16px;
+ font-family: inherit;
+ }
+ .form-group input:focus,
+ .form-group select:focus,
+ .form-group textarea:focus {
+ outline: none;
+ border-color: #667eea;
+ box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+ }
+ .input-with-button {
+ display: flex;
+ gap: 8px;
+ align-items: flex-end;
+ }
+ .input-with-button input {
+ flex: 1;
+ }
+ button.btn {
+ padding: 10px 16px;
+ border: none;
+ border-radius: 6px;
+ font-size: 0.9em;
+ font-weight: 500;
+ cursor: pointer;
+ transition: all 0.2s ease;
+ }
+ .btn-primary {
+ background: #667eea;
+ color: white;
+ }
+ .btn-primary:active {
+ background: #5568d3;
+ }
+ .btn-secondary {
+ background: #f0f0f0;
+ color: #333;
+ }
+ .btn-secondary:active {
+ background: #e0e0e0;
+ }
+ .btn-success {
+ background: #10b981;
+ color: white;
+ }
+ .btn-danger {
+ background: #ef4444;
+ color: white;
+ }
+ .btn-small {
+ padding: 6px 10px;
+ font-size: 0.8em;
+ min-width: auto;
+ }
+ .data-table {
+ width: 100%;
+ border-collapse: collapse;
+ background: white;
+ border: 1px solid #e0e0e0;
+ border-radius: 8px;
+ overflow: hidden;
+ margin-bottom: 16px;
+ }
+ .data-table th {
+ background: #f5f5f5;
+ padding: 10px;
+ text-align: left;
+ font-weight: 600;
+ border-bottom: 2px solid #e0e0e0;
+ font-size: 0.85em;
+ color: #555;
+ }
+ .data-table td {
+ padding: 10px;
+ border-bottom: 1px solid #f0f0f0;
+ font-size: 0.9em;
+ }
+ .badge {
+ display: inline-block;
+ padding: 4px 8px;
+ border-radius: 12px;
+ font-size: 0.8em;
+ font-weight: 500;
+ background: #dbeafe;
+ color: #1e40af;
+ }
+ .modal {
+ display: none;
+ position: fixed;
+ top: 0;
+ left: 0;
+ right: 0;
+ bottom: 0;
+ background: rgba(0, 0, 0, 0.5);
+ z-index: 1000;
+ justify-content: flex-end;
+ align-items: flex-end;
+ }
+ .modal.active {
+ display: flex;
+ }
+ .modal-content {
+ background: white;
+ border-radius: 12px 12px 0 0;
+ padding: 16px;
+ width: 100%;
+ max-height: 85vh;
+ overflow-y: auto;
+ -webkit-overflow-scrolling: touch;
+ }
+ .modal-header {
+ font-size: 1.2em;
+ font-weight: 600;
+ margin-bottom: 16px;
+ color: #333;
+ }
+ .modal-footer {
+ display: flex;
+ gap: 10px;
+ margin-top: 20px;
+ }
+ .modal-footer button {
+ flex: 1;
+ }
+ .action-buttons {
+ display: flex;
+ gap: 8px;
+ flex-wrap: wrap;
+ margin-bottom: 16px;
+ }
+ .action-buttons button {
+ flex: 1;
+ min-width: 120px;
+ }
+ .no-data {
+ text-align: center;
+ padding: 40px 20px;
+ color: #999;
+ }
+ .coords-display {
+ font-family: monospace;
+ font-size: 0.85em;
+ color: #666;
+ background: #f5f5f5;
+ padding: 8px;
+ border-radius: 4px;
+ margin-top: 4px;
+ }
+ .weather-grid {
+ display: grid;
+ grid-template-columns: repeat(2, 1fr);
+ gap: 8px;
+ margin-top: 8px;
+ }
+ .weather-option {
+ padding: 8px 12px;
+ background: #f0f0f0;
+ border: 1px solid #ddd;
+ border-radius: 4px;
+ text-align: center;
+ font-size: 0.9em;
+ cursor: pointer;
+ }
+ .weather-option:active {
+ background: #667eea;
+ color: white;
+ }
+ .weather-status {
+ padding: 8px;
+ margin-top: 8px;
+ border-radius: 4px;
+ font-size: 0.85em;
+ display: none;
+ }
+ .weather-status.loading {
+ display: block;
+ background: #fef3c7;
+ color: #92400e;
+ }
+ .weather-status.success {
+ display: block;
+ background: #d1fae5;
+ color: #065f46;
+ }
+ .weather-status.error {
+ display: block;
+ background: #fee2e2;
+ color: #991b1b;
+ }
+ @media (max-width: 480px) {
+ header h1 {
+ font-size: 1.2em;
+ }
+ .nav-tabs button {
+ padding: 10px 8px;
+ font-size: 0.8em;
+ }
+ .modal-content {
+ padding: 12px;
+ }
+ }
+ </style>
+</head>
+<body>
+ <div class="container">
+ <header>
+ <h1>🎯 Quartet Loki - PREMIUM</h1>
+ <div class="subtitle">
+ <span class="version-badge">v2027.8</span>
+ <span>Merisää GPS (FIXED)</span>
+ </div>
+ </header>
+ <div class="nav-tabs" id="navTabs">
+ <button class="tab-btn active" data-tab="merkinta">📝 Merkinnät</button>
+ <button class="tab-btn" data-tab="locations">📍 Paikat</button>
+ <button class="tab-btn" data-tab="settings">⚙️ Asetukset</button>
+ </div>
+ <div class="content">
+ <!-- MERKINNÄT TAB -->
+ <div id="merkinta" class="tab-content active">
+ <h2 style="margin-bottom: 12px; font-size: 1.1em;">Merkinnät</h2>
+ <div class="action-buttons">
+ <button class="btn btn-primary" id="newEntryBtn">+ Merkintä</button>
+ <button class="btn btn-secondary" id="exportDataBtn">📤 Vie</button>
+ </div>
+ <div id="entriesList"></div>
+ </div>
+ <!-- LOCATIONS TAB -->
+ <div id="locations" class="tab-content">
+ <h2 style="margin-bottom: 16px; font-size: 1.1em;">📍 Paikat</h2>
+ <div class="form-section">
+ <h3 style="margin-bottom: 12px;">🛰️ GPS-PAIKKA</h3>
+ <div class="form-group">
+ <label>Leveysaste (Latitude)</label>
+ <input type="text" id="locationLat" placeholder="60.2530">
+ </div>
+ <div class="form-group">
+ <label>Pituusaste (Longitude)</label>
+ <input type="text" id="locationLon" placeholder="24.2530">
+ </div>
+ <div class="form-group">
+ <label>Paikan nimi</label>
+ <input type="text" id="locationName" placeholder="esim. Helsinki">
+ </div>
+ <div class="action-buttons">
+ <button class="btn btn-primary" id="useGpsBtn">🛰️ Käytä GPS:ää</button>
+ <button class="btn btn-success" id="addLocationBtn">✅ Lisää paikka</button>
+ </div>
+ </div>
+ <div style="margin-top: 20px;">
+ <h3 style="margin-bottom: 12px;">Merkityt paikat</h3>
+ <div id="locationsList"></div>
+ </div>
+ </div>
+ <!-- SETTINGS TAB -->
+ <div id="settings" class="tab-content">
+ <h2 style="margin-bottom: 16px; font-size: 1.1em;">⚙️ Asetukset</h2>
+ <div class="form-section">
+ <h3 style="margin-bottom: 12px;">💾 Varmuuskopiointi</h3>
+ <div class="action-buttons">
+ <button class="btn btn-secondary" id="backupBtn">📥 Lataa</button>
+ <button class="btn btn-success" id="restoreAutoBackupBtn">⬆️ Palauta</button>
+ </div>
+ </div>
+ <div class="form-section">
+ <h3 style="margin-bottom: 12px;">📌 Versio</h3>
+ <p style="color: #666; font-size: 0.9em;">
+ <strong>Quartet Loki v2027.8</strong><br>
+ Merisää GPS-paikannuksella (FIXED)<br>
+ <span id="dbSize"></span>
+ </p>
+ </div>
+ </div>
+ </div>
+ </div>
+ <!-- ENTRY FORM MODAL -->
+ <div id="entryModal" class="modal">
+ <div class="modal-content">
+ <div class="modal-header">✍️ Merkintä</div>
+ <div class="form-group">
+ <label>Päivämäärä *</label>
+ <input type="date" id="entryDate" required>
+ </div>
+ <div class="form-group">
+ <label>Kipari</label>
+ <input type="text" id="entryCaptain" placeholder="Jarmo Aaltonen">
+ </div>
+ <div class="form-group">
+ <label>Lähtösatama</label>
+ <div class="input-with-button">
+ <input type="text" id="entryDeparturePort" placeholder="Helsinki">
+ <button class="btn btn-secondary btn-small gps-btn" data-field="entryDeparturePort" data-coords="depCoordsDisplay">🛰️ GPS</button>
+ </div>
+ <div class="coords-display" id="depCoordsDisplay" style="display:none;"></div>
+ </div>
+ <div class="form-group">
+ <label>Tulosatama</label>
+ <div class="input-with-button">
+ <input type="text" id="entryArrivalPort" placeholder="Porvoo">
+ <button class="btn btn-secondary btn-small gps-btn" data-field="entryArrivalPort" data-coords="arrCoordsDisplay">🛰️ GPS</button>
+ </div>
+ <div class="coords-display" id="arrCoordsDisplay" style="display:none;"></div>
+ </div>
+ <div class="form-group">
+ <label>Reitti</label>
+ <input type="text" id="entryRoute" placeholder="Helsinki - Porvoo">
+ </div>
+ <div class="form-group">
+ <label>Mailit (nm)</label>
+ <input type="number" id="entryNauticalMiles" step="0.1" placeholder="0.0">
+ </div>
+ <div class="form-group">
+ <label>Sää</label>
+ <input type="text" id="entryWeather" placeholder="Selkeä, 2m tuuli">
+ <button class="btn btn-primary btn-small" id="fetchWeatherBtn" style="margin-top: 8px; width: 100%;">☁️ Hae merisää GPS:llä</button>
+ <div class="weather-status" id="weatherStatus"></div>
+ </div>
+ <div class="modal-footer">
+ <button class="btn btn-secondary" id="closeModalBtn">Peruuta</button>
+ <button class="btn btn-primary" id="saveEntryBtn">💾 Tallenna</button>
+ </div>
+ </div>
+ </div>
+ <input type="file" id="csvImportInput" accept=".csv" style="display:none;">
+ <input type="file" id="jsonRestoreInput" accept=".json" style="display:none;">
+ <script>
+ const APP_VERSION = '2027.8';
+ const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
+ // ✅ KORJAUS 1: Koordinaattien muotoilu DMS-formaattiin (DD°MM'SS.S"H)
+ function formatCoordinates(decimal, isLongitude = false) {
+ const value = parseFloat(decimal);
+ const direction = isLongitude 
+ ? (value >= 0 ? 'E' : 'W')
+ : (value >= 0 ? 'N' : 'S');
+
+const abs = Math.abs(value);
+const degrees = Math.floor(abs);
+const minutesDecimal = (abs - degrees) * 60;
+const minutes = Math.floor(minutesDecimal);
+const seconds = ((minutesDecimal - minutes) * 60).toFixed(1);
+
+return `${String(degrees).padStart(2, '0')}°${String(minutes).padStart(2, '0')}'${String(parseFloat(seconds)).padStart(4, '0')}"${direction}`;
+}
+// Merisään haku Open-Meteo API:sta
+async function fetchMarineWeather(latitude, longitude) {
+try {
+const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=windspeed_10m,weathercode,temperature_2m&timezone=Europe/Helsinki&forecast_days=1`;
+const response = await fetch(url);
+if (!response.ok) throw new Error(‘Sää-haku epäonnistui’);
+const data = await response.json();
+const hourly = data.hourly;
+if (!hourly || !hourly.windspeed_10m || hourly.windspeed_10m.length === 0) {
+throw new Error(‘Sää-dataa ei saatavilla’);
+}
+const idx = hourly.windspeed_10m.length - 1;
+const wind = hourly.windspeed_10m[idx];
+const temp = hourly.temperature_2m[idx];
+const weatherCode = hourly.weathercode[idx];
+const weatherDescriptions = {
+0: ‘Selkeä’,
+1: ‘Lähes selkeä’,
+2: ‘Pilvinen’,
+3: ‘Pilvinen’,
+45: ‘Sumu’,
+48: ‘Sumu’,
+51: ‘Drizzle’,
+53: ‘Drizzle’,
+55: ‘Drizzle’,
+61: ‘Sade’,
+63: ‘Sade’,
+65: ‘Kova sade’,
+71: ‘Lumi’,
+73: ‘Lumi’,
+75: ‘Kova lumi’,
+77: ‘Lumi’,
+80: ‘Sade’,
+81: ‘Kova sade’,
+82: ‘Erittäin kova sade’,
+85: ‘Lumi’,
+86: ‘Lumi’,
+95: ‘Ukkonen’,
+96: ‘Ukkonen’,
+99: ‘Ukkonen’
+};
+const weather = weatherDescriptions[weatherCode] || ‘Tuntematon’;
+const windDesc = wind < 1 ? ‘0m’ : wind < 2 ? ‘0-1m’ : wind < 4 ? ‘1-2m’ : wind < 6 ? ‘2-3m’ : wind < 8 ? ‘3-4m’ : wind < 10 ? ‘4-5m’ : ‘5m+’;
+return `${weather}, ${windDesc} tuuli, ${temp}°C`;
+} catch (error) {
+throw new Error(‘Merisää-haku epäonnistui: ’ + error.message);
+}
+}
+const DB = {
+entries: ‘quartet_entries_v2027’,
+locations: ‘quartet_locations_v2027’,
+getEntries() {
+try {
+return JSON.parse(localStorage.getItem(this.entries) || ‘[]’);
+} catch {
+return [];
+}
+},
+setEntries(entries) {
+localStorage.setItem(this.entries, JSON.stringify(entries));
+},
+getLocations() {
+try {
+return JSON.parse(localStorage.getItem(this.locations) || ‘[]’);
+} catch {
+return [];
+}
+},
+setLocations(locations) {
+localStorage.setItem(this.locations, JSON.stringify(locations));
+},
+addLocation(location) {
+const locations = this.getLocations();
+location.id = Date.now().toString();
+location.timestamp = new Date().toISOString();
+locations.push(location);
+this.setLocations(locations);
+},
+addEntry(entry) {
+const entries = this.getEntries();
+entry.id = Date.now().toString();
+entry.createdAt = new Date().toISOString();
+entries.push(entry);
+this.setEntries(entries);
+},
+backup() {
+return {
+version: APP_VERSION,
+entries: this.getEntries(),
+locations: this.getLocations(),
+timestamp: new Date().toISOString()
+};
+},
+restore(data) {
+this.setEntries(data.entries || []);
+if (data.locations) this.setLocations(data.locations);
+}
+};
+const UI = {
+currentEditingId: null,
+init() {
+console.log(‘🛰️ Quartet Loki v’ + APP_VERSION);
+this.setupTabNavigation();
+this.setupEventListeners();
+this.render();
+},
+setupTabNavigation() {
+document.querySelectorAll(’.tab-btn’).forEach(btn => {
+btn.addEventListener(‘click’, (e) => {
+e.preventDefault();
+document.querySelectorAll(’.tab-btn’).forEach(b => b.classList.remove(‘active’));
+document.querySelectorAll(’.tab-content’).forEach(c => c.classList.remove(‘active’));
+btn.classList.add(‘active’);
+document.getElementById(btn.dataset.tab).classList.add(‘active’);
+});
+});
+},
+setupEventListeners() {
+const addListener = (id, callback) => {
+const el = document.getElementById(id);
+if (el) {
+el.addEventListener(‘click’, callback);
+el.addEventListener(‘touchstart’, (e) => {
+e.preventDefault();
+callback();
+}, { passive: false });
+}
+};
+addListener(‘newEntryBtn’, () => this.openEntryModal());
+addListener(‘closeModalBtn’, () => this.closeEntryModal());
+addListener(‘saveEntryBtn’, () => this.saveEntry());
+addListener(‘exportDataBtn’, () => this.exportData());
+addListener(‘backupBtn’, () => this.backup());
+addListener(‘restoreAutoBackupBtn’, () => this.restoreAutoBackup());
+addListener(‘useGpsBtn’, () => this.useGPS());
+addListener(‘addLocationBtn’, () => this.addLocation());
+addListener(‘fetchWeatherBtn’, () => this.fetchWeatherForEntry());
+// ✅ KORJAUS 2: GPS-napit modalissa käyttävät data-attribuutteja
+document.querySelectorAll(’.gps-btn’).forEach(btn => {
+btn.addEventListener(‘click’, (e) => {
+e.preventDefault();
+const fieldId = btn.dataset.field;
+const coordsDisplayId = btn.dataset.coords;
+this.getGpsForField(fieldId, coordsDisplayId, btn);
+});
+});
+},
+openEntryModal() {
+document.getElementById(‘entryDate’).valueAsDate = new Date();
+document.getElementById(‘entryCaptain’).value = DEFAULT_CAPTAIN;
+document.getElementById(‘entryWeather’).value = ‘’;
+document.getElementById(‘entryModal’).classList.add(‘active’);
+},
+closeEntryModal() {
+document.getElementById(‘entryModal’).classList.remove(‘active’);
+},
+saveEntry() {
+const date = document.getElementById(‘entryDate’).value;
+if (!date) {
+alert(‘⚠️ Täytä päivämäärä’);
+return;
+}
+const entry = {
+date,
+captain: document.getElementById(‘entryCaptain’).value || DEFAULT_CAPTAIN,
+departurePort: document.getElementById(‘entryDeparturePort’).value,
+arrivalPort: document.getElementById(‘entryArrivalPort’).value,
+route: document.getElementById(‘entryRoute’).value,
+nauticalMiles: parseFloat(document.getElementById(‘entryNauticalMiles’).value) || 0,
+weather: document.getElementById(‘entryWeather’).value
+};
+DB.addEntry(entry);
+this.closeEntryModal();
+this.render();
+},
+render() {
+const entries = DB.getEntries();
+const container = document.getElementById(‘entriesList’);
+if (entries.length === 0) {
+container.innerHTML = ‘<div class="no-data">📭 Ei merkintöjä vielä.</div>’;
+return;
+}
+let html = ‘<table class="data-table"><thead><tr><th>Päivä</th><th>Kipari</th><th>Reitti</th><th>Mailit</th></tr></thead><tbody>’;
+entries.forEach(entry => {
+html += `<tr>
+
+ <td>${entry.date}</td>
+ <td>${entry.captain}</td>
+ <td>${entry.route || '-'}</td>
+ <td>${entry.nauticalMiles}</td>
+ </tr>`;
+ });
+ html += '</tbody></table>';
+ container.innerHTML = html;
+ },
+ useGPS() {
+ const btn = document.getElementById('useGpsBtn');
+ btn.textContent = '⏳ Etsitään...';
+ btn.disabled = true;
+ navigator.geolocation.getCurrentPosition(
+ (pos) => {
+ const lat = formatCoordinates(pos.coords.latitude, false); // Leveysaste
+ const lon = formatCoordinates(pos.coords.longitude, true);  // Pituusaste
+ document.getElementById('locationLat').value = lat;
+ document.getElementById('locationLon').value = lon;
+ btn.textContent = '✅ OK';
+ setTimeout(() => {
+ btn.textContent = '🛰️ Käytä GPS:ää';
+ btn.disabled = false;
+ }, 2000);
+ },
+ (err) => {
+ alert('⚠️ GPS-virhe: ' + err.message + '\n\nOle hyvä ja varmista, että käytät HTTPS:ää tai localhost-kehitysympäristöä.');
+ btn.textContent = '🛰️ Käytä GPS:ää';
+ btn.disabled = false;
+ }
+ );
+ },
+ // ✅ KORJAUS 3: getGpsForField saa btn-parametrin
+ getGpsForField(fieldId, coordsDisplayId, btn) {
+ if (!btn) {
+ console.error('GPS-nappi ei löytynyt');
+ return;
+ }
+ btn.textContent = '⏳ Etsitään...';
+ btn.disabled = true;
+ navigator.geolocation.getCurrentPosition(
+ (pos) => {
+ // Tunnista onko leveysaste vai pituusaste nimen perusteella
+ const isLongitude = fieldId.includes('Lon') || fieldId.includes('arrival');
+ const lat = formatCoordinates(pos.coords.latitude, false);
+ const lon = formatCoordinates(pos.coords.longitude, true);
+ const coord = isLongitude ? lon : lat;
+
+document.getElementById(fieldId).value = document.getElementById(fieldId).value || coord;
+document.getElementById(coordsDisplayId).textContent = `📍 Lat: ${lat} | Lon: ${lon}`;
+document.getElementById(coordsDisplayId).style.display = ‘block’;
+btn.textContent = ‘✅ OK’;
+setTimeout(() => {
+btn.textContent = ‘🛰️ GPS’;
+btn.disabled = false;
+}, 2000);
+},
+(err) => {
+alert(’⚠️ GPS-virhe: ’ + err.message + ‘\n\nOle hyvä ja varmista:\n1) HTTPS-protokolla käytössä\n2) Paikallista pääsy sallittu\n3) Geolocation käytössä’);
+btn.textContent = ‘🛰️ GPS’;
+btn.disabled = false;
+}
+);
+},
+async fetchWeatherForEntry() {
+const btn = document.getElementById(‘fetchWeatherBtn’);
+const status = document.getElementById(‘weatherStatus’);
+btn.textContent = ‘⏳ Haetaan…’;
+btn.disabled = true;
+status.className = ‘weather-status loading’;
+status.textContent = ‘☁️ Haetaan merisää…’;
+navigator.geolocation.getCurrentPosition(
+async (pos) => {
+try {
+const weather = await fetchMarineWeather(pos.coords.latitude, pos.coords.longitude);
+document.getElementById(‘entryWeather’).value = weather;
+status.className = ‘weather-status success’;
+status.textContent = ’✅ ’ + weather;
+btn.textContent = ‘☁️ Hae merisää GPS:llä’;
+btn.disabled = false;
+setTimeout(() => {
+status.className = ‘’;
+}, 3000);
+} catch (error) {
+status.className = ‘weather-status error’;
+status.textContent = ’❌ ’ + error.message;
+btn.textContent = ‘☁️ Hae merisää GPS:llä’;
+btn.disabled = false;
+}
+},
+(err) => {
+status.className = ‘weather-status error’;
+status.textContent = ’❌ GPS-virhe: ’ + err.message;
+btn.textContent = ‘☁️ Hae merisää GPS:llä’;
+btn.disabled = false;
+}
+);
+},
+addLocation() {
+const lat = parseFloat(document.getElementById(‘locationLat’).value);
+const lon = parseFloat(document.getElementById(‘locationLon’).value);
+const name = document.getElementById(‘locationName’).value || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+if (isNaN(lat) || isNaN(lon)) {
+alert(‘⚠️ Syötä koordinaatit’);
+return;
+}
+DB.addLocation({ lat, lon, name });
+document.getElementById(‘locationLat’).value = ‘’;
+document.getElementById(‘locationLon’).value = ‘’;
+document.getElementById(‘locationName’).value = ‘’;
+this.renderLocations();
+},
+renderLocations() {
+const locations = DB.getLocations();
+const container = document.getElementById(‘locationsList’);
+if (locations.length === 0) {
+container.innerHTML = ‘<p style="text-align: center; color: #999;">📭 Ei paikkoja.</p>’;
+return;
+}
+let html = ‘’;
+locations.forEach(loc => {
+html += `<div style="padding: 8px; background: #f5f5f5; border-radius: 4px; margin-bottom: 8px;">
+
+ <div style="font-weight: 600;">📍 ${loc.name}</div>
+ <div style="font-size: 0.85em; color: #666;">${loc.lat.toFixed(4)}, ${loc.lon.toFixed(4)}</div>
+ </div>`;
+ });
+ container.innerHTML = html;
+ },
+ exportData() {
+ const entries = DB.getEntries();
+ let csv = 'Päivä,Kipari,Reitti,Mailit,Sää\n';
+ entries.forEach(e => {
+ csv += `"${e.date}","${e.captain}","${e.route}","${e.nauticalMiles}","${e.weather}"\n`;
+ });
+ const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+ const link = document.createElement('a');
+ link.href = URL.createObjectURL(blob);
+ link.download = `quartet_${new Date().toISOString().split('T')[0]}.csv`;
+ link.click();
+ },
+ backup() {
+ const backup = DB.backup();
+ const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+ const link = document.createElement('a');
+ link.href = URL.createObjectURL(blob);
+ link.download = `quartet_backup_${new Date().toISOString().split('T')[0]}.json`;
+ link.click();
+ alert('💾 Latautunut!');
+ },
+ restoreAutoBackup() {
+ try {
+ const backup = localStorage.getItem('quartet_auto_backup_latest');
+ if (!backup) {
+ alert('❌ Ei varmuuskopiota');
+ return;
+ }
+ const data = JSON.parse(backup);
+ if (confirm(`🔄 Palauta ${data.entries?.length || 0} merkintää?`)) {
+ DB.restore(data);
+ this.render();
+ alert('✅ Palautettu!');
+ }
+ } catch (err) {
+ alert('❌ Virhe: ' + err.message);
+ }
+ }
+ };
+ document.addEventListener('DOMContentLoaded', () => {
+ UI.init();
+ });
+ </script>
 </body>
 </html>
