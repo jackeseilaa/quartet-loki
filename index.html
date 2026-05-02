@@ -568,12 +568,12 @@
                     <p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">Merkitse laivan sijainti GPS:n tai manuaalisen syöttönsä avulla.</p>
 
                     <div class="form-group">
-                        <label>Leveysaste (Latitude) DDMMSS</label>
-                        <input type="text" id="locationLat" placeholder="602530N" style="font-family: monospace;">
+                        <label>Leveysaste (Latitude) DD°MM'SS"</label>
+                        <input type="text" id="locationLat" placeholder="60°08'54.0&quot;N" style="font-family: monospace;">
                     </div>
                     <div class="form-group">
-                        <label>Pituusaste (Longitude) DDMMSS</label>
-                        <input type="text" id="locationLon" placeholder="242530E" style="font-family: monospace;">
+                        <label>Pituusaste (Longitude) DD°MM'SS"</label>
+                        <input type="text" id="locationLon" placeholder="24°59'23.3&quot;E" style="font-family: monospace;">
                     </div>
                     <div class="form-group">
                         <label>Paikan nimi (valinnainen)</label>
@@ -797,8 +797,29 @@
         const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
         const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
         const ICLOUD_SYNC_INTERVAL = 60 * 60 * 1000; // 1 hour
+        
+        // Roihuvuoren Venekerho (Helsinki) - s/y Quartet kotilaiturin osoite
+        const DEFAULT_DEPARTURE_PORT = 'Roihuvuori, RVK';
+        const DEFAULT_DEPARTURE_LAT = '60°08\'54.0"N'; // 60.148333
+        const DEFAULT_DEPARTURE_LON = '24°59\'23.3"E'; // 24.989806
 
         // ==================== DATA MANAGEMENT ====================
+        // ==================== KOORDINAATTIEN MUOTOILU ====================
+        function formatCoordinateToDMS(decimal, isLongitude = false) {
+            const value = parseFloat(decimal);
+            const direction = isLongitude 
+                ? (value >= 0 ? 'E' : 'W')
+                : (value >= 0 ? 'N' : 'S');
+            
+            const abs = Math.abs(value);
+            const degrees = Math.floor(abs);
+            const minutesDecimal = (abs - degrees) * 60;
+            const minutes = Math.floor(minutesDecimal);
+            const seconds = ((minutesDecimal - minutes) * 60).toFixed(1);
+            
+            return `${String(degrees).padStart(2, '0')}°${String(minutes).padStart(2, '0')}'${String(parseFloat(seconds)).padStart(4, '0')}"${direction}`;
+        }
+
         // ==================== MERISÄÄ-HAKU ====================
         async function fetchMarineWeather(latitude, longitude) {
             try {
@@ -1145,8 +1166,11 @@
                     document.getElementById('entryKayttotarkoitus').value = entry.kayttotarkoitus;
                 } else {
                     document.getElementById('entryDate').valueAsDate = new Date();
+                    document.getElementById('entryCaptain').value = DEFAULT_CAPTAIN;
+                    document.getElementById('entryDeparturePort').value = DEFAULT_DEPARTURE_PORT;
                     document.getElementById('entryVuokralainen').value = '';
                     document.getElementById('entryKayttotarkoitus').value = '';
+                    document.getElementById('entryWeather').value = '';
                 }
 
                 modal.classList.add('active');
@@ -1268,8 +1292,10 @@
 
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        document.getElementById('locationLat').value = position.coords.latitude.toFixed(4);
-                        document.getElementById('locationLon').value = position.coords.longitude.toFixed(4);
+                        const lat = formatCoordinateToDMS(position.coords.latitude, false);
+                        const lon = formatCoordinateToDMS(position.coords.longitude, true);
+                        document.getElementById('locationLat').value = lat;
+                        document.getElementById('locationLon').value = lon;
                         useGpsBtn.textContent = '✅ GPS OK';
                         setTimeout(() => {
                             useGpsBtn.textContent = '📡 Käytä GPS:ää';
@@ -1357,10 +1383,12 @@
                 locations.forEach(loc => {
                     const time = new Date(loc.timestamp);
                     const timeStr = time.toLocaleString('fi-FI');
+                    const latDMS = formatCoordinateToDMS(loc.lat, false);
+                    const lonDMS = formatCoordinateToDMS(loc.lon, true);
                     html += `<div class="location-item">
                         <div>
                             <div style="font-weight: 600;">${loc.name}</div>
-                            <div style="font-size: 0.8em; color: #666;">📍 ${loc.lat.toFixed(4)}, ${loc.lon.toFixed(4)}</div>
+                            <div style="font-size: 0.8em; color: #666;">📍 ${latDMS} ${lonDMS}</div>
                             <div class="location-time">${timeStr}</div>
                         </div>
                         <button class="btn btn-danger delete-loc-btn" data-id="${loc.id}" style="padding: 4px 8px; font-size: 0.8em;">Poista</button>
