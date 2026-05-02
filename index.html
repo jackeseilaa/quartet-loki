@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2027.5 (Journey Tracking & GPS)</title>
+    <title>Quartet Loki - v2030.0 (Journey Tracking & GPS)</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -519,7 +519,7 @@
         <header>
             <h1>🎼 Quartet Loki - PREMIUM</h1>
             <div class="subtitle">
-                <span class="version-badge" id="versionBadge">v2027.5</span>
+                <span class="version-badge" id="versionBadge">v2030.0</span>
                 <span id="lastSyncTime">Offline</span>
                 <span class="sync-indicator" id="syncIndicator"></span>
             </div>
@@ -673,7 +673,7 @@
                     <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
                     <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                         <strong>Quartet Loki PREMIUM</strong><br>
-                        <span id="versionDetail">v2027.5 - Fixed</span><br>
+                        <span id="versionDetail">v2030.0 - GPS Merisää</span><br>
                         Offline-pohjainen arkkitehtuuri<br>
                         <span id="dbSize"></span><br>
                         <span id="lastBackup"></span>
@@ -735,12 +735,20 @@
 
             <div class="form-group">
                 <label>Lähtösatama</label>
-                <input type="text" id="entryDeparturePort" placeholder="esim. Helsinki, RVK">
+                <div style="display: flex; gap: 8px; align-items: flex-end;">
+                    <input type="text" id="entryDeparturePort" placeholder="esim. Helsinki, RVK" style="flex: 1;">
+                    <button class="btn btn-secondary btn-small" id="depGpsBtn" style="padding: 10px 12px; white-space: nowrap;">🛰️ GPS</button>
+                </div>
+                <div id="depGpsCoords" style="font-family: monospace; font-size: 0.8em; color: #666; background: #f5f5f5; padding: 6px; border-radius: 4px; margin-top: 4px; display: none;"></div>
             </div>
 
             <div class="form-group">
                 <label>Tulosatama</label>
-                <input type="text" id="entryArrivalPort" placeholder="esim. Porvoo">
+                <div style="display: flex; gap: 8px; align-items: flex-end;">
+                    <input type="text" id="entryArrivalPort" placeholder="esim. Porvoo" style="flex: 1;">
+                    <button class="btn btn-secondary btn-small" id="arrGpsBtn" style="padding: 10px 12px; white-space: nowrap;">🛰️ GPS</button>
+                </div>
+                <div id="arrGpsCoords" style="font-family: monospace; font-size: 0.8em; color: #666; background: #f5f5f5; padding: 6px; border-radius: 4px; margin-top: 4px; display: none;"></div>
             </div>
 
             <div class="form-group">
@@ -793,7 +801,7 @@
 
     <script>
         // ==================== VERSION & CONSTANTS ====================
-        const APP_VERSION = '2027.5';
+        const APP_VERSION = '2030.0';
         const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
         const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
         const ICLOUD_SYNC_INTERVAL = 60 * 60 * 1000; // 1 hour
@@ -1131,6 +1139,8 @@
                 addTouchListener(document.getElementById('useGpsBtn'), () => this.useGPS());
                 addTouchListener(document.getElementById('addLocationBtn'), () => this.addLocation());
                 addTouchListener(document.getElementById('fetchWeatherBtn'), () => this.fetchWeatherForEntry());
+                addTouchListener(document.getElementById('depGpsBtn'), () => this.getGpsForPort('entryDeparturePort', 'depGpsCoords'));
+                addTouchListener(document.getElementById('arrGpsBtn'), () => this.getGpsForPort('entryArrivalPort', 'arrGpsCoords'));
 
                 // Journey buttons
                 const changeCaptainBtn = document.getElementById('changeCaptainBtn');
@@ -1480,6 +1490,35 @@
                 );
             },
 
+            getGpsForPort(portFieldId, coordsDisplayId) {
+                const btn = event.target;
+                btn.textContent = '⏳ Etsitään...';
+                btn.disabled = true;
+                const coordsDiv = document.getElementById(coordsDisplayId);
+                
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        const latDMS = formatCoordinateToDMS(pos.coords.latitude, false);
+                        const lonDMS = formatCoordinateToDMS(pos.coords.longitude, true);
+                        
+                        // Näytä koordinaatit
+                        coordsDiv.textContent = `📍 ${latDMS} ${lonDMS}`;
+                        coordsDiv.style.display = 'block';
+                        
+                        btn.textContent = '✅ OK';
+                        setTimeout(() => {
+                            btn.textContent = '🛰️ GPS';
+                            btn.disabled = false;
+                        }, 2000);
+                    },
+                    (err) => {
+                        alert('⚠️ GPS-virhe: ' + err.message);
+                        btn.textContent = '🛰️ GPS';
+                        btn.disabled = false;
+                    }
+                );
+            },
+
             generateReport() {
                 const entries = DB.getEntries();
                 const totalMiles = entries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0);
@@ -1665,6 +1704,9 @@
             updateVersionInfo() {
                 const versionBadge = document.getElementById('versionBadge');
                 if (versionBadge) versionBadge.textContent = `v${APP_VERSION}`;
+
+                const versionDetail = document.getElementById('versionDetail');
+                if (versionDetail) versionDetail.textContent = `v${APP_VERSION} - GPS Merisää`;
 
                 const lastSync = document.getElementById('lastSyncTime');
                 if (lastSync) lastSync.textContent = 'Ready';
