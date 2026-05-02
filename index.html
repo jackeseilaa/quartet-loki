@@ -1182,19 +1182,56 @@
             this.currentEditingId = id;
             const modal = document.getElementById('entryModal');
 
+            // TYHJENNÄ lomake ensin
+            document.getElementById('entryDate').value = '';
+            document.getElementById('entryCaptain').value = DEFAULT_CAPTAIN;
+            document.getElementById('entryDeparturePort').value = DEFAULT_DEPARTURE_PORT;
+            document.getElementById('entryArrivalPort').value = '';
+            document.getElementById('entryRoute').value = '';
+            document.getElementById('entryNauticalMiles').value = '';
+            document.getElementById('entryEngineHoursStart').value = '';
+            document.getElementById('entryEngineHoursEnd').value = '';
+            document.getElementById('entryCrew').value = '';
+            document.getElementById('entryVuokralainen').value = '';
+            document.getElementById('entryKayttotarkoitus').value = '';
+            document.getElementById('entryWeather').value = '';
+            document.getElementById('entryStartTime').value = '';
+            document.getElementById('entryEndTime').value = '';
+            document.getElementById('entryNotes').value = '';
+
             if (id) {
+                // Etsi merkintä ID:llä
                 const entry = DB.getEntries().find(e => e.id === id);
-                document.getElementById('entryDate').value = entry.date;
-                document.getElementById('entryCaptain').value = entry.captain || '';
-                document.getElementById('entryVuokralainen').value = entry.vuokralainen;
-                document.getElementById('entryKayttotarkoitus').value = entry.kayttotarkoitus;
+                if (!entry) {
+                    console.error(`❌ Merkintää ${id} ei löydy!`);
+                    alert('Virhe: Merkintää ei löydy!');
+                    return;
+                }
+
+                console.log(`✏️ Muokataan merkintää: ${entry.date}`);
+
+                // Lataa KAIKKI kentät
+                document.getElementById('entryDate').value = entry.date || '';
+                document.getElementById('entryCaptain').value = entry.captain || DEFAULT_CAPTAIN;
+                document.getElementById('entryDeparturePort').value = entry.departurePort || '';
+                document.getElementById('entryArrivalPort').value = entry.arrivalPort || '';
+                document.getElementById('entryRoute').value = entry.route || '';
+                document.getElementById('entryNauticalMiles').value = entry.nauticalMiles || '';
+                document.getElementById('entryEngineHoursStart').value = entry.engineHoursStart || '';
+                document.getElementById('entryEngineHoursEnd').value = entry.engineHoursEnd || '';
+                document.getElementById('entryCrew').value = entry.personnel || entry.crew || '';
+                document.getElementById('entryVuokralainen').value = entry.vuokralainen || '';
+                document.getElementById('entryKayttotarkoitus').value = entry.kayttotarkoitus || '';
+                document.getElementById('entryWeather').value = entry.weather || '';
+                document.getElementById('entryStartTime').value = entry.startTime || '';
+                document.getElementById('entryEndTime').value = entry.endTime || '';
+                document.getElementById('entryNotes').value = entry.notes || '';
             } else {
+                // Uusi merkintä - aseta oletusarvot
                 document.getElementById('entryDate').valueAsDate = new Date();
                 document.getElementById('entryCaptain').value = DEFAULT_CAPTAIN;
                 document.getElementById('entryDeparturePort').value = DEFAULT_DEPARTURE_PORT;
-                document.getElementById('entryVuokralainen').value = '';
-                document.getElementById('entryKayttotarkoitus').value = '';
-                document.getElementById('entryWeather').value = '';
+                console.log('📝 Uusi merkintä');
             }
 
             modal.classList.add('active');
