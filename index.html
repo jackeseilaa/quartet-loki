@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2027.4 (Journey Tracking & GPS)</title>
+    <title>Quartet Loki - v2027.5 (Journey Tracking & GPS)</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -375,14 +375,6 @@
             font-weight: 700;
         }
 
-        .location-widget {
-            background: #f0f7ff;
-            border: 2px dashed #667eea;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 16px;
-        }
-
         .location-item {
             display: flex;
             justify-content: space-between;
@@ -527,7 +519,7 @@
         <header>
             <h1>🎼 Quartet Loki - PREMIUM</h1>
             <div class="subtitle">
-                <span class="version-badge" id="versionBadge">v2027.3 (iCloud)</span>
+                <span class="version-badge" id="versionBadge">v2027.5</span>
                 <span id="lastSyncTime">Offline</span>
                 <span class="sync-indicator" id="syncIndicator"></span>
             </div>
@@ -567,14 +559,14 @@
             <!-- LOCATIONS TAB -->
             <div id="locations" class="tab-content">
                 <h2 style="margin-bottom: 16px; font-size: 1.1em;">📍 Paikan merkinnät</h2>
-                
+
                 <!-- Journey Status -->
                 <div id="journeyStatus"></div>
 
                 <div class="form-section">
                     <h3 style="margin-bottom: 12px;">📡 GPS-PAIKKA</h3>
                     <p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">Merkitse laivan sijainti GPS:n tai manuaalisen syöttönsä avulla.</p>
-                    
+
                     <div class="form-group">
                         <label>Leveysaste (Latitude) DDMMSS</label>
                         <input type="text" id="locationLat" placeholder="602530N" style="font-family: monospace;">
@@ -587,7 +579,7 @@
                         <label>Paikan nimi (valinnainen)</label>
                         <input type="text" id="locationName" placeholder="esim. Tallinna, avomeri jne">
                     </div>
-                    
+
                     <div class="action-buttons" style="margin-bottom: 12px;">
                         <button class="btn btn-primary" id="useGpsBtn">📡 Käytä GPS:ää</button>
                         <button class="btn btn-success" id="addLocationBtn">Lisää paikka</button>
@@ -598,7 +590,6 @@
                     <h3 style="margin-bottom: 12px; font-size: 1em;">Merkityt paikat</h3>
                     <div id="locationsList"></div>
                 </div>
-            </div>
             </div>
 
             <!-- ACCOUNTING TAB -->
@@ -667,10 +658,9 @@
                     <p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">Synkronoi automaattisesti iCloud Driven kanssa. Kaikki laitteet näkevät samat tiedot.</p>
                     <div id="icloudStatus" style="margin-bottom: 12px; padding: 10px; background: #d1f5d3; border-radius: 6px; font-size: 0.9em;">
                         ✅ iCloud Drive aktiivinen<br>
-                        <span style="font-size: 0.85em; color: #666;" id="icloudStatusDetail">Synkronointi aktiivinen - Seuraava auto-sync: ~1h</span>
+                        <span style="font-size: 0.85em; color: #666;" id="icloudStatusDetail">Synkronointi aktiivinen</span>
                     </div>
                     <button class="btn btn-success" id="syncNowBtn">🔄 Synkronoi nyt iCloud:iin</button>
-                    <label for="jsonRestoreInput" class="btn btn-secondary" style="cursor: pointer; margin: 0; display: block; text-align: center;">📥 Lataa iCloud:ista</label>
                 </div>
 
                 <div class="form-section">
@@ -683,7 +673,7 @@
                     <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
                     <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                         <strong>Quartet Loki PREMIUM</strong><br>
-                        v2027.1 (iOS-first)<br>
+                        <span id="versionDetail">v2027.5 - Fixed</span><br>
                         Offline-pohjainen arkkitehtuuri<br>
                         <span id="dbSize"></span><br>
                         <span id="lastBackup"></span>
@@ -795,82 +785,21 @@
         </div>
     </div>
 
-    <!-- Hidden file inputs for iOS (triggered via labels) -->
+    <!-- Hidden file inputs for iOS -->
     <input type="file" id="csvImportInput" accept=".csv" style="display:none;" />
     <input type="file" id="jsonRestoreInput" accept=".json" style="display:none;" />
 
     <script>
-        // ==================== VERSIO & SYNC ====================
-        const APP_VERSION = '2027.4';
-
+        // ==================== VERSION & CONSTANTS ====================
+        const APP_VERSION = '2027.5';
         const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
         const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
-
-        const APP_BUILD_DATE = '2026-04-15T15:00:00Z';
-        const ICLOUD_SYNC_INTERVAL = 60 * 60 * 1000; // 1 tunti
-        const ICLOUD_FILENAME = 'Quartet_Loki_iCloud_Backup.json';
-
-        // ==================== ICLOUD DRIVE SYNC ====================
-        const iCloudSync = {
-            lastSync: null,
-            nextSyncTime: null,
-
-            async init() {
-                this.lastSync = localStorage.getItem('icloud_lastSync');
-                this.calculateNextSync();
-                console.log('✅ iCloud Drive synkronointi aktiivinen');
-                return true;
-            },
-
-            calculateNextSync() {
-                const now = new Date();
-                this.nextSyncTime = new Date(now.getTime() + ICLOUD_SYNC_INTERVAL);
-            },
-
-            async exportToICloud(data) {
-                try {
-                    // Viedään JSON-muodossa
-                    const json = JSON.stringify(data, null, 2);
-                    const blob = new Blob([json], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `${ICLOUD_FILENAME}`;
-                    link.click();
-
-                    // Tallenna sync-aika
-                    const syncTime = new Date().toISOString();
-                    localStorage.setItem('icloud_lastSync', syncTime);
-                    this.lastSync = syncTime;
-                    this.calculateNextSync();
-
-                    console.log('✅ Exported to iCloud');
-                    return true;
-                } catch (err) {
-                    console.error('iCloud export error:', err);
-                    return false;
-                }
-            },
-
-            getNextSyncIn() {
-                if (!this.nextSyncTime) return '...';
-                const now = new Date();
-                const diff = this.nextSyncTime - now;
-                if (diff <= 0) return 'Seuraava synkronointi';
-
-                const hours = Math.floor(diff / (1000 * 60 * 60));
-                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-                if (hours > 0) return `~${hours}h ${mins}m`;
-                return `~${mins}m`;
-            }
-        };
+        const ICLOUD_SYNC_INTERVAL = 60 * 60 * 1000; // 1 hour
 
         // ==================== DATA MANAGEMENT ====================
         const DB = {
             entries: 'quartet_entries_v2027',
             locations: 'quartet_locations_v2027',
-            settings: 'quartet_settings_v2027',
             lastSync: 'quartet_lastSync',
 
             getEntries() {
@@ -902,11 +831,8 @@
 
             addLocation(location) {
                 const locations = this.getLocations();
-                const journey = this.getActiveJourney();
                 location.id = Date.now().toString();
                 location.timestamp = new Date().toISOString();
-                location.journeyId = journey ? journey.id : null;
-                location.captain = journey ? journey.captain : DEFAULT_CAPTAIN;
                 locations.push(location);
                 this.setLocations(locations);
                 return location;
@@ -980,978 +906,9 @@
             clear() {
                 localStorage.removeItem(this.entries);
                 localStorage.removeItem(this.locations);
-            }
-        };
-
-        // ==================== ACCOUNTING LOGIC ====================
-        const Accounting = {
-            calculateEntityStats(entity) {
-                const entries = DB.getEntries().filter(e => e.vuokralainen === entity);
-                return {
-                    tripCount: entries.length,
-                    totalNauticalMiles: entries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0),
-                    totalEngineHours: entries.reduce((sum, e) => {
-                        const start = parseFloat(e.engineHoursStart) || 0;
-                        const end = parseFloat(e.engineHoursEnd) || 0;
-                        return sum + (end - start);
-                    }, 0),
-                    charterTrips: entries.filter(e => e.kayttotarkoitus === 'charter').length,
-                    educationTrips: entries.filter(e => e.kayttotarkoitus === 'koulutus').length,
-                    ownUse: entries.filter(e => e.kayttotarkoitus === 'oma-kaytto').length
-                };
             },
 
-            calculateCosts() {
-                const entries = DB.getEntries();
-                const totalEngineHours = entries.reduce((sum, e) => {
-                    const start = parseFloat(e.engineHoursStart) || 0;
-                    const end = parseFloat(e.engineHoursEnd) || 0;
-                    return sum + (end - start);
-                }, 0);
-
-                const fuelCost = 150;
-                const maintenanceCost = 50;
-                const insuranceCost = 200;
-                const moorageCost = 300;
-
-                return {
-                    totalVariable: (fuelCost + maintenanceCost) * totalEngineHours,
-                    totalFixed: insuranceCost + moorageCost
-                };
-            },
-
-            allocateByUsage() {
-                const stats = {
-                    tmi: this.calculateEntityStats('tmi'),
-                    oy: this.calculateEntityStats('oy'),
-                    oma: this.calculateEntityStats('oma')
-                };
-
-                const costs = this.calculateCosts();
-                const totalTrips = stats.tmi.tripCount + stats.oy.tripCount + stats.oma.tripCount;
-
-                return {
-                    stats,
-                    costs,
-                    allocation: {
-                        tmi: {
-                            share: totalTrips > 0 ? (stats.tmi.tripCount / totalTrips * 100).toFixed(1) : 0,
-                            variableCost: ((stats.tmi.tripCount / totalTrips) * costs.totalVariable).toFixed(2),
-                            fixedCost: ((stats.tmi.tripCount / totalTrips) * costs.totalFixed).toFixed(2)
-                        },
-                        oy: {
-                            share: totalTrips > 0 ? (stats.oy.tripCount / totalTrips * 100).toFixed(1) : 0,
-                            variableCost: ((stats.oy.tripCount / totalTrips) * costs.totalVariable).toFixed(2),
-                            fixedCost: ((stats.oy.tripCount / totalTrips) * costs.totalFixed).toFixed(2)
-                        },
-                        oma: {
-                            share: totalTrips > 0 ? (stats.oma.tripCount / totalTrips * 100).toFixed(1) : 0,
-                            variableCost: ((stats.oma.tripCount / totalTrips) * costs.totalVariable).toFixed(2),
-                            fixedCost: ((stats.oma.tripCount / totalTrips) * costs.totalFixed).toFixed(2)
-                        }
-                    }
-                };
-            }
-        };
-
-        
-
-        // ==================== GPS UTILITIES ====================
-        convertDDMMSSToDecimal(ddmmss, direction) {
-            // Muunna DDMMSS muoto desimaaliksi
-            // 602530N = 60°25'30"N = 60 + 25/60 + 30/3600
-            const dd = parseInt(ddmmss.substring(0, 2));
-            const mm = parseInt(ddmmss.substring(2, 4));
-            const ss = parseInt(ddmmss.substring(4, 6));
-            let decimal = dd + (mm / 60) + (ss / 3600);
-            if (direction === 'S' || direction === 'W') {
-                decimal = -decimal;
-            }
-            return decimal.toFixed(4);
-        },
-
-        convertDecimalToDDMMSS(decimal) {
-            // Muunna desimaali DDMMSS:ksi
-            const abs = Math.abs(parseFloat(decimal));
-            const dd = Math.floor(abs);
-            const mm = Math.floor((abs - dd) * 60);
-            const ss = Math.floor(((abs - dd) * 60 - mm) * 60);
-            return String(dd).padStart(2, '0') + String(mm).padStart(2, '0') + String(ss).padStart(2, '0');
-        },
-
-        getGPS() {
-            return new Promise((resolve) => {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            const lat = position.coords.latitude;
-                            const lon = position.coords.longitude;
-                            const latDDMMSS = this.convertDecimalToDDMMSS(lat) + (lat >= 0 ? 'N' : 'S');
-                            const lonDDMMSS = this.convertDecimalToDDMMSS(lon) + (lon >= 0 ? 'E' : 'W');
-                            resolve({ lat: latDDMMSS, lon: lonDDMMSS, decimal: `${lat}, ${lon}` });
-                        },
-                        (error) => {
-                            console.error('GPS error:', error);
-                            alert('GPS-haku epäonnistui: ' + error.message);
-                            resolve(null);
-                        }
-                    );
-                } else {
-                    alert('GPS ei saatavilla tällä laitteella');
-                    resolve(null);
-                }
-            });
-        }
-
-
-// ==================== UI RENDERING ====================
-        const UI = {
-            currentEditingId: null,
-
-            async init() {
-                console.log('🚀 Quartet Loki v' + APP_VERSION + ' initializing...');
-
-                // Initialize iCloud Drive Sync
-                await iCloudSync.init();
-
-                this.setupTabNavigation();
-                this.setupEventListeners();
-                this.updateVersionInfo();
-                this.render();
-                this.setupAutoBackup();
-                this.setupAutoSync();
-                console.log('✅ Initialized successfully');
-            },
-
-            setupTabNavigation() {
-                const navTabs = document.getElementById('navTabs');
-                const tabBtns = navTabs.querySelectorAll('.tab-btn');
-
-                const handleTabClick = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    const btn = e.target.closest('.tab-btn');
-                    if (!btn) return;
-
-                    // Remove active from all buttons and contents
-                    tabBtns.forEach(b => b.classList.remove('active'));
-                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-
-                    // Add active to clicked button
-                    btn.classList.add('active');
-
-                    // Show corresponding content
-                    const tabId = btn.dataset.tab;
-                    const tabContent = document.getElementById(tabId);
-                    if (tabContent) {
-                        tabContent.classList.add('active');
-
-                        // Render specific content if needed
-                        if (tabId === 'accounting') {
-                            this.renderAccounting();
-                        } else if (tabId === 'reporting') {
-                            this.renderReporting();
-                        } else if (tabId === 'locations') {
-                            this.renderLocations();
-                        }
-                    }
-                };
-
-                tabBtns.forEach(btn => {
-                    // iOS: Listen for both touch and click
-                    btn.addEventListener('touchstart', handleTabClick, { passive: false });
-                    btn.addEventListener('click', handleTabClick, { passive: false });
-                });
-            },
-
-            setupEventListeners() {
-                const addTouchListener = (element, callback) => {
-                    if (!element) return;
-                    const handler = (e) => {
-                        e.preventDefault();
-                        callback();
-                    };
-                    element.addEventListener('touchstart', handler, { passive: false });
-                    element.addEventListener('click', handler, { passive: false });
-                };
-
-                // Special handler for file inputs - don't preventDefault
-                const addFileInputListener = (element, callback) => {
-                    if (!element) return;
-                    const handler = (e) => {
-                        callback();
-                    };
-                    element.addEventListener('touchstart', handler, { passive: true });
-                    element.addEventListener('click', handler, { passive: true });
-                };
-
-                // Entry management
-                const newEntryBtn = document.getElementById('newEntryBtn');
-                const closeModalBtn = document.getElementById('closeModalBtn');
-                const saveEntryBtn = document.getElementById('saveEntryBtn');
-                const exportDataBtn = document.getElementById('exportDataBtn');
-                const csvImportInput = document.getElementById('csvImportInput');
-                const kayttotarkoitusField = document.getElementById('entryKayttotarkoitus');
-
-                addTouchListener(newEntryBtn, () => this.openEntryModal());
-                addTouchListener(closeModalBtn, () => this.closeEntryModal());
-                addTouchListener(saveEntryBtn, () => this.saveEntry());
-                addTouchListener(exportDataBtn, () => this.exportData());
-                if (csvImportInput) csvImportInput.addEventListener('change', (e) => this.importData(e));
-                if (kayttotarkoitusField) kayttotarkoitusField.addEventListener('change', () => this.toggleVuokralainenField());
-                // Journey management
-                const changeCaptainBtn = document.getElementById('changeCaptainBtn');
-                const endJourneyBtn = document.getElementById('endJourneyBtn');
-                
-                if (changeCaptainBtn) addTouchListener(changeCaptainBtn, () => this.changeCaptain());
-                if (endJourneyBtn) addTouchListener(endJourneyBtn, () => {
-                    const arrivalPort = prompt('Tulosatama:');
-                    const arrivalTime = prompt('Tuloaika (HH:MM):');
-                    if (arrivalPort && arrivalTime) {
-                        this.endJourney(arrivalPort, arrivalTime, '');
-                    }
-                });
-
-
-                // Location management
-                const useGpsBtn = document.getElementById('useGpsBtn');
-                const addLocationBtn = document.getElementById('addLocationBtn');
-                addTouchListener(useGpsBtn, () => this.useGPS());
-                addTouchListener(addLocationBtn, () => this.addLocation());
-
-                // Settings
-                const backupBtn = document.getElementById('backupBtn');
-                const restoreAutoBackupBtn = document.getElementById('restoreAutoBackupBtn');
-                const clearAllBtn = document.getElementById('clearAllBtn');
-                const jsonRestoreInput = document.getElementById('jsonRestoreInput');
-                const yearFilter = document.getElementById('yearFilter');
-                const generateReportBtn = document.getElementById('generateReportBtn');
-                const syncNowBtn = document.getElementById('syncNowBtn');
-
-                addTouchListener(backupBtn, () => this.backup());
-                addTouchListener(restoreAutoBackupBtn, () => this.restoreLatestAutoBackup());
-                addTouchListener(clearAllBtn, () => this.clearAll());
-                addTouchListener(generateReportBtn, () => this.generateReport());
-                if (jsonRestoreInput) jsonRestoreInput.addEventListener('change', (e) => this.restore(e));
-                if (yearFilter) yearFilter.addEventListener('change', () => {
-                    this.render();
-                    const reportOutput = document.getElementById('reportOutput');
-                    if (reportOutput && reportOutput.innerHTML.trim()) {
-                        this.renderReporting();
-                    }
-                });
-
-                // Reporting
-                const reportType = document.getElementById('reportType');
-                const reportEntity = document.getElementById('reportEntity');
-                const printReportBtn = document.getElementById('printReportBtn');
-                if (reportType) reportType.addEventListener('change', () => this.generateReport());
-                if (reportEntity) reportEntity.addEventListener('change', () => this.generateReport());
-                addTouchListener(printReportBtn, () => window.print());
-
-                addTouchListener(syncNowBtn, () => this.syncToICloud());
-
-                // File inputs handled directly via labels (iOS compatibility)
-            },
-
-            openEntryModal(id = null) {
-                this.currentEditingId = id;
-                const modal = document.getElementById('entryModal');
-
-                if (id) {
-                    const entry = DB.getEntries().find(e => e.id === id);
-                    document.getElementById('entryDate').value = entry.date;
-                    document.getElementById('entryCaptain').value = entry.captain || '';
-                    document.getElementById('entryCrew').value = entry.crew || '';
-                    document.getElementById('entryVuokralainen').value = entry.vuokralainen;
-                    document.getElementById('entryDeparturePort').value = entry.departurePort || '';
-                    document.getElementById('entryArrivalPort').value = entry.arrivalPort || '';
-                    document.getElementById('entryKayttotarkoitus').value = entry.kayttotarkoitus;
-                    document.getElementById('entryStartTime').value = entry.startTime || '';
-                    document.getElementById('entryEndTime').value = entry.endTime || '';
-                    document.getElementById('entryRoute').value = entry.route || '';
-                    document.getElementById('entryNauticalMiles').value = entry.nauticalMiles || '';
-                    document.getElementById('entryEngineHoursStart').value = entry.engineHoursStart || '';
-                    document.getElementById('entryEngineHoursEnd').value = entry.engineHoursEnd || '';
-                    document.getElementById('entryPersonnel').value = entry.personnel || '';
-                    document.getElementById('entryWeather').value = entry.weather || '';
-                    document.getElementById('entryNotes').value = entry.notes || '';
-                    this.toggleVuokralainenField();
-                } else {
-                    document.getElementById('entryDate').valueAsDate = new Date();
-                    document.getElementById('entryVuokralainen').value = '';
-                    document.getElementById('entryKayttotarkoitus').value = '';
-                    document.getElementById('entryStartTime').value = '';
-                    document.getElementById('entryEndTime').value = '';
-                    document.getElementById('entryRoute').value = '';
-                    document.getElementById('entryNauticalMiles').value = '';
-                    document.getElementById('entryEngineHoursStart').value = '';
-                    document.getElementById('entryEngineHoursEnd').value = '';
-                    document.getElementById('entryPersonnel').value = '';
-                    document.getElementById('entryWeather').value = '';
-                    document.getElementById('entryNotes').value = '';
-                }
-
-                modal.classList.add('active');
-            },
-
-            toggleVuokralainenField() {
-                const kayttotarkoitus = document.getElementById('entryKayttotarkoitus').value;
-                const vuokralainenGroup = document.getElementById('vuokralainenGroup');
-                const vuokralainenField = document.getElementById('entryVuokralainen');
-
-                if (kayttotarkoitus === 'oma-kaytto') {
-                    // Piilotetaan vuokralainen-kenttä, asetetaan "oma"
-                    vuokralainenGroup.style.display = 'none';
-                    vuokralainenField.value = 'oma';
-                    // Poista required-atribuutti
-                    vuokralainenField.removeAttribute('required');
-                } else if (kayttotarkoitus === 'charter' || kayttotarkoitus === 'koulutus' || kayttotarkoitus === 'muu') {
-                    // Näytetään vuokralainen-kenttä
-                    vuokralainenGroup.style.display = 'block';
-                    vuokralainenField.value = '';
-                    // Lisää required-atribuutti
-                    vuokralainenField.setAttribute('required', 'required');
-                } else {
-                    // Oletuksena näytetään
-                    vuokralainenGroup.style.display = 'block';
-                    vuokralainenField.removeAttribute('required');
-                }
-            },
-
-            closeEntryModal() {
-                document.getElementById('entryModal').classList.remove('active');
-                this.currentEditingId = null;
-            },
-
-            saveEntry() {
-                const vuokralainen = document.getElementById('entryVuokralainen').value;
-                const kayttotarkoitus = document.getElementById('entryKayttotarkoitus').value;
-                const date = document.getElementById('entryDate').value;
-
-                if (!date || !kayttotarkoitus) {
-                    alert('Täytä kaikki vaaditut kentät');
-                    return;
-                }
-
-                // Tarkista vuokralainen vain jos ei ole oma-kaytto
-                if (kayttotarkoitus !== 'oma-kaytto' && !vuokralainen) {
-                    alert('Valitse vuokralainen');
-                    return;
-                }
-
-                const entry = {
-                    date,
-                    captain: document.getElementById('entryCaptain').value,
-                    crew: document.getElementById('entryCrew').value,
-                    vuokralainen,
-                    kayttotarkoitus,
-                    departurePort: document.getElementById('entryDeparturePort').value,
-                    arrivalPort: document.getElementById('entryArrivalPort').value,
-                    startTime: document.getElementById('entryStartTime').value,
-                    endTime: document.getElementById('entryEndTime').value,
-                    route: document.getElementById('entryRoute').value,
-                    nauticalMiles: parseFloat(document.getElementById('entryNauticalMiles').value) || 0,
-                    engineHoursStart: parseFloat(document.getElementById('entryEngineHoursStart').value) || 0,
-                    engineHoursEnd: parseFloat(document.getElementById('entryEngineHoursEnd').value) || 0,
-                    personnel: document.getElementById('entryPersonnel').value,
-                    weather: document.getElementById('entryWeather').value,
-                    notes: document.getElementById('entryNotes').value
-                };
-
-                if (this.currentEditingId) {
-                    DB.updateEntry(this.currentEditingId, entry);
-                } else {
-                    DB.addEntry(entry);
-                }
-
-                this.closeEntryModal();
-                this.render();
-            },
-
-            render() {
-                this.renderEntries();
-            },
-
-            renderEntries() {
-                const yearFilter = document.getElementById('yearFilter').value;
-                let entries = DB.getEntries();
-
-                if (yearFilter !== 'all') {
-                    entries = entries.filter(e => (e.year || '2025') === yearFilter);
-                }
-
-                entries = entries.sort((a, b) => new Date(b.date) - new Date(a.date));
-                const container = document.getElementById('entriesList');
-
-                if (entries.length === 0) {
-                    container.innerHTML = '<div class="no-data"><p>Ei merkintöjä vielä.</p></div>';
-                    return;
-                }
-
-                let html = '<table class="data-table"><thead><tr><th>Päivä</th><th>Vuokr.</th><th>Käyttö</th><th>Reitti</th><th>Mailit</th><th>h</th><th>Toiminnot</th></tr></thead><tbody>';
-
-                entries.forEach(entry => {
-                    const hours = (parseFloat(entry.engineHoursEnd) || 0) - (parseFloat(entry.engineHoursStart) || 0);
-                    html += `<tr>
-                        <td>${entry.date}</td>
-                        <td><span class="badge badge-${entry.vuokralainen}">${entry.vuokralainen.toUpperCase()}</span></td>
-                        <td>${entry.kayttotarkoitus}</td>
-                        <td>${entry.route || '-'}</td>
-                        <td>${entry.nauticalMiles || 0}</td>
-                        <td>${hours.toFixed(1)}</td>
-                        <td>
-                            <div class="edit-buttons">
-                                <button class="btn btn-secondary edit-btn" data-id="${entry.id}" data-action="edit">Muokkaa</button>
-                                <button class="btn btn-danger edit-btn" data-id="${entry.id}" data-action="delete">Poista</button>
-                            </div>
-                        </td>
-                    </tr>`;
-                });
-
-                html += '</tbody></table>';
-                container.innerHTML = html;
-
-                // iOS-friendly event delegation
-                container.addEventListener('touchstart', (e) => {
-                    const btn = e.target.closest('.edit-btn');
-                    if (!btn) return;
-                    e.preventDefault();
-                    const id = btn.dataset.id;
-                    const action = btn.dataset.action;
-                    if (action === 'edit') this.openEntryModal(id);
-                    else if (action === 'delete') this.deleteEntry(id);
-                }, { passive: false });
-
-                container.addEventListener('click', (e) => {
-                    const btn = e.target.closest('.edit-btn');
-                    if (!btn) return;
-                    const id = btn.dataset.id;
-                    const action = btn.dataset.action;
-                    if (action === 'edit') this.openEntryModal(id);
-                    else if (action === 'delete') this.deleteEntry(id);
-                });
-            },
-
-            deleteEntry(id) {
-                if (confirm('Poistetaanko merkintä?')) {
-                    DB.deleteEntry(id);
-                    this.render();
-                }
-            },
-
-            // ========== LOCATION MANAGEMENT ==========
-            useGPS() {
-                if (!navigator.geolocation) {
-                    alert('GPS ei saatavilla tässä selaimessa');
-                    return;
-                }
-
-                const useGpsBtn = document.getElementById('useGpsBtn');
-                useGpsBtn.textContent = '📡 Etsitään...';
-                useGpsBtn.disabled = true;
-
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        document.getElementById('locationLat').value = position.coords.latitude.toFixed(4);
-                        document.getElementById('locationLon').value = position.coords.longitude.toFixed(4);
-                        useGpsBtn.textContent = '✅ GPS OK';
-                        useGpsBtn.disabled = false;
-                        setTimeout(() => {
-                            useGpsBtn.textContent = '📡 Käytä GPS:ää';
-                        }, 2000);
-                    },
-                    (error) => {
-                        alert('GPS-virhe: ' + error.message);
-                        useGpsBtn.textContent = '📡 Käytä GPS:ää';
-                        useGpsBtn.disabled = false;
-                    }
-                );
-            },
-
-            addLocation() {
-                const lat = parseFloat(document.getElementById('locationLat').value);
-                const lon = parseFloat(document.getElementById('locationLon').value);
-                const name = document.getElementById('locationName').value || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-
-                if (isNaN(lat) || isNaN(lon)) {
-                    alert('Syötä kelvolliset koordinaatit');
-                    return;
-                }
-
-                DB.addLocation({
-                    lat,
-                    lon,
-                    name
-                });
-
-                document.getElementById('locationLat').value = '';
-                document.getElementById('locationLon').value = '';
-                document.getElementById('locationName').value = '';
-
-                this.renderLocations();
-            },
-            startJourney(departurePort, departureTime, departureGPS, entryId) {
-                const journey = DB.createJourney(departurePort, departureTime, departureGPS, entryId);
-                alert(`✅ Matka aloitettu!
-${departurePort} → ?
-Kipari: ${journey.captain}`);
-                this.renderLocations();
-            },
-
-            endJourney(arrivalPort, arrivalTime, arrivalGPS) {
-                const journey = DB.getActiveJourney();
-                if (!journey) {
-                    alert('❌ Ei aktiivista matkaa');
-                    return;
-                }
-                DB.endJourney(arrivalPort, arrivalTime, arrivalGPS);
-                alert(`✅ Matka päätetty!
-${journey.departurePort} → ${arrivalPort}`);
-                this.renderLocations();
-            },
-
-            changeCaptain() {
-                const journey = DB.getActiveJourney();
-                if (!journey) {
-                    alert('❌ Ei aktiivista matkaa');
-                    return;
-                }
-                const newCaptain = prompt(`Vaihda kiparia
-Nykyinen: ${journey.captain}
-Uusi kipari:`, journey.captain);
-                if (newCaptain && newCaptain !== journey.captain) {
-                    DB.changeCaptain(newCaptain);
-                    this.renderLocations();
-                }
-            },
-
-            async useGPSLocation() {
-                const gps = await this.getGPS();
-                if (gps) {
-                    document.getElementById('locationLat').value = gps.lat;
-                    document.getElementById('locationLon').value = gps.lon;
-                    alert(`✅ GPS-sijainti haettu:
-${gps.decimal}`);
-                }
-            },
-
-            renderJourneyStatus() {
-                const journey = DB.getActiveJourney();
-                const statusDiv = document.getElementById('journeyStatus');
-                
-                if (!statusDiv) return;
-
-                if (journey && journey.status === 'active') {
-                    statusDiv.innerHTML = `
-                        <div style="background: #10b981; color: white; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
-                            <strong>🚀 AKTIIVINEN MATKA</strong><br>
-                            ${journey.departurePort} → ?<br>
-                            Kipari: ${journey.captain}<br>
-                            Alkanut: ${journey.startTime}<br>
-                            <button class="btn btn-secondary" id="changeCaptainBtn" style="margin-top: 8px; width: 100%;">👤 Vaihda kipparia</button>
-                            <button class="btn btn-danger" id="endJourneyBtn" style="margin-top: 4px; width: 100%;">🏁 Lopeta matka</button>
-                        </div>
-                    `;
-                } else {
-                    statusDiv.innerHTML = '';
-                }
-            },
-
-
-            renderLocations() {
-                const locations = DB.getLocations().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                const container = document.getElementById('locationsList');
-
-                if (locations.length === 0) {
-                    container.innerHTML = '<p style="text-align: center; color: #999;">Ei merkittyjä paikkoja vielä.</p>';
-                    return;
-                }
-
-                let html = '';
-                locations.forEach(loc => {
-                    const time = new Date(loc.timestamp);
-                    const timeStr = time.toLocaleString('fi-FI');
-                    html += `<div class="location-item">
-                        <div>
-                            <div style="font-weight: 600;">${loc.name}</div>
-                            <div style="font-size: 0.8em; color: #666;">📍 ${loc.lat.toFixed(4)}, ${loc.lon.toFixed(4)}</div>
-                            <div class="location-time">${timeStr}</div>
-                        </div>
-                        <button class="btn btn-danger" onclick="UI.deleteLocation('${loc.id}')" style="padding: 4px 8px; font-size: 0.8em;">Poista</button>
-                    </div>`;
-                });
-
-                container.innerHTML = html;
-            },
-
-            deleteLocation(id) {
-                DB.deleteLocation(id);
-                this.renderLocations();
-            },
-
-            renderAccounting() {
-                const allocation = Accounting.allocateByUsage();
-
-                const statsHtml = `
-                    <div class="stat-card">
-                        <h3>Yhteensä matkat</h3>
-                        <div class="value">${allocation.stats.tmi.tripCount + allocation.stats.oy.tripCount + allocation.stats.oma.tripCount}</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Yhteensä mailit</h3>
-                        <div class="value">${(allocation.stats.tmi.totalNauticalMiles + allocation.stats.oy.totalNauticalMiles + allocation.stats.oma.totalNauticalMiles).toFixed(1)} nm</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Yhteensä konetunnit</h3>
-                        <div class="value">${(allocation.stats.tmi.totalEngineHours + allocation.stats.oy.totalEngineHours + allocation.stats.oma.totalEngineHours).toFixed(1)} h</div>
-                    </div>
-                `;
-                document.getElementById('accountingStats').innerHTML = statsHtml;
-
-                const renderEntity = (entity) => {
-                    const stats = allocation.stats[entity];
-                    const alloc = allocation.allocation[entity];
-
-                    const html = `
-                        <table class="data-table"><tbody>
-                            <tr><td>Matkat</td><td>${stats.tripCount}</td></tr>
-                            <tr><td>Mailit yhteensä</td><td>${stats.totalNauticalMiles.toFixed(1)} nm</td></tr>
-                            <tr><td>Konetunnit</td><td>${stats.totalEngineHours.toFixed(1)} h</td></tr>
-                            <tr><td>Käyttöosuus</td><td><strong>${alloc.share}%</strong></td></tr>
-                            <tr><td>Charter matkat</td><td>${stats.charterTrips}</td></tr>
-                            <tr><td>Koulutus matkat</td><td>${stats.educationTrips}</td></tr>
-                        </tbody></table>
-                    `;
-                    document.getElementById(`${entity}Accounting`).innerHTML = html;
-                };
-
-                renderEntity('tmi');
-                renderEntity('oy');
-                renderEntity('oma');
-            },
-
-            renderReporting() {
-                const selectedYear = document.getElementById('yearFilter').value || 'all';
-                let entries = DB.getEntries();
-
-                if (selectedYear !== 'all') {
-                    entries = entries.filter(e => (e.year || '2025') === selectedYear);
-                }
-
-                const totalMiles = entries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0);
-                const totalHours = entries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
-                const uniqueDates = new Set(entries.map(e => e.date).filter(d => d)).size;
-
-                let html = '<div class="form-section"><h3>📊 Yhteenveto</h3>';
-                html += '<table class="data-table"><tbody>';
-                html += '<tr><td><strong>Mailit:</strong></td><td>' + totalMiles.toFixed(1) + ' nm</td></tr>';
-                html += '<tr><td><strong>Konetunnit:</strong></td><td>' + totalHours.toFixed(1) + ' h</td></tr>';
-                html += '<tr><td><strong>Käyttöpäivät:</strong></td><td>' + uniqueDates + ' pv</td></tr>';
-                html += '<tr><td><strong>Merkintöjä:</strong></td><td>' + entries.length + '</td></tr>';
-                html += '</tbody></table></div>';
-
-                html += '<div class="form-section"><h3>🏢 Käyttöosuudet</h3>';
-                html += '<table class="data-table"><thead><tr><th>Entiteetti</th><th>Tunnit</th><th>Osuus %</th></tr></thead><tbody>';
-
-                ['tmi', 'oy', 'oma'].forEach(entity => {
-                    const entityEntries = entries.filter(e => e.vuokralainen === entity);
-                    const entityHours = entityEntries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
-                    const entityShare = totalHours > 0 ? (entityHours / totalHours * 100).toFixed(1) : 0;
-
-                    html += '<tr><td><span class="badge badge-' + entity + '">' + entity.toUpperCase() + '</span></td>';
-                    html += '<td>' + entityHours.toFixed(1) + ' h</td>';
-                    html += '<td><strong>' + entityShare + '%</strong></td></tr>';
-                });
-
-                html += '</tbody></table></div>';
-                document.getElementById('reportOutput').innerHTML = html;
-            },
-            getJourneyReport(year = 'all') {
-                const entries = DB.getEntries();
-                const filtered = year === 'all' ? entries : entries.filter(e => (e.year || '2025') === year);
-                
-                // Ryhmitä matkoittain (lähtösatama + aika)
-                const journeys = {};
-                filtered.forEach(entry => {
-                    const key = entry.departurePort + '_' + entry.startTime;
-                    if (!journeys[key]) {
-                        journeys[key] = entry;
-                    }
-                });
-
-                return Object.values(journeys);
-            },
-
-            getDayReport(date) {
-                const entries = DB.getEntries().filter(e => e.date === date);
-                const locations = DB.getLocations().filter(l => l.timestamp && l.timestamp.startsWith(date));
-                
-                return {
-                    date: date,
-                    entries: entries,
-                    locations: locations
-                };
-            },
-
-            generateJourneyReport(year = 'all') {
-                const journeys = this.getJourneyReport(year);
-                
-                let html = '<div class="form-section"><h3>🚢 Matkakohtainen Raportti</h3>';
-                
-                if (journeys.length === 0) {
-                    html += '<p style="color: #999;">Ei matkoja valitulle kaudelle</p>';
-                } else {
-                    journeys.forEach(journey => {
-                        const startDate = new Date(journey.date);
-                        const duration = journey.endTime ? 
-                            `${journey.startTime} - ${journey.endTime}` : 
-                            `${journey.startTime} -`;
-                        
-                        html += `<table class="data-table"><tbody>
-                            <tr><td><strong>Matka</strong></td><td>${journey.departurePort} → ${journey.arrivalPort || '?'}</td></tr>
-                            <tr><td>Päivämäärä</td><td>${journey.date}</td></tr>
-                            <tr><td>Aika</td><td>${duration}</td></tr>
-                            <tr><td>Kipari</td><td>${journey.captain || ''}</td></tr>
-                            <tr><td>Reitti</td><td>${journey.route || '-'}</td></tr>
-                            <tr><td>Mailit</td><td>${journey.nauticalMiles || 0} nm</td></tr>
-                            <tr><td>Konetunnit</td><td>${((journey.engineHoursEnd || 0) - (journey.engineHoursStart || 0)).toFixed(1)} h</td></tr>
-                        </tbody></table>`;
-                    });
-                }
-                
-                html += '</div>';
-                document.getElementById('reportOutput').innerHTML = html;
-                document.getElementById('printReportBtn').style.display = 'inline-block';
-            },
-
-            generateDayReport(date) {
-                const report = this.getDayReport(date);
-                
-                let html = `<div class="form-section"><h3>📅 Päivän Raportti: ${date}</h3>`;
-                
-                report.entries.forEach(entry => {
-                    html += `<table class="data-table" style="margin-bottom: 12px;"><tbody>
-                        <tr><td><strong>${entry.departurePort} → ${entry.arrivalPort}</strong></td></tr>
-                        <tr><td>Aika</td><td>${entry.startTime} - ${entry.endTime || ''}</td></tr>
-                        <tr><td>Kipari</td><td>${entry.captain || DEFAULT_CAPTAIN}</td></tr>
-                        <tr><td>Mailit</td><td>${entry.nauticalMiles || 0}</td></tr>
-                    </tbody></table>`;
-                });
-                
-                html += '</div>';
-                document.getElementById('reportOutput').innerHTML = html;
-                document.getElementById('printReportBtn').style.display = 'inline-block';
-            },
-
-
-            generateReport() {
-                const reportType = document.getElementById('reportType')?.value || 'summary';
-                const reportEntity = document.getElementById('reportEntity')?.value || 'all';
-                const selectedYear = document.getElementById('yearFilter')?.value || 'all';
-
-                let entries = DB.getEntries();
-
-                // Suodata vuoden mukaan
-                if (selectedYear !== 'all') {
-                    entries = entries.filter(e => (e.year || '2025') === selectedYear);
-                }
-
-                // Suodata entiteetin mukaan
-                if (reportEntity !== 'all') {
-                    entries = entries.filter(e => e.vuokralainen === reportEntity);
-                }
-
-                const totalMiles = entries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0);
-                const totalHours = entries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
-                const uniqueDates = new Set(entries.map(e => e.date).filter(d => d)).size;
-
-                let html = '';
-
-                if (reportType === 'summary') {
-                    html += '<div class="form-section"><h3>📊 Yhteenveto</h3>';
-                    html += '<table class="data-table"><tbody>';
-                    html += '<tr><td><strong>Merkintöjä:</strong></td><td>' + entries.length + '</td></tr>';
-                    html += '<tr><td><strong>Mailit:</strong></td><td>' + totalMiles.toFixed(1) + ' nm</td></tr>';
-                    html += '<tr><td><strong>Konetunnit:</strong></td><td>' + totalHours.toFixed(1) + ' h</td></tr>';
-                    html += '<tr><td><strong>Käyttöpäivät:</strong></td><td>' + uniqueDates + ' pv</td></tr>';
-                    html += '<tr><td><strong>Keskiarvo h/matka:</strong></td><td>' + (entries.length > 0 ? (totalHours/entries.length).toFixed(1) : '0') + ' h</td></tr>';
-                    html += '</tbody></table></div>';
-                } else if (reportType === 'detailed') {
-                    html += '<div class="form-section"><h3>📋 Yksityiskohtainen raportti</h3>';
-                    html += '<table class="data-table"><thead><tr><th>Pv</th><th>Reitti</th><th>Mailit</th><th>Tunnit</th><th>Vuokr.</th><th>Käyttö</th><th>Sää</th></tr></thead><tbody>';
-                    entries.forEach(e => {
-                        const h = ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)).toFixed(1);
-                        html += '<tr><td>' + e.date + '</td><td>' + (e.route || '-') + '</td><td>' + (e.nauticalMiles || 0) + '</td><td>' + h + '</td>';
-                        html += '<td><span class="badge badge-' + e.vuokralainen + '">' + e.vuokralainen.toUpperCase() + '</span></td>';
-                        html += '<td>' + e.kayttotarkoitus + '</td><td>' + (e.weather || '-') + '</td></tr>';
-                    });
-                    html += '</tbody></table></div>';
-                } else if (reportType === 'entity') {
-                    html += '<div class="form-section"><h3>🏢 Entiteetin mukaan</h3>';
-                    ['tmi', 'oy', 'oma'].forEach(entity => {
-                        const entityEntries = entries.filter(e => e.vuokralainen === entity);
-                        if (entityEntries.length > 0) {
-                            const entityHours = entityEntries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
-                            const entityMiles = entityEntries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0);
-                            html += '<div style="margin-bottom: 20px; page-break-inside: avoid;"><h4>' + entity.toUpperCase() + '</h4>';
-                            html += '<table class="data-table"><tbody>';
-                            html += '<tr><td>Merkintöjä</td><td>' + entityEntries.length + '</td></tr>';
-                            html += '<tr><td>Mailit</td><td>' + entityMiles.toFixed(1) + ' nm</td></tr>';
-                            html += '<tr><td>Konetunnit</td><td>' + entityHours.toFixed(1) + ' h</td></tr>';
-                            html += '</tbody></table></div>';
-                        }
-                    });
-                    html += '</div>';
-                }
-
-                document.getElementById('reportOutput').innerHTML = html;
-
-                // Näytä tulosta-nappi kun raportti on luotu
-                const printBtn = document.getElementById('printReportBtn');
-                if (printBtn && html.trim()) {
-                    printBtn.style.display = 'inline-block';
-                }
-            },
-
-            exportData() {
-                const entries = DB.getEntries();
-                let csv = 'Päivämäärä,Vuokralainen,Käyttötarkoitus,Reitti,Mailit,Tunnit alku,Tunnit loppu,Miehistö,Sää,Merkinnät\n';
-
-                entries.forEach(entry => {
-                    csv += `"${entry.date}","${entry.vuokralainen}","${entry.kayttotarkoitus}","${entry.route || ''}","${entry.nauticalMiles || ''}","${entry.engineHoursStart || ''}","${entry.engineHoursEnd || ''}","${entry.personnel || ''}","${entry.weather || ''}","${(entry.notes || '').replace(/"/g, '""')}"\n`;
-                });
-
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', `quartet_export_${new Date().toISOString().split('T')[0]}.csv`);
-                link.click();
-            },
-
-            importData(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const csv = event.target.result;
-                    const lines = csv.split('\n').slice(1);
-                    const entries = DB.getEntries();
-
-                    lines.forEach(line => {
-                        if (!line.trim()) return;
-                        const parts = line.split(',').map(p => p.replace(/^"|"$/g, ''));
-
-                        if (parts.length >= 10) {
-                            entries.push({
-                                id: Date.now().toString() + Math.random(),
-                                date: parts[0].trim(),
-                                vuokralainen: parts[1].trim(),
-                                kayttotarkoitus: parts[2].trim(),
-                                route: parts[3].trim(),
-                                nauticalMiles: parseFloat(parts[4]) || 0,
-                                engineHoursStart: parseFloat(parts[5]) || 0,
-                                engineHoursEnd: parseFloat(parts[6]) || 0,
-                                personnel: parts[7].trim(),
-                                weather: parts[8].trim(),
-                                notes: parts[9].trim(),
-                                createdAt: new Date().toISOString(),
-                                year: new Date(parts[0]).getFullYear().toString()
-                            });
-                        }
-                    });
-
-                    DB.setEntries(entries);
-                    this.render();
-                    alert(`Tuotu ${entries.length - DB.getEntries().length} merkintää!`);
-                };
-                reader.readAsText(file);
-            },
-
-            backup() {
-                const backup = DB.backup();
-                const json = JSON.stringify(backup, null, 2);
-                const blob = new Blob([json], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.setAttribute('href', url);
-                link.setAttribute('download', `quartet_backup_${new Date().toISOString().split('T')[0]}.json`);
-                link.click();
-                alert('Varmuuskopio ladattu!');
-            },
-
-            restore(e) {
-                const file = e.target.files[0];
-                if (!file) {
-                    console.warn('No file selected');
-                    return;
-                }
-
-                console.log('📥 Restoring from:', file.name, file.size, 'bytes');
-
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    try {
-                        const jsonText = event.target.result;
-                        const data = JSON.parse(jsonText);
-                        console.log('✅ JSON parsed successfully');
-                        console.log('Data structure:', {
-                            entries: data.entries?.length || 0,
-                            locations: data.locations?.length || 0,
-                            timestamp: data.timestamp
-                        });
-
-                        // Tarkista että entries-kenttä on olemassa
-                        if (!data.entries || !Array.isArray(data.entries)) {
-                            alert('❌ Virhe: Tiedosto ei sisällä "entries"-kenttää.\n\nTarkista että tiedosto on Quartet Loki -varmuuskopio.\n\nJSON-rakenne: ' + Object.keys(data).join(', '));
-                            return;
-                        }
-
-                        // Validoi että entries sisältävät oikeita merkintöjä
-                        if (data.entries.length === 0) {
-                            alert('⚠️ Varoitus: Tiedosto ei sisällä merkintöjä.');
-                            return;
-                        }
-
-                        // Tarkista ensimmäinen merkintä
-                        const firstEntry = data.entries[0];
-                        const requiredFields = ['date', 'vuokralainen', 'kayttotarkoitus'];
-                        const missingFields = requiredFields.filter(f => !(f in firstEntry));
-
-                        if (missingFields.length > 0) {
-                            alert(`❌ Virhe: Merkinnät puuttuvat kenttiä: ${missingFields.join(', ')}`);
-                            return;
-                        }
-
-                        const count = data.entries.length;
-                        const locationCount = data.locations?.length || 0;
-
-                        if (confirm(`✅ Tiedosto OK!\n\n📝 Merkintöjä: ${count}\n📍 Paikkoja: ${locationCount}\n\nPalautetaanko kaikki tiedot?\n\n⚠️ Tämä korvaa nykyiset tiedot!`)) {
-                            DB.restore(data);
-                            this.render();
-                            this.updateVersionInfo();
-
-                            // Näytä onnistumisviesti
-                            let successMsg = `✅ Varmuuskopio palautettu!\n\n📝 ${count} merkintää ladattu`;
-                            if (locationCount > 0) successMsg += `\n📍 ${locationCount} paikkaa ladattu`;
-                            successMsg += `\n\n💾 Tiedot tallennetaan automaattisesti`;
-
-                            alert(successMsg);
-                            console.log('✅ Restore successful:', count, 'entries,', locationCount, 'locations');
-                        }
-                    } catch (err) {
-                        console.error('❌ Restore error:', err);
-                        alert('❌ JSON-virhe!\n\n' + err.message + '\n\nTarkista että tiedosto on kelvollinen JSON-tiedosto.\n\nVoit avata tiedoston tekstieditorissa ja tarkistaa sen muodon.');
-                    }
-                };
-                reader.onerror = (err) => {
-                    console.error('❌ File read error:', err);
-                    alert('❌ Tiedoston lukeminen epäonnistui!\n\nKokeile uudestaan tai valitse toinen tiedosto.');
-                };
-
+            // ========== JOURNEY MANAGEMENT ==========
             getActiveJourney() {
                 try {
                     const data = localStorage.getItem(JOURNEY_STORAGE);
@@ -2006,8 +963,542 @@ ${gps.decimal}`);
                     this.setActiveJourney(journey);
                 }
             }
+        };
 
+        // ==================== ACCOUNTING ====================
+        const Accounting = {
+            calculateEntityStats(entity) {
+                const entries = DB.getEntries().filter(e => e.vuokralainen === entity);
+                return {
+                    tripCount: entries.length,
+                    totalNauticalMiles: entries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0),
+                    totalEngineHours: entries.reduce((sum, e) => {
+                        const start = parseFloat(e.engineHoursStart) || 0;
+                        const end = parseFloat(e.engineHoursEnd) || 0;
+                        return sum + (end - start);
+                    }, 0)
+                };
+            }
+        };
+
+        // ==================== GPS UTILITIES ====================
+        function convertDDMMSSToDecimal(ddmmss, direction) {
+            const dd = parseInt(ddmmss.substring(0, 2));
+            const mm = parseInt(ddmmss.substring(2, 4));
+            const ss = parseInt(ddmmss.substring(4, 6));
+            let decimal = dd + (mm / 60) + (ss / 3600);
+            if (direction === 'S' || direction === 'W') {
+                decimal = -decimal;
+            }
+            return decimal.toFixed(4);
+        }
+
+        function convertDecimalToDDMMSS(decimal) {
+            const abs = Math.abs(parseFloat(decimal));
+            const dd = Math.floor(abs);
+            const mm = Math.floor((abs - dd) * 60);
+            const ss = Math.floor(((abs - dd) * 60 - mm) * 60);
+            return String(dd).padStart(2, '0') + String(mm).padStart(2, '0') + String(ss).padStart(2, '0');
+        }
+
+        // ==================== UI ====================
+        const UI = {
+            currentEditingId: null,
+
+            async init() {
+                console.log('🚀 Quartet Loki v' + APP_VERSION + ' initializing...');
+                this.setupTabNavigation();
+                this.setupEventListeners();
+                this.render();
+                this.updateVersionInfo();
+                this.setupAutoBackup();
+                console.log('✅ Ready');
+            },
+
+            setupTabNavigation() {
+                const navTabs = document.getElementById('navTabs');
+                const tabBtns = navTabs.querySelectorAll('.tab-btn');
+
+                const handleTabClick = (e) => {
+                    e.preventDefault();
+                    const btn = e.target.closest('.tab-btn');
+                    if (!btn) return;
+
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                    btn.classList.add('active');
+                    const tabId = btn.dataset.tab;
+                    const tabContent = document.getElementById(tabId);
+                    if (tabContent) {
+                        tabContent.classList.add('active');
+                        if (tabId === 'locations') {
+                            this.renderJourneyStatus();
+                            this.renderLocations();
+                        }
+                    }
+                };
+
+                tabBtns.forEach(btn => {
+                    btn.addEventListener('touchstart', handleTabClick, { passive: false });
+                    btn.addEventListener('click', handleTabClick, { passive: false });
+                });
+            },
+
+            setupEventListeners() {
+                const addTouchListener = (element, callback) => {
+                    if (!element) return;
+                    const handler = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        callback();
+                    };
+                    element.addEventListener('touchstart', handler, { passive: false });
+                    element.addEventListener('click', handler, { passive: false });
+                };
+
+                // Entry buttons
+                addTouchListener(document.getElementById('newEntryBtn'), () => this.openEntryModal());
+                addTouchListener(document.getElementById('closeModalBtn'), () => this.closeEntryModal());
+                addTouchListener(document.getElementById('saveEntryBtn'), () => this.saveEntry());
+                addTouchListener(document.getElementById('exportDataBtn'), () => this.exportData());
+                addTouchListener(document.getElementById('backupBtn'), () => this.backup());
+                addTouchListener(document.getElementById('restoreAutoBackupBtn'), () => this.restoreLatestAutoBackup());
+                addTouchListener(document.getElementById('clearAllBtn'), () => this.clearAll());
+                addTouchListener(document.getElementById('generateReportBtn'), () => this.generateReport());
+                addTouchListener(document.getElementById('syncNowBtn'), () => this.syncToICloud());
+
+                // Location buttons
+                addTouchListener(document.getElementById('useGpsBtn'), () => this.useGPS());
+                addTouchListener(document.getElementById('addLocationBtn'), () => this.addLocation());
+
+                // Journey buttons
+                const changeCaptainBtn = document.getElementById('changeCaptainBtn');
+                const endJourneyBtn = document.getElementById('endJourneyBtn');
+                if (changeCaptainBtn) {
+                    addTouchListener(changeCaptainBtn, () => this.changeCaptain());
+                }
+                if (endJourneyBtn) {
+                    addTouchListener(endJourneyBtn, () => {
+                        const arrivalPort = prompt('Tulosatama:');
+                        const arrivalTime = prompt('Tuloaika (HH:MM):');
+                        if (arrivalPort && arrivalTime) {
+                            this.endJourney(arrivalPort, arrivalTime, '');
+                        }
+                    });
+                }
+
+                // File inputs
+                document.getElementById('csvImportInput')?.addEventListener('change', (e) => this.importData(e));
+                document.getElementById('jsonRestoreInput')?.addEventListener('change', (e) => this.restore(e));
+                document.getElementById('yearFilter')?.addEventListener('change', () => this.render());
+            },
+
+            openEntryModal(id = null) {
+                this.currentEditingId = id;
+                const modal = document.getElementById('entryModal');
+
+                if (id) {
+                    const entry = DB.getEntries().find(e => e.id === id);
+                    document.getElementById('entryDate').value = entry.date;
+                    document.getElementById('entryCaptain').value = entry.captain || '';
+                    document.getElementById('entryVuokralainen').value = entry.vuokralainen;
+                    document.getElementById('entryKayttotarkoitus').value = entry.kayttotarkoitus;
+                } else {
+                    document.getElementById('entryDate').valueAsDate = new Date();
+                    document.getElementById('entryVuokralainen').value = '';
+                    document.getElementById('entryKayttotarkoitus').value = '';
+                }
+
+                modal.classList.add('active');
+            },
+
+            closeEntryModal() {
+                document.getElementById('entryModal').classList.remove('active');
+                this.currentEditingId = null;
+            },
+
+            saveEntry() {
+                const vuokralainen = document.getElementById('entryVuokralainen').value;
+                const kayttotarkoitus = document.getElementById('entryKayttotarkoitus').value;
+                const date = document.getElementById('entryDate').value;
+
+                if (!date || !kayttotarkoitus) {
+                    alert('Täytä kaikki vaaditut kentät');
+                    return;
+                }
+
+                const entry = {
+                    date,
+                    captain: document.getElementById('entryCaptain').value,
+                    vuokralainen,
+                    kayttotarkoitus,
+                    departurePort: document.getElementById('entryDeparturePort').value,
+                    arrivalPort: document.getElementById('entryArrivalPort').value,
+                    startTime: document.getElementById('entryStartTime').value,
+                    endTime: document.getElementById('entryEndTime').value,
+                    route: document.getElementById('entryRoute').value,
+                    nauticalMiles: parseFloat(document.getElementById('entryNauticalMiles').value) || 0,
+                    engineHoursStart: parseFloat(document.getElementById('entryEngineHoursStart').value) || 0,
+                    engineHoursEnd: parseFloat(document.getElementById('entryEngineHoursEnd').value) || 0,
+                    personnel: document.getElementById('entryPersonnel').value,
+                    weather: document.getElementById('entryWeather').value,
+                    notes: document.getElementById('entryNotes').value
+                };
+
+                if (this.currentEditingId) {
+                    DB.updateEntry(this.currentEditingId, entry);
+                } else {
+                    DB.addEntry(entry);
+                }
+
+                this.closeEntryModal();
+                this.render();
+            },
+
+            render() {
+                const yearFilter = document.getElementById('yearFilter').value;
+                let entries = DB.getEntries();
+
+                if (yearFilter !== 'all') {
+                    entries = entries.filter(e => (e.year || '2025') === yearFilter);
+                }
+
+                entries = entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+                const container = document.getElementById('entriesList');
+
+                if (entries.length === 0) {
+                    container.innerHTML = '<div class="no-data">Ei merkintöjä vielä.</div>';
+                    return;
+                }
+
+                let html = '<table class="data-table"><thead><tr><th>Päivä</th><th>Vuokr.</th><th>Reitti</th><th>Mailit</th><th>h</th><th>Toiminnot</th></tr></thead><tbody>';
+
+                entries.forEach(entry => {
+                    const hours = (parseFloat(entry.engineHoursEnd) || 0) - (parseFloat(entry.engineHoursStart) || 0);
+                    html += `<tr>
+                        <td>${entry.date}</td>
+                        <td><span class="badge badge-${entry.vuokralainen}">${entry.vuokralainen.toUpperCase()}</span></td>
+                        <td>${entry.route || '-'}</td>
+                        <td>${entry.nauticalMiles || 0}</td>
+                        <td>${hours.toFixed(1)}</td>
+                        <td>
+                            <div class="edit-buttons">
+                                <button class="btn btn-secondary edit-btn" data-id="${entry.id}" data-action="edit">Muokkaa</button>
+                                <button class="btn btn-danger edit-btn" data-id="${entry.id}" data-action="delete">Poista</button>
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+
+                // Event delegation
+                container.addEventListener('touchstart', (e) => {
+                    const btn = e.target.closest('.edit-btn');
+                    if (!btn) return;
+                    e.preventDefault();
+                    const id = btn.dataset.id;
+                    const action = btn.dataset.action;
+                    if (action === 'edit') this.openEntryModal(id);
+                    else if (action === 'delete') this.deleteEntry(id);
+                }, { passive: false });
+
+                container.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.edit-btn');
+                    if (!btn) return;
+                    const id = btn.dataset.id;
+                    const action = btn.dataset.action;
+                    if (action === 'edit') this.openEntryModal(id);
+                    else if (action === 'delete') this.deleteEntry(id);
+                });
+            },
+
+            deleteEntry(id) {
+                if (confirm('Poistetaanko merkintä?')) {
+                    DB.deleteEntry(id);
+                    this.render();
+                }
+            },
+
+            useGPS() {
+                const useGpsBtn = document.getElementById('useGpsBtn');
+                useGpsBtn.textContent = '📡 Etsitään...';
+                useGpsBtn.disabled = true;
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        document.getElementById('locationLat').value = position.coords.latitude.toFixed(4);
+                        document.getElementById('locationLon').value = position.coords.longitude.toFixed(4);
+                        useGpsBtn.textContent = '✅ GPS OK';
+                        setTimeout(() => {
+                            useGpsBtn.textContent = '📡 Käytä GPS:ää';
+                            useGpsBtn.disabled = false;
+                        }, 2000);
+                    },
+                    (error) => {
+                        alert('GPS-virhe: ' + error.message);
+                        useGpsBtn.textContent = '📡 Käytä GPS:ää';
+                        useGpsBtn.disabled = false;
+                    }
+                );
+            },
+
+            addLocation() {
+                const lat = parseFloat(document.getElementById('locationLat').value);
+                const lon = parseFloat(document.getElementById('locationLon').value);
+                const name = document.getElementById('locationName').value || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+
+                if (isNaN(lat) || isNaN(lon)) {
+                    alert('Syötä kelvolliset koordinaatit');
+                    return;
+                }
+
+                DB.addLocation({ lat, lon, name });
+
+                document.getElementById('locationLat').value = '';
+                document.getElementById('locationLon').value = '';
+                document.getElementById('locationName').value = '';
+
+                this.renderLocations();
+            },
+
+            renderJourneyStatus() {
+                const journey = DB.getActiveJourney();
+                const statusDiv = document.getElementById('journeyStatus');
+
+                if (!statusDiv) return;
+
+                if (journey && journey.status === 'active') {
+                    statusDiv.innerHTML = `
+                        <div style="background: #10b981; color: white; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+                            <strong>🚀 AKTIIVINEN MATKA</strong><br>
+                            ${journey.departurePort} → ?<br>
+                            Kipari: ${journey.captain}<br>
+                            Alkanut: ${journey.startTime}<br>
+                            <button class="btn btn-secondary" id="changeCaptainBtn" style="margin-top: 8px; width: 100%;">👤 Vaihda kipparia</button>
+                            <button class="btn btn-danger" id="endJourneyBtn" style="margin-top: 4px; width: 100%;">🏁 Lopeta matka</button>
+                        </div>
+                    `;
+                    // Re-attach event listeners after rendering
+                    const addTouchListener = (element, callback) => {
+                        if (!element) return;
+                        const handler = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            callback();
+                        };
+                        element.addEventListener('touchstart', handler, { passive: false });
+                        element.addEventListener('click', handler, { passive: false });
+                    };
+                    addTouchListener(document.getElementById('changeCaptainBtn'), () => this.changeCaptain());
+                    addTouchListener(document.getElementById('endJourneyBtn'), () => {
+                        const arrivalPort = prompt('Tulosatama:');
+                        const arrivalTime = prompt('Tuloaika (HH:MM):');
+                        if (arrivalPort && arrivalTime) {
+                            this.endJourney(arrivalPort, arrivalTime, '');
+                        }
+                    });
+                } else {
+                    statusDiv.innerHTML = '';
+                }
+            },
+
+            renderLocations() {
+                const locations = DB.getLocations().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                const container = document.getElementById('locationsList');
+
+                if (locations.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #999;">Ei merkittyjä paikkoja vielä.</p>';
+                    return;
+                }
+
+                let html = '';
+                locations.forEach(loc => {
+                    const time = new Date(loc.timestamp);
+                    const timeStr = time.toLocaleString('fi-FI');
+                    html += `<div class="location-item">
+                        <div>
+                            <div style="font-weight: 600;">${loc.name}</div>
+                            <div style="font-size: 0.8em; color: #666;">📍 ${loc.lat.toFixed(4)}, ${loc.lon.toFixed(4)}</div>
+                            <div class="location-time">${timeStr}</div>
+                        </div>
+                        <button class="btn btn-danger delete-loc-btn" data-id="${loc.id}" style="padding: 4px 8px; font-size: 0.8em;">Poista</button>
+                    </div>`;
+                });
+
+                container.innerHTML = html;
+
+                // Event delegation for delete
+                container.addEventListener('touchstart', (e) => {
+                    const btn = e.target.closest('.delete-loc-btn');
+                    if (!btn) return;
+                    e.preventDefault();
+                    DB.deleteLocation(btn.dataset.id);
+                    this.renderLocations();
+                }, { passive: false });
+
+                container.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.delete-loc-btn');
+                    if (!btn) return;
+                    DB.deleteLocation(btn.dataset.id);
+                    this.renderLocations();
+                });
+            },
+
+            changeCaptain() {
+                const journey = DB.getActiveJourney();
+                if (!journey) {
+                    alert('❌ Ei aktiivista matkaa');
+                    return;
+                }
+                const newCaptain = prompt(`Vaihda kiparia\nNykyinen: ${journey.captain}\nUusi kipari:`, journey.captain);
+                if (newCaptain && newCaptain !== journey.captain) {
+                    DB.changeCaptain(newCaptain);
+                    this.renderJourneyStatus();
+                }
+            },
+
+            endJourney(arrivalPort, arrivalTime, arrivalGPS) {
+                const journey = DB.getActiveJourney();
+                if (!journey) {
+                    alert('❌ Ei aktiivista matkaa');
+                    return;
+                }
+                DB.endJourney(arrivalPort, arrivalTime, arrivalGPS);
+                alert(`✅ Matka päätetty!\n${journey.departurePort} → ${arrivalPort}`);
+                this.renderJourneyStatus();
+            },
+
+            generateReport() {
+                const entries = DB.getEntries();
+                const totalMiles = entries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0);
+                const totalHours = entries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
+                const uniqueDates = new Set(entries.map(e => e.date).filter(d => d)).size;
+
+                let html = '<div class="form-section"><h3>📊 Yhteenveto</h3>';
+                html += '<table class="data-table"><tbody>';
+                html += '<tr><td><strong>Merkintöjä:</strong></td><td>' + entries.length + '</td></tr>';
+                html += '<tr><td><strong>Mailit:</strong></td><td>' + totalMiles.toFixed(1) + ' nm</td></tr>';
+                html += '<tr><td><strong>Konetunnit:</strong></td><td>' + totalHours.toFixed(1) + ' h</td></tr>';
+                html += '<tr><td><strong>Käyttöpäivät:</strong></td><td>' + uniqueDates + ' pv</td></tr>';
+                html += '</tbody></table></div>';
+
+                document.getElementById('reportOutput').innerHTML = html;
+            },
+
+            exportData() {
+                const entries = DB.getEntries();
+                let csv = 'Päivämäärä,Vuokralainen,Reitti,Mailit,Tunnit\n';
+
+                entries.forEach(entry => {
+                    const hours = (parseFloat(entry.engineHoursEnd) || 0) - (parseFloat(entry.engineHoursStart) || 0);
+                    csv += `"${entry.date}","${entry.vuokralainen}","${entry.route || ''}","${entry.nauticalMiles || ''}","${hours.toFixed(1)}"\n`;
+                });
+
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `quartet_export_${new Date().toISOString().split('T')[0]}.csv`;
+                link.click();
+            },
+
+            importData(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const csv = event.target.result;
+                    const lines = csv.split('\n').slice(1);
+                    const entries = DB.getEntries();
+
+                    lines.forEach(line => {
+                        if (!line.trim()) return;
+                        const parts = line.split(',').map(p => p.replace(/^"|"$/g, ''));
+
+                        if (parts.length >= 5) {
+                            entries.push({
+                                id: Date.now().toString() + Math.random(),
+                                date: parts[0].trim(),
+                                vuokralainen: parts[1].trim(),
+                                route: parts[2].trim(),
+                                nauticalMiles: parseFloat(parts[3]) || 0,
+                                createdAt: new Date().toISOString(),
+                                year: new Date(parts[0]).getFullYear().toString()
+                            });
+                        }
+                    });
+
+                    DB.setEntries(entries);
+                    this.render();
+                    alert(`Tuotu merkintöjä!`);
+                };
                 reader.readAsText(file);
+            },
+
+            backup() {
+                const backup = DB.backup();
+                const json = JSON.stringify(backup, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `quartet_backup_${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                alert('Varmuuskopio ladattu!');
+            },
+
+            restore(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+
+                        if (!data.entries || !Array.isArray(data.entries)) {
+                            alert('❌ Virhe: Tiedosto ei sisällä "entries"-kenttää.');
+                            return;
+                        }
+
+                        const count = data.entries.length;
+
+                        if (confirm(`✅ Tiedosto OK!\n\n📝 Merkintöjä: ${count}\n\nPalautetaanko?`)) {
+                            DB.restore(data);
+                            this.render();
+                            this.updateVersionInfo();
+                            alert(`✅ Varmuuskopio palautettu!\n\n📝 ${count} merkintää ladattu`);
+                        }
+                    } catch (err) {
+                        alert('❌ JSON-virhe!\n\n' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            },
+
+            restoreLatestAutoBackup() {
+                try {
+                    const backup = localStorage.getItem('quartet_auto_backup_latest');
+
+                    if (!backup) {
+                        alert('❌ Ei auto-varmuuskopiota saatavilla.');
+                        return;
+                    }
+
+                    const data = JSON.parse(backup);
+                    const count = data.entries?.length || 0;
+
+                    if (confirm(`Palauta viimeisin auto-backup?\n📝 ${count} merkintää`)) {
+                        DB.restore(data);
+                        this.render();
+                        this.updateVersionInfo();
+                        alert(`✅ Palautettu!\n\n📝 ${count} merkintää`);
+                    }
+                } catch (err) {
+                    alert('❌ Virhe: ' + err.message);
+                }
             },
 
             clearAll() {
@@ -2020,142 +1511,66 @@ ${gps.decimal}`);
                 }
             },
 
-            updateVersionInfo() {
-                const versionBadge = document.getElementById('versionBadge');
-                const lastSync = document.getElementById('lastSyncTime');
-                const dbSize = document.getElementById('dbSize');
-                const lastBackupEl = document.getElementById('lastBackup');
+            syncToICloud() {
+                const syncBtn = document.getElementById('syncNowBtn');
+                syncBtn.textContent = '🔄 Synkronoidaan...';
+                syncBtn.disabled = true;
 
-                if (versionBadge) versionBadge.textContent = `v${APP_VERSION}`;
+                try {
+                    const backup = DB.backup();
+                    const json = JSON.stringify(backup, null, 2);
+                    const blob = new Blob([json], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'Quartet_Loki_iCloud_Backup.json';
+                    link.click();
 
-                const lastSyncTime = DB.getLastSync();
-                if (lastSync && lastSyncTime) {
-                    const time = new Date(lastSyncTime);
-                    lastSync.textContent = time.toLocaleTimeString('fi-FI');
-                } else if (lastSync) {
-                    lastSync.textContent = 'Offline';
+                    syncBtn.textContent = '✅ Synkronoitu!';
+                    setTimeout(() => {
+                        syncBtn.textContent = '🔄 Synkronoi nyt iCloud:iin';
+                        syncBtn.disabled = false;
+                    }, 2000);
+                } catch (err) {
+                    alert('Synkronointi epäonnistui: ' + err.message);
+                    syncBtn.textContent = '🔄 Synkronoi nyt iCloud:iin';
+                    syncBtn.disabled = false;
                 }
-
-                if (dbSize) dbSize.innerHTML = `📊 Tietokannan koko: ${DB.getDBSize()} kB`;
-                if (lastBackupEl) lastBackupEl.innerHTML = `⏰ Viimeisin synkrointi: ${new Date().toLocaleString('fi-FI')}`;
             },
 
             setupAutoBackup() {
-                // Auto-backup päivittäin - tallennetaan suoraan viimeisimpään versioon
                 const runAutoBackup = () => {
                     try {
                         const backup = DB.backup();
-                        const today = new Date().toISOString().split('T')[0];
-
-                        // Tallenna päivän varmuuskopio
                         localStorage.setItem('quartet_auto_backup_latest', JSON.stringify(backup));
-                        localStorage.setItem('quartet_auto_backup_date', today);
-
-                        console.log('✅ Auto-backup created: ' + today + ' - ' + backup.entries.length + ' entries');
-                        this.updateVersionInfo();
+                        console.log('✅ Auto-backup: ' + backup.entries.length + ' entries');
                     } catch (err) {
                         console.error('❌ Auto-backup error:', err);
                     }
                 };
 
-                // Aja heti käynnistyksen yhteydessä
                 runAutoBackup();
-
-                // Aja sitten joka 24 tunti
                 setInterval(runAutoBackup, 24 * 60 * 60 * 1000);
             },
 
-            restoreLatestAutoBackup() {
-                try {
-                    const backupDate = localStorage.getItem('quartet_auto_backup_date');
-                    const backup = localStorage.getItem('quartet_auto_backup_latest');
+            updateVersionInfo() {
+                const versionBadge = document.getElementById('versionBadge');
+                if (versionBadge) versionBadge.textContent = `v${APP_VERSION}`;
 
-                    if (!backup || !backupDate) {
-                        alert('❌ Ei saatavilla olevaa auto-varmuuskopiota.\n\nJärjestelmä luo varmuuskopion hetki sitten.');
-                        return;
-                    }
+                const lastSync = document.getElementById('lastSyncTime');
+                if (lastSync) lastSync.textContent = 'Ready';
 
-                    const data = JSON.parse(backup);
+                const dbSize = document.getElementById('dbSize');
+                if (dbSize) dbSize.innerHTML = `📊 Koko: ${DB.getDBSize()} kB`;
 
-                    // Tarkista että data on oikea
-                    if (!data.entries || !Array.isArray(data.entries)) {
-                        alert('❌ Varmuuskopiossa on virhe - ei sisällä merkintöjä.');
-                        return;
-                    }
-
-                    const count = data.entries.length;
-                    const locationCount = data.locations?.length || 0;
-
-                    if (confirm(`✅ Viimeisin auto-backup (${backupDate})\n\n📝 Merkintöjä: ${count}\n📍 Paikkoja: ${locationCount}\n\nPalautetaanko?\n\n⚠️ Tämä korvaa nykyiset tiedot!`)) {
-                        DB.restore(data);
-                        this.render();
-                        this.updateVersionInfo();
-                        alert(`✅ Varmuuskopio palautettu!\n\n📝 ${count} merkintää\n📍 ${locationCount} paikkaa`);
-                    }
-                } catch (err) {
-                    console.error('❌ Auto-backup restore error:', err);
-                    alert('❌ Virhe: ' + err.message + '\n\nKokeile "Palauta" -nappia tiedostosta.');
-                }
-            },
-
-            async syncToICloud() {
-                const syncNowBtn = document.getElementById('syncNowBtn');
-                syncNowBtn.textContent = '🔄 Synkronoidaan...';
-                syncNowBtn.disabled = true;
-
-                try {
-                    const backup = DB.backup();
-                    const success = await iCloudSync.exportToICloud(backup);
-
-                    if (success) {
-                        syncNowBtn.textContent = '✅ Synkronoitu!';
-                        this.updateVersionInfo();
-                        setTimeout(() => {
-                            syncNowBtn.textContent = '🔄 Synkronoi nyt iCloud:iin';
-                            syncNowBtn.disabled = false;
-                        }, 2000);
-                    } else {
-                        syncNowBtn.textContent = '❌ Virhe';
-                        syncNowBtn.disabled = false;
-                    }
-                } catch (err) {
-                    alert('Synkronointi epäonnistui: ' + err.message);
-                    syncNowBtn.textContent = '🔄 Synkronoi nyt iCloud:iin';
-                    syncNowBtn.disabled = false;
-                }
-            },
-
-            setupAutoSync() {
-                // Auto-synkronoi iCloud:iin säännöllisesti
-                setInterval(() => {
-                    console.log('⏱️ Auto-syncing to iCloud...');
-                    this.syncToICloud();
-                }, ICLOUD_SYNC_INTERVAL);
-
-                // Päivitä status-tieto
-                setInterval(() => {
-                    if (document.getElementById('icloudStatusDetail')) {
-                        document.getElementById('icloudStatusDetail').textContent =
-                            'Seuraava auto-sync: ' + iCloudSync.getNextSyncIn();
-                    }
-                }, 30000); // Päivitä 30 sekunnin välein
+                const lastBackup = document.getElementById('lastBackup');
+                if (lastBackup) lastBackup.innerHTML = `⏰ Päivitetty: ${new Date().toLocaleString('fi-FI')}`;
             }
         };
 
         // ==================== INITIALIZE ====================
         document.addEventListener('DOMContentLoaded', () => {
             UI.init();
-
-            // Load preloaded data if available
-            window.addEventListener('load', () => {
-                const preloadedData = {"entries": [{"id": "entry_0", "date": "2025-04-18", "vuokralainen": "tmi", "kayttotarkoitus": "charter", "startTime": "16:50", "endTime": "17:55", "route": "RVK - Malkasaari", "nauticalMiles": 1.9, "engineHoursStart": 100.0, "engineHoursEnd": 101.1, "personnel": "", "weather": "", "notes": "", "createdAt": "2026-04-14T11:38:45.255655", "year": "2025"}], "timestamp": "2026-04-14T11:38:45.258722"};
-                if (preloadedData && preloadedData.entries && preloadedData.entries.length > 0) {
-                    DB.restore(preloadedData);
-                    UI.render();
-                    console.log('✅ Preloaded ' + preloadedData.entries.length + ' entries');
-                }
-                UI.updateVersionInfo();
-            });
         });
     </script>
 </body>
