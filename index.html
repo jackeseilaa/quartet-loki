@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2027.3 (iCloud Drive Sync)</title>
+    <title>Quartet Loki - v2027.4 (Journey Tracking & GPS)</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -567,28 +567,38 @@
             <!-- LOCATIONS TAB -->
             <div id="locations" class="tab-content">
                 <h2 style="margin-bottom: 16px; font-size: 1.1em;">📍 Paikan merkinnät</h2>
+                
+                <!-- Journey Status -->
+                <div id="journeyStatus"></div>
+
                 <div class="form-section">
-                    <p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">Merkkaa laivan sijainti GPS:n tai manuaalisen syöttönsä avulla.</p>
+                    <h3 style="margin-bottom: 12px;">📡 GPS-PAIKKA</h3>
+                    <p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">Merkitse laivan sijainti GPS:n tai manuaalisen syöttönsä avulla.</p>
+                    
                     <div class="form-group">
-                        <label>Leveysaste (Latitude)</label>
-                        <input type="number" id="locationLat" step="0.0001" placeholder="60.1699">
+                        <label>Leveysaste (Latitude) DDMMSS</label>
+                        <input type="text" id="locationLat" placeholder="602530N" style="font-family: monospace;">
                     </div>
                     <div class="form-group">
-                        <label>Pituusaste (Longitude)</label>
-                        <input type="number" id="locationLon" step="0.0001" placeholder="24.9384">
+                        <label>Pituusaste (Longitude) DDMMSS</label>
+                        <input type="text" id="locationLon" placeholder="242530E" style="font-family: monospace;">
                     </div>
                     <div class="form-group">
                         <label>Paikan nimi (valinnainen)</label>
                         <input type="text" id="locationName" placeholder="esim. Tallinna, avomeri jne">
                     </div>
-                    <button class="btn btn-primary" id="useGpsBtn">📡 Käytä GPS:ää</button>
-                    <button class="btn btn-success" id="addLocationBtn">Lisää paikka</button>
+                    
+                    <div class="action-buttons" style="margin-bottom: 12px;">
+                        <button class="btn btn-primary" id="useGpsBtn">📡 Käytä GPS:ää</button>
+                        <button class="btn btn-success" id="addLocationBtn">Lisää paikka</button>
+                    </div>
                 </div>
 
                 <div style="margin-top: 20px;">
                     <h3 style="margin-bottom: 12px; font-size: 1em;">Merkityt paikat</h3>
                     <div id="locationsList"></div>
                 </div>
+            </div>
             </div>
 
             <!-- ACCOUNTING TAB -->
@@ -791,7 +801,11 @@
 
     <script>
         // ==================== VERSIO & SYNC ====================
-        const APP_VERSION = '2027.3';
+        const APP_VERSION = '2027.4';
+
+        const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
+        const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
+
         const APP_BUILD_DATE = '2026-04-15T15:00:00Z';
         const ICLOUD_SYNC_INTERVAL = 60 * 60 * 1000; // 1 tunti
         const ICLOUD_FILENAME = 'Quartet_Loki_iCloud_Backup.json';
@@ -888,8 +902,11 @@
 
             addLocation(location) {
                 const locations = this.getLocations();
+                const journey = this.getActiveJourney();
                 location.id = Date.now().toString();
                 location.timestamp = new Date().toISOString();
+                location.journeyId = journey ? journey.id : null;
+                location.captain = journey ? journey.captain : DEFAULT_CAPTAIN;
                 locations.push(location);
                 this.setLocations(locations);
                 return location;
@@ -1037,7 +1054,57 @@
             }
         };
 
-        // ==================== UI RENDERING ====================
+        
+
+        // ==================== GPS UTILITIES ====================
+        convertDDMMSSToDecimal(ddmmss, direction) {
+            // Muunna DDMMSS muoto desimaaliksi
+            // 602530N = 60°25'30"N = 60 + 25/60 + 30/3600
+            const dd = parseInt(ddmmss.substring(0, 2));
+            const mm = parseInt(ddmmss.substring(2, 4));
+            const ss = parseInt(ddmmss.substring(4, 6));
+            let decimal = dd + (mm / 60) + (ss / 3600);
+            if (direction === 'S' || direction === 'W') {
+                decimal = -decimal;
+            }
+            return decimal.toFixed(4);
+        },
+
+        convertDecimalToDDMMSS(decimal) {
+            // Muunna desimaali DDMMSS:ksi
+            const abs = Math.abs(parseFloat(decimal));
+            const dd = Math.floor(abs);
+            const mm = Math.floor((abs - dd) * 60);
+            const ss = Math.floor(((abs - dd) * 60 - mm) * 60);
+            return String(dd).padStart(2, '0') + String(mm).padStart(2, '0') + String(ss).padStart(2, '0');
+        },
+
+        getGPS() {
+            return new Promise((resolve) => {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const lat = position.coords.latitude;
+                            const lon = position.coords.longitude;
+                            const latDDMMSS = this.convertDecimalToDDMMSS(lat) + (lat >= 0 ? 'N' : 'S');
+                            const lonDDMMSS = this.convertDecimalToDDMMSS(lon) + (lon >= 0 ? 'E' : 'W');
+                            resolve({ lat: latDDMMSS, lon: lonDDMMSS, decimal: `${lat}, ${lon}` });
+                        },
+                        (error) => {
+                            console.error('GPS error:', error);
+                            alert('GPS-haku epäonnistui: ' + error.message);
+                            resolve(null);
+                        }
+                    );
+                } else {
+                    alert('GPS ei saatavilla tällä laitteella');
+                    resolve(null);
+                }
+            });
+        }
+
+
+// ==================== UI RENDERING ====================
         const UI = {
             currentEditingId: null,
 
@@ -1133,6 +1200,19 @@
                 addTouchListener(exportDataBtn, () => this.exportData());
                 if (csvImportInput) csvImportInput.addEventListener('change', (e) => this.importData(e));
                 if (kayttotarkoitusField) kayttotarkoitusField.addEventListener('change', () => this.toggleVuokralainenField());
+                // Journey management
+                const changeCaptainBtn = document.getElementById('changeCaptainBtn');
+                const endJourneyBtn = document.getElementById('endJourneyBtn');
+                
+                if (changeCaptainBtn) addTouchListener(changeCaptainBtn, () => this.changeCaptain());
+                if (endJourneyBtn) addTouchListener(endJourneyBtn, () => {
+                    const arrivalPort = prompt('Tulosatama:');
+                    const arrivalTime = prompt('Tuloaika (HH:MM):');
+                    if (arrivalPort && arrivalTime) {
+                        this.endJourney(arrivalPort, arrivalTime, '');
+                    }
+                });
+
 
                 // Location management
                 const useGpsBtn = document.getElementById('useGpsBtn');
@@ -1412,6 +1492,73 @@
 
                 this.renderLocations();
             },
+            startJourney(departurePort, departureTime, departureGPS, entryId) {
+                const journey = DB.createJourney(departurePort, departureTime, departureGPS, entryId);
+                alert(`✅ Matka aloitettu!
+${departurePort} → ?
+Kipari: ${journey.captain}`);
+                this.renderLocations();
+            },
+
+            endJourney(arrivalPort, arrivalTime, arrivalGPS) {
+                const journey = DB.getActiveJourney();
+                if (!journey) {
+                    alert('❌ Ei aktiivista matkaa');
+                    return;
+                }
+                DB.endJourney(arrivalPort, arrivalTime, arrivalGPS);
+                alert(`✅ Matka päätetty!
+${journey.departurePort} → ${arrivalPort}`);
+                this.renderLocations();
+            },
+
+            changeCaptain() {
+                const journey = DB.getActiveJourney();
+                if (!journey) {
+                    alert('❌ Ei aktiivista matkaa');
+                    return;
+                }
+                const newCaptain = prompt(`Vaihda kiparia
+Nykyinen: ${journey.captain}
+Uusi kipari:`, journey.captain);
+                if (newCaptain && newCaptain !== journey.captain) {
+                    DB.changeCaptain(newCaptain);
+                    this.renderLocations();
+                }
+            },
+
+            async useGPSLocation() {
+                const gps = await this.getGPS();
+                if (gps) {
+                    document.getElementById('locationLat').value = gps.lat;
+                    document.getElementById('locationLon').value = gps.lon;
+                    alert(`✅ GPS-sijainti haettu:
+${gps.decimal}`);
+                }
+            },
+
+            renderJourneyStatus() {
+                const journey = DB.getActiveJourney();
+                const statusDiv = document.getElementById('journeyStatus');
+                
+                if (!statusDiv) return;
+
+                if (journey && journey.status === 'active') {
+                    statusDiv.innerHTML = `
+                        <div style="background: #10b981; color: white; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+                            <strong>🚀 AKTIIVINEN MATKA</strong><br>
+                            ${journey.departurePort} → ?<br>
+                            Kipari: ${journey.captain}<br>
+                            Alkanut: ${journey.startTime}<br>
+                            <button class="btn btn-secondary" id="changeCaptainBtn" style="margin-top: 8px; width: 100%;">👤 Vaihda kipparia</button>
+                            <button class="btn btn-danger" id="endJourneyBtn" style="margin-top: 4px; width: 100%;">🏁 Lopeta matka</button>
+                        </div>
+                    `;
+                } else {
+                    statusDiv.innerHTML = '';
+                }
+            },
+
 
             renderLocations() {
                 const locations = DB.getLocations().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -1521,6 +1668,83 @@
                 html += '</tbody></table></div>';
                 document.getElementById('reportOutput').innerHTML = html;
             },
+            getJourneyReport(year = 'all') {
+                const entries = DB.getEntries();
+                const filtered = year === 'all' ? entries : entries.filter(e => (e.year || '2025') === year);
+                
+                // Ryhmitä matkoittain (lähtösatama + aika)
+                const journeys = {};
+                filtered.forEach(entry => {
+                    const key = entry.departurePort + '_' + entry.startTime;
+                    if (!journeys[key]) {
+                        journeys[key] = entry;
+                    }
+                });
+
+                return Object.values(journeys);
+            },
+
+            getDayReport(date) {
+                const entries = DB.getEntries().filter(e => e.date === date);
+                const locations = DB.getLocations().filter(l => l.timestamp && l.timestamp.startsWith(date));
+                
+                return {
+                    date: date,
+                    entries: entries,
+                    locations: locations
+                };
+            },
+
+            generateJourneyReport(year = 'all') {
+                const journeys = this.getJourneyReport(year);
+                
+                let html = '<div class="form-section"><h3>🚢 Matkakohtainen Raportti</h3>';
+                
+                if (journeys.length === 0) {
+                    html += '<p style="color: #999;">Ei matkoja valitulle kaudelle</p>';
+                } else {
+                    journeys.forEach(journey => {
+                        const startDate = new Date(journey.date);
+                        const duration = journey.endTime ? 
+                            `${journey.startTime} - ${journey.endTime}` : 
+                            `${journey.startTime} -`;
+                        
+                        html += `<table class="data-table"><tbody>
+                            <tr><td><strong>Matka</strong></td><td>${journey.departurePort} → ${journey.arrivalPort || '?'}</td></tr>
+                            <tr><td>Päivämäärä</td><td>${journey.date}</td></tr>
+                            <tr><td>Aika</td><td>${duration}</td></tr>
+                            <tr><td>Kipari</td><td>${journey.captain || ''}</td></tr>
+                            <tr><td>Reitti</td><td>${journey.route || '-'}</td></tr>
+                            <tr><td>Mailit</td><td>${journey.nauticalMiles || 0} nm</td></tr>
+                            <tr><td>Konetunnit</td><td>${((journey.engineHoursEnd || 0) - (journey.engineHoursStart || 0)).toFixed(1)} h</td></tr>
+                        </tbody></table>`;
+                    });
+                }
+                
+                html += '</div>';
+                document.getElementById('reportOutput').innerHTML = html;
+                document.getElementById('printReportBtn').style.display = 'inline-block';
+            },
+
+            generateDayReport(date) {
+                const report = this.getDayReport(date);
+                
+                let html = `<div class="form-section"><h3>📅 Päivän Raportti: ${date}</h3>`;
+                
+                report.entries.forEach(entry => {
+                    html += `<table class="data-table" style="margin-bottom: 12px;"><tbody>
+                        <tr><td><strong>${entry.departurePort} → ${entry.arrivalPort}</strong></td></tr>
+                        <tr><td>Aika</td><td>${entry.startTime} - ${entry.endTime || ''}</td></tr>
+                        <tr><td>Kipari</td><td>${entry.captain || DEFAULT_CAPTAIN}</td></tr>
+                        <tr><td>Mailit</td><td>${entry.nauticalMiles || 0}</td></tr>
+                    </tbody></table>`;
+                });
+                
+                html += '</div>';
+                document.getElementById('reportOutput').innerHTML = html;
+                document.getElementById('printReportBtn').style.display = 'inline-block';
+            },
+
 
             generateReport() {
                 const reportType = document.getElementById('reportType')?.value || 'summary';
@@ -1727,6 +1951,62 @@
                     console.error('❌ File read error:', err);
                     alert('❌ Tiedoston lukeminen epäonnistui!\n\nKokeile uudestaan tai valitse toinen tiedosto.');
                 };
+
+            getActiveJourney() {
+                try {
+                    const data = localStorage.getItem(JOURNEY_STORAGE);
+                    return data ? JSON.parse(data) : null;
+                } catch {
+                    return null;
+                }
+            },
+
+            setActiveJourney(journey) {
+                if (journey) {
+                    localStorage.setItem(JOURNEY_STORAGE, JSON.stringify(journey));
+                } else {
+                    localStorage.removeItem(JOURNEY_STORAGE);
+                }
+            },
+
+            createJourney(departurePort, departureTime, departureGPS, entryId) {
+                const journey = {
+                    id: 'journey_' + Date.now(),
+                    startDate: new Date().toISOString().split('T')[0],
+                    startTime: departureTime,
+                    departurePort: departurePort,
+                    departureGPS: departureGPS,
+                    captain: DEFAULT_CAPTAIN,
+                    entryId: entryId,
+                    status: 'active',
+                    createdAt: new Date().toISOString()
+                };
+                this.setActiveJourney(journey);
+                return journey;
+            },
+
+            endJourney(arrivalPort, arrivalTime, arrivalGPS) {
+                const journey = this.getActiveJourney();
+                if (journey) {
+                    journey.status = 'completed';
+                    journey.endTime = arrivalTime;
+                    journey.arrivalPort = arrivalPort;
+                    journey.arrivalGPS = arrivalGPS;
+                    journey.completedAt = new Date().toISOString();
+                    this.setActiveJourney(journey);
+                    return journey;
+                }
+                return null;
+            },
+
+            changeCaptain(newCaptain) {
+                const journey = this.getActiveJourney();
+                if (journey) {
+                    journey.captain = newCaptain;
+                    this.setActiveJourney(journey);
+                }
+            }
+
                 reader.readAsText(file);
             },
 
