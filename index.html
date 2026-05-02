@@ -831,7 +831,7 @@
         // ==================== MERISÄÄ-HAKU ====================
         async function fetchMarineWeather(latitude, longitude) {
             try {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=windspeed_10m,weathercode,temperature_2m&timezone=Europe/Helsinki&forecast_days=1`;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=windspeed_10m,winddirection_10m,weathercode,temperature_2m&timezone=Europe/Helsinki&forecast_days=1`;
                 const response = await fetch(url);
                 if (!response.ok) throw new Error('Sää-haku epäonnistui');
                 const data = await response.json();
@@ -842,6 +842,7 @@
                 
                 const idx = hourly.windspeed_10m.length - 1;
                 const wind = hourly.windspeed_10m[idx];
+                const windDirection = hourly.winddirection_10m ? hourly.winddirection_10m[idx] : 0;
                 const temp = hourly.temperature_2m[idx];
                 const weatherCode = hourly.weathercode[idx];
                 
@@ -854,11 +855,17 @@
                     85: 'Lumi', 86: 'Lumi', 95: 'Ukkonen', 96: 'Ukkonen', 99: 'Ukkonen'
                 };
                 
-                const weather = weatherDescriptions[weatherCode] || 'Tuntematon';
-                const windDesc = wind < 1 ? '0m' : wind < 2 ? '0-1m' : wind < 4 ? '1-2m' : 
-                                 wind < 6 ? '2-3m' : wind < 8 ? '3-4m' : wind < 10 ? '4-5m' : '5m+';
+                // Tuulen suunnan määritys (0° = N, 90° = E, 180° = S, 270° = W)
+                const getWindDirection = (deg) => {
+                    const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+                    const index = Math.round(deg / 22.5) % 16;
+                    return directions[index];
+                };
                 
-                return `${weather}, ${windDesc} tuuli, ${temp}°C`;
+                const weather = weatherDescriptions[weatherCode] || 'Tuntematon';
+                const windDirection16 = getWindDirection(windDirection);
+                
+                return `${weather}, ${wind.toFixed(1)} m/s ${windDirection16} (${Math.round(windDirection)}°), ${temp}°C`;
             } catch (error) {
                 throw new Error('Merisää-haku epäonnistui: ' + error.message);
             }
@@ -1495,15 +1502,22 @@
                 btn.textContent = '⏳ Etsitään...';
                 btn.disabled = true;
                 const coordsDiv = document.getElementById(coordsDisplayId);
+                const portField = document.getElementById(portFieldId);
                 
                 navigator.geolocation.getCurrentPosition(
                     (pos) => {
                         const latDMS = formatCoordinateToDMS(pos.coords.latitude, false);
                         const lonDMS = formatCoordinateToDMS(pos.coords.longitude, true);
                         
-                        // Näytä koordinaatit
+                        // Näytä koordinaatit näyttöön
                         coordsDiv.textContent = `📍 ${latDMS} ${lonDMS}`;
                         coordsDiv.style.display = 'block';
+                        
+                        // Tallenna koordinaatit sataman nimen perään (esim. "Saari 60°08'54.0"N 24°59'23.3"E")
+                        // jos satama-kenttä on tyhjä, anna käyttäjän syöttää se
+                        if (!portField.value) {
+                            portField.value = '(GPS: ' + latDMS + ' ' + lonDMS + ')';
+                        }
                         
                         btn.textContent = '✅ OK';
                         setTimeout(() => {
