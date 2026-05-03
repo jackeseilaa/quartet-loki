@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.11 (Journey Events & Locations)</title>
+    <title>Quartet Loki - v2030.12 (Journey Events & Locations Linked)</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -724,7 +724,7 @@
                 <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
                 <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                     <strong>Quartet Loki PREMIUM</strong><br>
-                    <span id="versionDetail">v2030.11 - Tapahtuma-merkinnät & Paikat</span><br>
+                    <span id="versionDetail">v2030.12 - Reitistä linkitetyt tapahtumat</span><br>
                     Offline-pohjainen arkkitehtuuri<br>
                     <span id="dbSize"></span><br>
                     <span id="lastBackup"></span>
@@ -889,7 +889,7 @@
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.11';
+    const APP_VERSION = '2030.12';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     const ICLOUD_SYNC_INTERVAL = 60 * 60 * 1000; // 1 hour
@@ -1607,7 +1607,8 @@
                 return;
             }
 
-            DB.addLocation({ lat, lon, name, notes, type: 'location' });
+            const journey = DB.getActiveJourney();
+            DB.addLocation({ lat, lon, name, notes, type: 'location', journeyId: journey ? journey.id : null });
 
             document.getElementById('locationLat').value = '';
             document.getElementById('locationLon').value = '';
@@ -1626,16 +1627,52 @@
                 return;
             }
 
+            const journey = DB.getActiveJourney();
             DB.addLocation({
                 captain: captain || '—',
                 notes: notes || '—',
-                type: 'captain-change'
+                type: 'captain-change',
+                journeyId: journey ? journey.id : null
             });
 
             document.getElementById('locationCaptain').value = '';
             document.getElementById('locationNotes').value = '';
 
             this.renderLocations();
+        },
+
+        editLocation(id) {
+            const locations = DB.getLocations();
+            const location = locations.find(l => l.id === id);
+
+            if (!location) {
+                alert('Merkintää ei löydy');
+                return;
+            }
+
+            if (location.type === 'captain-change') {
+                const newCaptain = prompt('Uusi kapteeni:', location.captain);
+                if (newCaptain !== null) {
+                    location.captain = newCaptain;
+                    const newNotes = prompt('Merkinnät:', location.notes === '—' ? '' : location.notes);
+                    if (newNotes !== null) {
+                        location.notes = newNotes || '—';
+                        DB.setLocations(locations);
+                        this.renderLocations();
+                    }
+                }
+            } else {
+                const newName = prompt('Paikan nimi:', location.name);
+                if (newName !== null) {
+                    location.name = newName;
+                    const newNotes = prompt('Merkinnät:', location.notes || '');
+                    if (newNotes !== null) {
+                        location.notes = newNotes;
+                        DB.setLocations(locations);
+                        this.renderLocations();
+                    }
+                }
+            }
         },
 
         renderJourneyStatus() {
@@ -1754,7 +1791,10 @@
                             <div style="font-size: 0.85em; color: #333; margin-top: 4px;">${loc.notes}</div>
                             <div class="location-time">${timeStr}</div>
                         </div>
-                        <button class="btn btn-danger delete-loc-btn" data-id="${loc.id}" style="padding: 4px 8px; font-size: 0.8em;">Poista</button>
+                        <div style="display: flex; gap: 4px;">
+                            <button class="btn btn-primary edit-loc-btn" data-id="${loc.id}" style="padding: 4px 8px; font-size: 0.8em; flex: 1;">✏️ Muokkaa</button>
+                            <button class="btn btn-danger delete-loc-btn" data-id="${loc.id}" style="padding: 4px 8px; font-size: 0.8em; flex: 1;">Poista</button>
+                        </div>
                     </div>`;
                 } else if (loc.type === 'gps-location') {
                     // GPS-haku merkintä
@@ -1766,7 +1806,10 @@
                             <div style="font-size: 0.8em; color: #0c4a6e;">📍 ${latDMS} ${lonDMS}</div>
                             <div class="location-time">${timeStr}</div>
                         </div>
-                        <button class="btn btn-danger delete-loc-btn" data-id="${loc.id}" style="padding: 4px 8px; font-size: 0.8em;">Poista</button>
+                        <div style="display: flex; gap: 4px;">
+                            <button class="btn btn-primary edit-loc-btn" data-id="${loc.id}" style="padding: 4px 8px; font-size: 0.8em; flex: 1;">✏️ Muokkaa</button>
+                            <button class="btn btn-danger delete-loc-btn" data-id="${loc.id}" style="padding: 4px 8px; font-size: 0.8em; flex: 1;">Poista</button>
+                        </div>
                     </div>`;
                 } else {
                     // Manuaalinen GPS-paikka
@@ -1779,7 +1822,10 @@
                             ${loc.notes ? `<div style="font-size: 0.85em; color: #333; margin-top: 4px; padding: 8px; background: #f9f9f9; border-radius: 4px;">📝 ${loc.notes}</div>` : ''}
                             <div class="location-time">${timeStr}</div>
                         </div>
-                        <button class="btn btn-danger delete-loc-btn" data-id="${loc.id}" style="padding: 4px 8px; font-size: 0.8em;">Poista</button>
+                        <div style="display: flex; gap: 4px;">
+                            <button class="btn btn-primary edit-loc-btn" data-id="${loc.id}" style="padding: 4px 8px; font-size: 0.8em; flex: 1;">✏️ Muokkaa</button>
+                            <button class="btn btn-danger delete-loc-btn" data-id="${loc.id}" style="padding: 4px 8px; font-size: 0.8em; flex: 1;">Poista</button>
+                        </div>
                     </div>`;
                 }
             });
@@ -1791,20 +1837,29 @@
                 container.parentElement.scrollTop = 0;
             }, 100);
 
-            // Event delegation for delete
+            // Event delegation for edit and delete
             container.addEventListener('touchstart', (e) => {
-                const btn = e.target.closest('.delete-loc-btn');
-                if (!btn) return;
-                e.preventDefault();
-                DB.deleteLocation(btn.dataset.id);
-                this.renderLocations();
+                const deleteBtn = e.target.closest('.delete-loc-btn');
+                const editBtn = e.target.closest('.edit-loc-btn');
+                if (deleteBtn) {
+                    e.preventDefault();
+                    DB.deleteLocation(deleteBtn.dataset.id);
+                    this.renderLocations();
+                } else if (editBtn) {
+                    e.preventDefault();
+                    this.editLocation(editBtn.dataset.id);
+                }
             }, { passive: false });
 
             container.addEventListener('click', (e) => {
-                const btn = e.target.closest('.delete-loc-btn');
-                if (!btn) return;
-                DB.deleteLocation(btn.dataset.id);
-                this.renderLocations();
+                const deleteBtn = e.target.closest('.delete-loc-btn');
+                const editBtn = e.target.closest('.edit-loc-btn');
+                if (deleteBtn) {
+                    DB.deleteLocation(deleteBtn.dataset.id);
+                    this.renderLocations();
+                } else if (editBtn) {
+                    this.editLocation(editBtn.dataset.id);
+                }
             });
         },
 
@@ -1905,11 +1960,13 @@
                     }
 
                     // Tallenna GPS-haku merkintönä paikat-välilehteen aika-leimalla
+                    const journey = DB.getActiveJourney();
                     DB.addLocation({
                         lat: pos.coords.latitude,
                         lon: pos.coords.longitude,
                         name: `${portName} (GPS-haku)`,
-                        type: 'gps-location'
+                        type: 'gps-location',
+                        journeyId: journey ? journey.id : null
                     });
 
                     btn.textContent = '✅ OK';
@@ -1978,6 +2035,7 @@
                 filename = `lokikirja_purjehdus_${new Date().toISOString().split('T')[0]}.csv`;
                 csv = 'Purjehdus #,Päivä,Kapteeni,Lähtösatama,Tulosatama,Entiteetti,Käyttötarkoitus,Mailit (nm),Tunnit (h),Loki alku,Loki loppu,Sää,Miehistö,Merkinnät\n';
 
+                const locations = DB.getLocations();
                 let journeyNum = 1;
                 let currentJourney = null;
                 let journeyEntries = [];
@@ -2007,6 +2065,22 @@
                     const firstEntry = journeyEntries[0];
                     const lastEntry = journeyEntries[journeyEntries.length - 1];
                     csv += `"${journeyNum}","${currentJourney.date}","${currentJourney.captain}","${currentJourney.departurePort}","${lastEntry.arrivalPort || '—'}","${currentJourney.vuokralainen}","${currentJourney.kayttotarkoitus}","${totalMiles.toFixed(1)}","${totalHours.toFixed(1)}","${firstEntry.engineHoursStart || 0}","${lastEntry.engineHoursEnd || 0}","${firstEntry.weather || ''}","${firstEntry.personnel || ''}","${firstEntry.notes || ''}"\n`;
+                }
+
+                // Lisää matkalla tapahtuneet tapahtumat jos niillä on journeyId
+                if (locations.length > 0) {
+                    csv += '\n\nMATKALLA TAPAHTUNEET TAPAHTUMAT\n';
+                    csv += 'Aika,Tapahtuman tyyppi,Tiedot\n';
+                    locations.forEach(loc => {
+                        const time = new Date(loc.timestamp).toLocaleString('fi-FI');
+                        if (loc.type === 'captain-change') {
+                            csv += `"${time}","Kapteenin vaihto","${loc.captain} | ${loc.notes}"\n`;
+                        } else if (loc.type === 'gps-location') {
+                            csv += `"${time}","GPS-haku","${loc.name}"\n`;
+                        } else {
+                            csv += `"${time}","Paikka","${loc.name} | ${loc.notes || ''}"\n`;
+                        }
+                    });
                 }
             } else {
                 // Yhteenveto
@@ -2214,7 +2288,7 @@
             if (versionBadge) versionBadge.textContent = `v${APP_VERSION}`;
 
             const versionDetail = document.getElementById('versionDetail');
-            if (versionDetail) versionDetail.textContent = `v${APP_VERSION} - GPS Merisää`;
+            if (versionDetail) versionDetail.textContent = `v${APP_VERSION} - Reitistä linkitetyt tapahtumat`;
 
             const lastSync = document.getElementById('lastSyncTime');
             if (lastSync) lastSync.textContent = 'Ready';
