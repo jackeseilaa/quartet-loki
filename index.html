@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.6 (Journey Tracking & GPS)</title>
+    <title>Quartet Loki - v2030.8 (Optimized Entry Flow)</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -674,7 +674,7 @@
                 <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
                 <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                     <strong>Quartet Loki PREMIUM</strong><br>
-                    <span id="versionDetail">v2030.6 - GPS Merisää</span><br>
+                    <span id="versionDetail">v2030.8 - Optimoitu merkintävirta</span><br>
                     Offline-pohjainen arkkitehtuuri<br>
                     <span id="dbSize"></span><br>
                     <span id="lastBackup"></span>
@@ -689,21 +689,7 @@
     <div class="modal-content">
         <div class="modal-header">Merkinnän tiedot</div>
 
-        <div class="form-group">
-            <label>Päivämäärä <span class="required">*</span></label>
-            <input type="date" id="entryDate" required>
-        </div>
-
-        <div class="form-group">
-            <label>Kapteeni / Skiperi</label>
-            <input type="text" id="entryCaptain" placeholder="vastuussa oleva henkilö">
-        </div>
-
-        <div class="form-group">
-            <label>Miehistö</label>
-            <input type="text" id="entryCrew" placeholder="esim. Jukka, Liisa, Mikko">
-        </div>
-
+        <!-- PAKOLLISET TIEDOT -->
         <div class="form-group">
             <label>Käyttötarkoitus <span class="required">*</span></label>
             <select id="entryKayttotarkoitus" required>
@@ -725,13 +711,21 @@
         </div>
 
         <div class="form-group">
-            <label>Loki aloitus (aika) <span style="font-size: 0.85em; color: #666;">(oletuksena nyt)</span></label>
-            <input type="datetime-local" id="entryStartTime">
+            <label>Kapteeni / Skiperi</label>
+            <input type="text" id="entryCaptain" placeholder="vastuussa oleva henkilö">
+        </div>
+
+        <!-- PURJEHDYKSEN ALKU -->
+        <div style="margin: 20px 0 12px; padding: 8px 0; border-bottom: 2px solid #667eea; font-weight: 600; color: #667eea; font-size: 0.9em;">🚤 PURJEHDYKSEN ALKU</div>
+
+        <div class="form-group">
+            <label>Loki aloitus (aika) <span style="font-size: 0.85em; color: #666;">(oletuksena nyt)</span> <span class="required">*</span></label>
+            <input type="datetime-local" id="entryStartTime" required>
         </div>
 
         <div class="form-group">
-            <label>Loki lopetus (aika) <span style="font-size: 0.85em; color: #666;">(oletuksena nyt)</span></label>
-            <input type="datetime-local" id="entryEndTime">
+            <label>Lokimittari alku (h) <span style="font-size: 0.85em; color: #666;">(auto edellisestä)</span></label>
+            <input type="number" id="entryEngineHoursStart" step="0.1" placeholder="0.0">
         </div>
 
         <div class="form-group">
@@ -744,6 +738,26 @@
         </div>
 
         <div class="form-group">
+            <label>Sää</label>
+            <input type="text" id="entryWeather" placeholder="esim. Aurinko, 2-3m tuuli">
+            <button class="btn btn-primary btn-small" id="fetchWeatherBtn" style="margin-top: 8px; width: 100%;">☁️ Hae merisää GPS:llä</button>
+            <div id="weatherStatus" style="margin-top: 8px; padding: 8px; border-radius: 4px; font-size: 0.85em; display: none;"></div>
+        </div>
+
+        <div class="form-group">
+            <label>Miehistön lukumäärä</label>
+            <input type="text" id="entryPersonnel" placeholder="esim. 3 hlö">
+        </div>
+
+        <div class="form-group">
+            <label>Miehistö</label>
+            <input type="text" id="entryCrew" placeholder="esim. Jukka, Liisa, Mikko">
+        </div>
+
+        <!-- PURJEHDYKSEN LOPPU -->
+        <div style="margin: 20px 0 12px; padding: 8px 0; border-bottom: 2px solid #10b981; font-weight: 600; color: #10b981; font-size: 0.9em;">⚓ PURJEHDYKSEN LOPPU</div>
+
+        <div class="form-group">
             <label>Tulosatama</label>
             <div style="display: flex; gap: 8px; align-items: flex-end;">
                 <input type="text" id="entryArrivalPort" placeholder="esim. Porvoo" style="flex: 1;">
@@ -753,18 +767,8 @@
         </div>
 
         <div class="form-group">
-            <label>Reitti</label>
-            <input type="text" id="entryRoute" placeholder="esim. Helsinki - Porvoo">
-        </div>
-
-        <div class="form-group">
-            <label>Mailit (nm)</label>
-            <input type="number" id="entryNauticalMiles" step="0.1" placeholder="0.0">
-        </div>
-
-        <div class="form-group">
-            <label>Lokimittari alku (h) <span style="font-size: 0.85em; color: #666;">(auto edellisestä)</span></label>
-            <input type="number" id="entryEngineHoursStart" step="0.1" placeholder="0.0">
+            <label>Logi lopetus (aika) <span style="font-size: 0.85em; color: #666;">(oletuksena nyt)</span> <span class="required">*</span></label>
+            <input type="datetime-local" id="entryEndTime" required>
         </div>
 
         <div class="form-group">
@@ -772,22 +776,40 @@
             <input type="number" id="entryEngineHoursEnd" step="0.1" placeholder="0.0">
         </div>
 
+        <!-- Automaattinen laskenta: Konetunnit -->
+        <div class="form-group" style="background: #e0f2fe; padding: 12px; border-radius: 6px; border-left: 4px solid #0ea5e9;">
+            <span style="font-size: 0.85em; color: #0c4a6e; font-weight: 500;">⏱️ Käyttöaika: </span>
+            <span id="calculatedHours" style="font-size: 1em; font-weight: 600; color: #0369a1;">— h</span>
+        </div>
+
+        <!-- MUUT TIEDOT -->
+        <div style="margin: 20px 0 12px; padding: 8px 0; border-bottom: 2px solid #667eea; font-weight: 600; color: #667eea; font-size: 0.9em;">📋 MUUT TIEDOT</div>
+
         <div class="form-group">
-            <label>Miehistön lukumäärä</label>
-            <input type="text" id="entryPersonnel" placeholder="esim. 3 hlö">
+            <label>Reitti</label>
+            <input type="text" id="entryRoute" placeholder="esim. Helsinki - Porvoo">
         </div>
 
         <div class="form-group">
-            <label>Sää</label>
-            <input type="text" id="entryWeather" placeholder="esim. Aurinko, 2-3m tuuli">
-            <button class="btn btn-primary btn-small" id="fetchWeatherBtn" style="margin-top: 8px; width: 100%;">☁️ Hae merisää GPS:llä</button>
-            <div id="weatherStatus" style="margin-top: 8px; padding: 8px; border-radius: 4px; font-size: 0.85em; display: none;"></div>
+            <label>Mailit (nm) <span style="font-size: 0.85em; color: #666;">(auto lokimittarista)</span></label>
+            <input type="number" id="entryNauticalMiles" step="0.1" placeholder="0.0">
+            <!-- Automaattinen laskenta: Mailit -->
+            <div style="margin-top: 8px; padding: 10px; background: #dcfce7; border-radius: 6px; border-left: 4px solid #22c55e;">
+                <span style="font-size: 0.85em; color: #15803d;">📊 Laskettu: </span>
+                <span id="calculatedMiles" style="font-size: 0.95em; font-weight: 600; color: #166534;">— nm</span>
+                <span style="font-size: 0.75em; color: #15803d; display: block; margin-top: 4px;">
+                    <em>(lokimittari loppu - alku)</em>
+                </span>
+            </div>
         </div>
 
         <div class="form-group">
             <label>Merkinnät</label>
             <textarea id="entryNotes" placeholder="Lisähuomautukset..." style="resize: vertical; min-height: 80px;"></textarea>
         </div>
+
+        <!-- HIDDEN INPUT FOR DATE DERIVATION FROM STARTTIME -->
+        <input type="hidden" id="entryDate">
 
         <div class="modal-footer">
             <button class="btn btn-secondary" id="closeModalBtn">Peruuta</button>
@@ -803,7 +825,7 @@
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.6';
+    const APP_VERSION = '2030.8';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     const ICLOUD_SYNC_INTERVAL = 60 * 60 * 1000; // 1 hour
@@ -1195,6 +1217,7 @@
             document.getElementById('entryEngineHoursStart').value = '';
             document.getElementById('entryEngineHoursEnd').value = '';
             document.getElementById('entryCrew').value = '';
+            document.getElementById('entryPersonnel').value = '';
             document.getElementById('entryVuokralainen').value = '';
             document.getElementById('entryKayttotarkoitus').value = '';
             document.getElementById('entryWeather').value = '';
@@ -1222,7 +1245,8 @@
                 document.getElementById('entryNauticalMiles').value = entry.nauticalMiles || '';
                 document.getElementById('entryEngineHoursStart').value = entry.engineHoursStart || '';
                 document.getElementById('entryEngineHoursEnd').value = entry.engineHoursEnd || '';
-                document.getElementById('entryCrew').value = entry.personnel || entry.crew || '';
+                document.getElementById('entryPersonnel').value = entry.personnel || '';
+                document.getElementById('entryCrew').value = entry.crew || '';
                 document.getElementById('entryVuokralainen').value = entry.vuokralainen || '';
                 document.getElementById('entryKayttotarkoitus').value = entry.kayttotarkoitus || '';
                 document.getElementById('entryWeather').value = entry.weather || '';
@@ -1232,14 +1256,13 @@
             } else {
                 // Uusi merkintä - aseta oletusarvot
                 const now = new Date();
-                document.getElementById('entryDate').valueAsDate = now;
                 document.getElementById('entryCaptain').value = DEFAULT_CAPTAIN;
                 document.getElementById('entryDeparturePort').value = DEFAULT_DEPARTURE_PORT;
 
-                // Aseta aloitus- ja lopetusajat "nyt"
-                const timeStr = now.toTimeString().slice(0, 5);
+                // Aseta aloitus- ja lopetusajat "nyt" (date derived from startTime)
                 document.getElementById('entryStartTime').value = now.toISOString().slice(0, 16);
                 document.getElementById('entryEndTime').value = now.toISOString().slice(0, 16);
+                // entryDate hidden field will be auto-populated from startTime on save
 
                 // Auto-link: Edellisen merkinnän lopetuslukema → tämän aloituslukema
                 const entries = DB.getEntries();
@@ -1258,6 +1281,9 @@
 
             // Enter-navigaatio: Siirrä seuraavaan kenttään Enter-painikkeella
             this.setupEnterNavigation();
+
+            // Automaattiset laskelmat: konetunnit ja mailit
+            this.setupAutoCalculations();
         },
 
         setupEnterNavigation() {
@@ -1277,6 +1303,61 @@
             });
         },
 
+        setupAutoCalculations() {
+            // Konetunnit: laske aika aloitus ja lopetus välillä
+            const updateEngineHours = () => {
+                const startTime = document.getElementById('entryStartTime').value;
+                const endTime = document.getElementById('entryEndTime').value;
+                const display = document.getElementById('calculatedHours');
+
+                if (startTime && endTime) {
+                    const start = new Date(startTime);
+                    const end = new Date(endTime);
+                    const diffMs = end - start;
+                    const diffHours = diffMs / (1000 * 60 * 60);
+
+                    if (diffHours >= 0) {
+                        display.textContent = `${diffHours.toFixed(1)} h`;
+                        display.style.color = '#0369a1';
+                    } else {
+                        display.textContent = '⚠️ Lopetus ennen alkua!';
+                        display.style.color = '#dc2626';
+                    }
+                }
+            };
+
+            // Mailit: laske lokimittarin ero
+            const updateMiles = () => {
+                const startReading = parseFloat(document.getElementById('entryEngineHoursStart').value) || 0;
+                const endReading = parseFloat(document.getElementById('entryEngineHoursEnd').value) || 0;
+                const display = document.getElementById('calculatedMiles');
+                const milesField = document.getElementById('entryNauticalMiles');
+
+                const miles = endReading - startReading;
+
+                if (miles >= 0) {
+                    display.textContent = `${miles.toFixed(1)} nm`;
+                    display.style.color = '#166534';
+                    // Auto-täytä mailit-kenttä
+                    milesField.value = miles.toFixed(1);
+                } else {
+                    display.textContent = '⚠️ Lopetus < alku!';
+                    display.style.color = '#dc2626';
+                    milesField.value = '';
+                }
+            };
+
+            // Lisää event listenerit
+            document.getElementById('entryStartTime')?.addEventListener('change', updateEngineHours);
+            document.getElementById('entryEndTime')?.addEventListener('change', updateEngineHours);
+            document.getElementById('entryEngineHoursStart')?.addEventListener('input', updateMiles);
+            document.getElementById('entryEngineHoursEnd')?.addEventListener('input', updateMiles);
+
+            // Käynnistä laskelmat auki
+            updateEngineHours();
+            updateMiles();
+        },
+
         closeEntryModal() {
             document.getElementById('entryModal').classList.remove('active');
             this.currentEditingId = null;
@@ -1285,12 +1366,17 @@
         saveEntry() {
             const vuokralainen = document.getElementById('entryVuokralainen').value;
             const kayttotarkoitus = document.getElementById('entryKayttotarkoitus').value;
-            const date = document.getElementById('entryDate').value;
+            const startTime = document.getElementById('entryStartTime').value;
+            const endTime = document.getElementById('entryEndTime').value;
 
-            if (!date || !kayttotarkoitus) {
+            // Derive date from startTime
+            if (!startTime || !endTime || !kayttotarkoitus) {
                 alert('Täytä kaikki vaaditut kentät');
                 return;
             }
+
+            // Extract date from startTime (format: YYYY-MM-DDTHH:mm)
+            const date = startTime.split('T')[0];
 
             const entry = {
                 date,
@@ -1299,8 +1385,8 @@
                 kayttotarkoitus,
                 departurePort: document.getElementById('entryDeparturePort').value,
                 arrivalPort: document.getElementById('entryArrivalPort').value,
-                startTime: document.getElementById('entryStartTime').value,
-                endTime: document.getElementById('entryEndTime').value,
+                startTime: startTime,
+                endTime: endTime,
                 route: document.getElementById('entryRoute').value,
                 nauticalMiles: parseFloat(document.getElementById('entryNauticalMiles').value) || 0,
                 engineHoursStart: parseFloat(document.getElementById('entryEngineHoursStart').value) || 0,
