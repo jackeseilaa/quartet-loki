@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.21 (GPS-muunnos, CSV-tapahtumat, Muokkaus)</title>
+    <title>Quartet Loki - v2030.22 (Captain input fix)</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -189,6 +189,15 @@
         -webkit-user-select: text;
         user-select: text;
         pointer-events: auto !important;
+    }
+
+    /* Erityinen varmistus kapteenin kentälle */
+    #locationModalCaptain {
+        -webkit-user-select: text !important;
+        user-select: text !important;
+        pointer-events: auto !important;
+        -webkit-appearance: none;
+        appearance: none;
     }
 
     .form-row {
@@ -983,7 +992,7 @@
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.21';
+    const APP_VERSION = '2030.22';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1568,7 +1577,11 @@
         },
 
         setupEnterNavigation() {
-            const formInputs = document.querySelectorAll('.modal-content input, .modal-content select, .modal-content textarea');
+            // KORJAUS: Vain merkintä-modaalin kentät, ei paikat-modaalin kenttiä
+            const entryModal = document.getElementById('entryModal');
+            if (!entryModal) return;
+
+            const formInputs = entryModal.querySelectorAll('input, select, textarea');
             const inputArray = Array.from(formInputs);
 
             inputArray.forEach((input, index) => {
