@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.5 (Journey Tracking & GPS)</title>
+    <title>Quartet Loki - v2030.6 (Journey Tracking & GPS)</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -674,7 +674,7 @@
                 <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
                 <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                     <strong>Quartet Loki PREMIUM</strong><br>
-                    <span id="versionDetail">v2030.5 - GPS Merisää</span><br>
+                    <span id="versionDetail">v2030.6 - GPS Merisää</span><br>
                     Offline-pohjainen arkkitehtuuri<br>
                     <span id="dbSize"></span><br>
                     <span id="lastBackup"></span>
@@ -725,12 +725,12 @@
         </div>
 
         <div class="form-group">
-            <label>Veneen loki aloitus</label>
+            <label>Loki aloitus (aika) <span style="font-size: 0.85em; color: #666;">(oletuksena nyt)</span></label>
             <input type="datetime-local" id="entryStartTime">
         </div>
 
         <div class="form-group">
-            <label>Veneen loki lopetus</label>
+            <label>Loki lopetus (aika) <span style="font-size: 0.85em; color: #666;">(oletuksena nyt)</span></label>
             <input type="datetime-local" id="entryEndTime">
         </div>
 
@@ -763,12 +763,12 @@
         </div>
 
         <div class="form-group">
-            <label>Konetunnit (alku)</label>
+            <label>Lokimittari alku (h) <span style="font-size: 0.85em; color: #666;">(auto edellisestä)</span></label>
             <input type="number" id="entryEngineHoursStart" step="0.1" placeholder="0.0">
         </div>
 
         <div class="form-group">
-            <label>Konetunnit (loppu)</label>
+            <label>Lokimittari loppu (h) <span style="font-size: 0.85em; color: #666;">(→ seuraavan alku)</span></label>
             <input type="number" id="entryEngineHoursEnd" step="0.1" placeholder="0.0">
         </div>
 
@@ -803,7 +803,7 @@
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.5';
+    const APP_VERSION = '2030.6';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     const ICLOUD_SYNC_INTERVAL = 60 * 60 * 1000; // 1 hour
@@ -1231,13 +1231,50 @@
                 document.getElementById('entryNotes').value = entry.notes || '';
             } else {
                 // Uusi merkintä - aseta oletusarvot
-                document.getElementById('entryDate').valueAsDate = new Date();
+                const now = new Date();
+                document.getElementById('entryDate').valueAsDate = now;
                 document.getElementById('entryCaptain').value = DEFAULT_CAPTAIN;
                 document.getElementById('entryDeparturePort').value = DEFAULT_DEPARTURE_PORT;
+
+                // Aseta aloitus- ja lopetusajat "nyt"
+                const timeStr = now.toTimeString().slice(0, 5);
+                document.getElementById('entryStartTime').value = now.toISOString().slice(0, 16);
+                document.getElementById('entryEndTime').value = now.toISOString().slice(0, 16);
+
+                // Auto-link: Edellisen merkinnän lopetuslukema → tämän aloituslukema
+                const entries = DB.getEntries();
+                if (entries.length > 0) {
+                    const lastEntry = entries[entries.length - 1];
+                    if (lastEntry.engineHoursEnd) {
+                        document.getElementById('entryEngineHoursStart').value = lastEntry.engineHoursEnd;
+                        console.log(`🔗 Auto-linked: Aloitus ${lastEntry.engineHoursEnd} (edellisen lopetus)`);
+                    }
+                }
+
                 console.log('📝 Uusi merkintä');
             }
 
             modal.classList.add('active');
+
+            // Enter-navigaatio: Siirrä seuraavaan kenttään Enter-painikkeella
+            this.setupEnterNavigation();
+        },
+
+        setupEnterNavigation() {
+            const formInputs = document.querySelectorAll('.modal-content input, .modal-content select, .modal-content textarea');
+            const inputArray = Array.from(formInputs);
+
+            inputArray.forEach((input, index) => {
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        // Siirry seuraavaan kenttään
+                        if (index < inputArray.length - 1) {
+                            inputArray[index + 1].focus();
+                        }
+                    }
+                });
+            });
         },
 
         closeEntryModal() {
