@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.15 (Debug & iCloud palautus)</title>
+    <title>Quartet Loki - v2030.16 (Merkinnät näkyvät oikein)</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -726,7 +726,7 @@
                 <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
                 <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                     <strong>Quartet Loki PREMIUM</strong><br>
-                    <span id="versionDetail">v2030.15 - iCloud ja debug</span><br>
+                    <span id="versionDetail">v2030.16 - Merkinnät näkyvät oikein</span><br>
                     Offline-pohjainen arkkitehtuuri<br>
                     <span id="dbSize"></span><br>
                     <span id="lastBackup"></span>
@@ -891,7 +891,7 @@
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.15';
+    const APP_VERSION = '2030.16';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     const ICLOUD_SYNC_INTERVAL = 60 * 60 * 1000; // 1 hour
@@ -1315,28 +1315,28 @@
 
                 console.log(`✏️ Muokataan merkintää: ${entry.date}`);
 
-                // Näytä merkinnän tapahtumien lista
+                // Näytä merkinnän tapahtumien lista - käytä JOURNEYID:tä jos olemassa
                 const locations = DB.getLocations().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-                // DEBUG: näytä kaikki paikat-merkinnät
-                console.log(`🔍 Kaikkia paikat-merkintöjä: ${locations.length}`);
-                locations.forEach(loc => {
-                    const locDate = new Date(loc.timestamp).toISOString().split('T')[0];
-                    console.log(`  - ${locDate} ${loc.timestamp.substring(11, 16)}: ${loc.type} - ${loc.name}`);
-                });
+                let journeyEvents = [];
 
-                const journeyEvents = locations.filter(loc => {
-                    if (!loc.timestamp) {
-                        console.warn('⚠️ Merkinnällä ei ole timestampia!', loc);
-                        return false;
-                    }
-                    const locDate = new Date(loc.timestamp).toISOString().split('T')[0];
-                    const matches = locDate === entry.date;
-                    if (matches) {
-                        console.log(`✓ Osuma: ${locDate} === ${entry.date}`);
-                    }
-                    return matches;
-                });
+                // Yritä ensin löytää merkinnän aikaisen reitin ID:n perusteella
+                const activeJourney = DB.getActiveJourney();
+                if (entry.id) {
+                    // Jos merkinnällä on reitti-ID, käytä sitä
+                    journeyEvents = locations.filter(loc =>
+                        loc.journeyId && entry.entryJourneyId && loc.journeyId === entry.entryJourneyId
+                    );
+                }
+
+                // Jos journeyId-hakua ei löytynyt, etsi päivämäärän perusteella
+                if (journeyEvents.length === 0) {
+                    journeyEvents = locations.filter(loc => {
+                        if (!loc.timestamp) return false;
+                        const locDate = new Date(loc.timestamp).toISOString().split('T')[0];
+                        return locDate === entry.date;
+                    });
+                }
 
                 const eventsInfo = document.getElementById('entryEventsInfo');
                 const eventsList = document.getElementById('entryEventsList');
@@ -1359,7 +1359,6 @@
                     eventsList.innerHTML = eventsHtml;
                 } else {
                     eventsInfo.style.display = 'none';
-                    console.warn(`⚠️ Ei tapahtumia ${entry.date}:lle. Kaikkia: ${locations.length}`);
                 }
 
                 // Lataa KAIKKI kentät
@@ -1504,6 +1503,9 @@
             // Extract date from startTime (format: YYYY-MM-DDTHH:mm)
             const date = startTime.split('T')[0];
 
+            // Linkitä merkintä aktiiviseen reittiin jos on olemassa
+            const activeJourney = DB.getActiveJourney();
+
             const entry = {
                 date,
                 captain: document.getElementById('entryCaptain').value,
@@ -1519,7 +1521,8 @@
                 engineHoursEnd: parseFloat(document.getElementById('entryEngineHoursEnd').value) || 0,
                 personnel: document.getElementById('entryPersonnel').value,
                 weather: document.getElementById('entryWeather').value,
-                notes: document.getElementById('entryNotes').value
+                notes: document.getElementById('entryNotes').value,
+                entryJourneyId: activeJourney ? activeJourney.id : null
             };
 
             if (this.currentEditingId) {
@@ -1653,7 +1656,20 @@
             }
 
             const journey = DB.getActiveJourney();
-            DB.addLocation({ lat, lon, name, notes, type: 'location', journeyId: journey ? journey.id : null });
+
+            // Jos merkintä on auki muokkaukseen, käytä sen päivämäärää
+            let timestamp = new Date().toISOString();
+            const entryDate = document.getElementById('entryDate')?.value;
+            if (entryDate) {
+                // Aseta aikaleima siten että se on merkinnän päivällä
+                const now = new Date();
+                const [year, month, day] = entryDate.split('-');
+                const locDate = new Date(year, parseInt(month) - 1, day, now.getHours(), now.getMinutes(), now.getSeconds());
+                timestamp = locDate.toISOString();
+                console.log(`📍 Merkintä lisätään ${entryDate} aikaleimalla`);
+            }
+
+            DB.addLocation({ lat, lon, name, notes, type: 'location', journeyId: journey ? journey.id : null, timestamp });
 
             document.getElementById('locationLat').value = '';
             document.getElementById('locationLon').value = '';
@@ -1673,11 +1689,24 @@
             }
 
             const journey = DB.getActiveJourney();
+
+            // Jos merkintä on auki muokkaukseen, käytä sen päivämäärää
+            let timestamp = new Date().toISOString();
+            const entryDate = document.getElementById('entryDate')?.value;
+            if (entryDate) {
+                // Aseta aikaleima siten että se on merkinnän päivällä
+                const now = new Date();
+                const [year, month, day] = entryDate.split('-');
+                const locDate = new Date(year, parseInt(month) - 1, day, now.getHours(), now.getMinutes(), now.getSeconds());
+                timestamp = locDate.toISOString();
+            }
+
             DB.addLocation({
                 captain: captain || '—',
                 notes: notes || '—',
                 type: 'captain-change',
-                journeyId: journey ? journey.id : null
+                journeyId: journey ? journey.id : null,
+                timestamp
             });
 
             document.getElementById('locationCaptain').value = '';
