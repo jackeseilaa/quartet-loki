@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.14 (Merkinnät näkyvät & iCloud palaute)</title>
+    <title>Quartet Loki - v2030.15 (Debug & iCloud palautus)</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -726,7 +726,7 @@
                 <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
                 <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                     <strong>Quartet Loki PREMIUM</strong><br>
-                    <span id="versionDetail">v2030.14 - Merkinnät näkyvät oikein</span><br>
+                    <span id="versionDetail">v2030.15 - iCloud ja debug</span><br>
                     Offline-pohjainen arkkitehtuuri<br>
                     <span id="dbSize"></span><br>
                     <span id="lastBackup"></span>
@@ -891,7 +891,7 @@
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.14';
+    const APP_VERSION = '2030.15';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     const ICLOUD_SYNC_INTERVAL = 60 * 60 * 1000; // 1 hour
@@ -1317,10 +1317,25 @@
 
                 // Näytä merkinnän tapahtumien lista
                 const locations = DB.getLocations().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-                const journeyEvents = locations.filter(loc => {
-                    if (!loc.timestamp) return false;
+
+                // DEBUG: näytä kaikki paikat-merkinnät
+                console.log(`🔍 Kaikkia paikat-merkintöjä: ${locations.length}`);
+                locations.forEach(loc => {
                     const locDate = new Date(loc.timestamp).toISOString().split('T')[0];
-                    return locDate === entry.date;
+                    console.log(`  - ${locDate} ${loc.timestamp.substring(11, 16)}: ${loc.type} - ${loc.name}`);
+                });
+
+                const journeyEvents = locations.filter(loc => {
+                    if (!loc.timestamp) {
+                        console.warn('⚠️ Merkinnällä ei ole timestampia!', loc);
+                        return false;
+                    }
+                    const locDate = new Date(loc.timestamp).toISOString().split('T')[0];
+                    const matches = locDate === entry.date;
+                    if (matches) {
+                        console.log(`✓ Osuma: ${locDate} === ${entry.date}`);
+                    }
+                    return matches;
                 });
 
                 const eventsInfo = document.getElementById('entryEventsInfo');
@@ -1344,6 +1359,7 @@
                     eventsList.innerHTML = eventsHtml;
                 } else {
                     eventsInfo.style.display = 'none';
+                    console.warn(`⚠️ Ei tapahtumia ${entry.date}:lle. Kaikkia: ${locations.length}`);
                 }
 
                 // Lataa KAIKKI kentät
@@ -2226,16 +2242,31 @@
                         return;
                     }
 
-                    const data = JSON.parse(result);
-                    console.log('📊 Ladattu JSON:', Object.keys(data));
+                    let data = JSON.parse(result);
+                    console.log('📊 Ladattu JSON avaimet:', Object.keys(data));
+
+                    // Tarkista onko data varmuuskopion sisällä vai suoraan entries/locations
+                    if (data.entries && Array.isArray(data.entries)) {
+                        // OK - suora varmuuskopioformaatti
+                        console.log('✅ Varmuuskopioformaatti tunnistettu');
+                    } else if (data.backup && data.backup.entries) {
+                        // Jos tiedosto on enkapsuloidussa formaatissa
+                        data = data.backup;
+                        console.log('✅ Enkapsuloidun varmuuskopion tunnistettu');
+                    } else {
+                        alert(`❌ Virhe: Tiedosto ei ole oikea varmuuskopio.\n\nSisältö: ${Object.keys(data).join(', ')}\n\nOdotetaan: entries, locations`);
+                        return;
+                    }
 
                     if (!data.entries || !Array.isArray(data.entries)) {
-                        alert(`❌ Virhe: Tiedosto ei ole oikea varmuuskopio.\n\nSisältö: ${Object.keys(data).join(', ')}\n\nOdotetaan: entries, locations`);
+                        alert(`❌ Virhe: "entries" kenttä on olemassa mutta se ei ole array.`);
                         return;
                     }
 
                     const count = data.entries.length;
                     const locCount = data.locations?.length || 0;
+
+                    console.log(`✅ Valmis palautettavaksi: ${count} merkintää, ${locCount} tapahtumaa`);
 
                     if (confirm(`✅ Tiedosto OK!\n\n📝 Merkintöjä: ${count}\n📍 Tapahtumia: ${locCount}\n\nPalautetaanko?`)) {
                         DB.restore(data);
