@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.23</title>
+    <title>Quartet Loki - v2030.24</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -207,23 +207,6 @@
         user-select: text !important;
     }
 
-    /* Varmista kapteenin kentän täydellinen interaktiivisuus */
-    #locationModalCaptain,
-    #locationModalCaptainNotes {
-        background-color: white !important;
-        color: #333 !important;
-        cursor: text !important;
-        border: 1px solid #ddd !important;
-        padding: 10px !important;
-        -webkit-user-select: text !important;
-        user-select: text !important;
-        -webkit-user-modify: read-write !important;
-        all: revert !important;
-        font: inherit;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-    }
 
 
     .form-row {
@@ -991,16 +974,14 @@
         </div>
 
         <!-- KAPTEENIN VAIHTO TAB -->
-        <div id="location-captain-tab" class="location-modal-content" style="display: none;">
-            <div class="form-section">
-                <div class="form-group">
-                    <label>Uusi kapteeni / Skiperi <span class="required">*</span></label>
-                    <input type="text" id="locationModalCaptain" placeholder="esim. Jukka Virtanen" autocomplete="off" spellcheck="false">
-                </div>
-                <div class="form-group">
-                    <label>Merkinnät</label>
-                    <textarea id="locationModalCaptainNotes" placeholder="Lisähuomautukset..." style="resize: vertical; min-height: 60px;" autocomplete="off" spellcheck="false"></textarea>
-                </div>
+        <div id="location-captain-tab" class="location-modal-content" style="display: none; padding: 16px;">
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">Uusi kapteeni / Skiperi *</label>
+                <input type="text" id="locationModalCaptain" placeholder="esim. Jukka Virtanen" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">Merkinnät</label>
+                <textarea id="locationModalCaptainNotes" placeholder="Lisähuomautukset..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; resize: vertical; min-height: 80px;"></textarea>
             </div>
         </div>
 
@@ -1018,7 +999,7 @@
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.23';
+    const APP_VERSION = '2030.24';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
