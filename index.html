@@ -380,17 +380,22 @@
     .location-item {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        padding: 8px;
+        align-items: flex-start;
+        padding: 10px;
         background: white;
         border-radius: 6px;
-        margin-bottom: 8px;
-        border-left: 3px solid #667eea;
+        margin-bottom: 10px;
+        border-left: 4px solid #667eea;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
 
     .location-time {
-        font-size: 0.85em;
-        color: #999;
+        font-size: 0.8em;
+        color: #0369a1;
+        font-weight: 600;
+        margin-top: 6px;
+        padding-top: 6px;
+        border-top: 1px solid rgba(0,0,0,0.1);
     }
 
     @media (max-width: 480px) {
@@ -614,9 +619,9 @@
                 </div>
             </div>
 
-            <div style="margin-top: 20px;">
-                <h3 style="margin-bottom: 12px; font-size: 1em;">Merkityt paikat</h3>
-                <div id="locationsList"></div>
+            <div style="margin-top: 20px; display: flex; flex-direction: column; height: 400px; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+                <h3 style="margin-bottom: 0; padding: 12px; font-size: 1em; background: #f5f5f5; border-bottom: 1px solid #e0e0e0;">Merkityt paikat (uusimmasta vanhimpaan)</h3>
+                <div id="locationsList" style="flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px; background: white;"></div>
             </div>
         </div>
 
@@ -833,6 +838,12 @@
         <div class="form-group" style="background: #e0f2fe; padding: 12px; border-radius: 6px; border-left: 4px solid #0ea5e9;">
             <span style="font-size: 0.85em; color: #0c4a6e; font-weight: 500;">⏱️ Käyttöaika: </span>
             <span id="calculatedHours" style="font-size: 1em; font-weight: 600; color: #0369a1;">— h</span>
+        </div>
+
+        <!-- MATKAN AIKANA TAPAHTUMAT -->
+        <div style="margin: 20px 0 12px; padding: 8px 0; border-bottom: 2px solid #f59e0b; font-weight: 600; color: #f59e0b; font-size: 0.9em;">📝 MATKAN AIKANA TAPAHTUMAT</div>
+        <div style="margin-bottom: 16px;">
+            <button class="btn btn-warning" id="addJourneyEventBtn" style="width: 100%;">➕ Lisää tapahtuma (paikat-välilehti)</button>
         </div>
 
         <!-- MUUT TIEDOT -->
@@ -1221,6 +1232,10 @@
             addTouchListener(document.getElementById('newEntryBtn'), () => this.openEntryModal());
             addTouchListener(document.getElementById('closeModalBtn'), () => this.closeEntryModal());
             addTouchListener(document.getElementById('viewEventsBtn'), () => {
+                this.closeEntryModal();
+                document.querySelector('[data-tab="locations"]').click();
+            });
+            addTouchListener(document.getElementById('addJourneyEventBtn'), () => {
                 this.closeEntryModal();
                 document.querySelector('[data-tab="locations"]').click();
             });
@@ -1770,6 +1785,11 @@
             });
 
             container.innerHTML = html;
+
+            // Scroll to top to show new entries
+            setTimeout(() => {
+                container.parentElement.scrollTop = 0;
+            }, 100);
 
             // Event delegation for delete
             container.addEventListener('touchstart', (e) => {
