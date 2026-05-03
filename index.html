@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.30</title>
+    <title>Quartet Loki - v2030.32</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -24,11 +24,6 @@
             -webkit-user-select: none;
         }
 
-        [contenteditable="true"] {
-        -webkit-user-select: text;
-        user-select: text;
-        -webkit-touch-callout: default;
-    }
 
     html, body {
         width: 100%;
@@ -982,11 +977,11 @@
         <div id="location-captain-tab" class="location-modal-content" style="display: none; padding: 16px;">
             <div style="margin-bottom: 16px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">Uusi kapteeni / Skiperi *</label>
-                <div id="locationModalCaptain" contenteditable="true" spellcheck="false" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 4px; font-size: 16px; min-height: 40px; background: white; color: #333; line-height: 1.5;" data-placeholder="esim. Jukka Virtanen"></div>
+<p style="font-size: 14px; color: #666; padding: 10px;">Dialogi tulee näytölle kun painat Tallenna.</p>
             </div>
             <div style="margin-bottom: 16px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">Merkinnät</label>
-                <div id="locationModalCaptainNotes" contenteditable="true" spellcheck="false" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 4px; font-size: 16px; min-height: 80px; background: white; color: #333; line-height: 1.5;" data-placeholder="Lisähuomautukset..."></div>
+
             </div>
             <div style="background: #fff3cd; padding: 12px; border-radius: 4px; margin-top: 16px;">
                 <button id="testCaptainBtn" style="width: 100%; padding: 10px; background: #ffc107; border: none; border-radius: 4px; font-size: 14px; font-weight: 600; cursor: pointer;">🧪 TEST: Lisää teksti</button>
@@ -1844,8 +1839,8 @@
                 document.querySelector('[data-tab="captain-change"]').classList.add('active');
                 document.getElementById('location-captain-tab').style.display = 'block';
 
-                document.getElementById('locationModalCaptain').textContent = loc.captain || '';
-                document.getElementById('locationModalCaptainNotes').textContent = loc.notes || '';
+                document.getElementById('locationModalCaptain').value = loc.captain || '';
+                document.getElementById('locationModalCaptainNotes').value = loc.notes || '';
             } else {
                 // Avaa GPS tab
                 document.querySelectorAll('.location-modal-tab').forEach(b => b.classList.remove('active'));
@@ -1925,13 +1920,27 @@
                     console.log(`✅ Paikka tallennettu merkinnälle ${currentEditingEntryId}`);
                 }
             } else if (activeTab === 'captain-change') {
-                const captain = document.getElementById('locationModalCaptain').textContent.trim();
-                const notes = (document.getElementById('locationModalCaptainNotes').textContent || '').trim();
-
-                if (!captain) {
+                // Use prompt() for input - bypasses all DOM/CSS issues
+                const captain = prompt('Syötä kapteenin nimi:', '');
+                if (captain === null) return; // User cancelled
+                if (!captain.trim()) {
                     alert('Syötä kapteenin nimi');
                     return;
                 }
+                const notes = prompt('Merkinnät (valinnainen):', '') || '';
+                
+                // Get last location's end hours as default for new start hours
+                const allLocations = DB.getLocations() || [];
+                const lastLocation = allLocations[allLocations.length - 1];
+                const defaultStartHours = lastLocation ? (lastLocation.engine_hours_end || '') : '';
+                
+                const engineHoursStartStr = prompt('Konetunnit aloitus (esim. 1234.56):', defaultStartHours);
+                if (engineHoursStartStr === null) return;
+                const engineHoursStart = parseFloat(engineHoursStartStr) || 0;
+                
+                const engineHoursEndStr = prompt('Konetunnit lopetus (esim. 1234.56):', '');
+                if (engineHoursEndStr === null) return;
+                const engineHoursEnd = parseFloat(engineHoursEndStr) || 0;
 
                 let timestamp = new Date().toISOString();
                 let entryDate = currentEditingEntryDate?.trim() ? currentEditingEntryDate : null;
@@ -1945,11 +1954,13 @@
 
                 const journey = DB.getActiveJourney();
                 const locationData = {
-                    captain: captain || '—',
-                    notes: notes || '—',
+                    captain: captain.trim() || '—',
+                    notes: notes.trim() || '—',
                     type: 'captain-change',
                     journeyId: journey ? journey.id : null,
                     entryId: currentEditingEntryId, // ← KRIITTINEN LINKITYS
+                    engine_hours_start: engineHoursStart,
+                    engine_hours_end: engineHoursEnd,
                     timestamp
                 };
 
