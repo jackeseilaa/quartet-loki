@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.17 (Päivämäärä muokattavissa)</title>
+    <title>Quartet Loki - v2030.18 (Merkinnät oikealle päivälle)</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -726,7 +726,7 @@
                 <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
                 <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                     <strong>Quartet Loki PREMIUM</strong><br>
-                    <span id="versionDetail">v2030.17 - Päivämäärä muokattavissa</span><br>
+                    <span id="versionDetail">v2030.18 - Merkinnät oikealle päivälle</span><br>
                     Offline-pohjainen arkkitehtuuri<br>
                     <span id="dbSize"></span><br>
                     <span id="lastBackup"></span>
@@ -891,9 +891,10 @@
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.17';
+    const APP_VERSION = '2030.18';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
+    let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
     const ICLOUD_SYNC_INTERVAL = 60 * 60 * 1000; // 1 hour
     
     // Roihuvuoren Venekerho (Helsinki) - s/y Quartet kotilaiturin osoite
@@ -1363,6 +1364,8 @@
 
                 // Lataa KAIKKI kentät
                 document.getElementById('entryDate').value = entry.date || '';
+                currentEditingEntryDate = entry.date; // Säilytä päivämäärä paikat-välilehdelle
+                console.log(`📌 Merkinnän päivämäärä tallennettu: ${currentEditingEntryDate}`);
                 document.getElementById('entryCaptain').value = entry.captain || DEFAULT_CAPTAIN;
                 document.getElementById('entryDeparturePort').value = entry.departurePort || '';
                 document.getElementById('entryArrivalPort').value = entry.arrivalPort || '';
@@ -1657,9 +1660,15 @@
 
             const journey = DB.getActiveJourney();
 
-            // Jos merkintä on auki muokkaukseen, käytä sen päivämäärää
+            // Käytä tallennettua merkinnän päivämäärää (currentEditingEntryDate)
             let timestamp = new Date().toISOString();
-            const entryDate = document.getElementById('entryDate')?.value;
+            let entryDate = currentEditingEntryDate; // Ensin yritä globaalia muuttujaa
+
+            // Jos se ei ole asetettu, yritä HTML-kentästä
+            if (!entryDate) {
+                entryDate = document.getElementById('entryDate')?.value;
+            }
+
             if (entryDate && entryDate.trim()) {
                 // Aseta aikaleima siten että se on merkinnän päivällä
                 const now = new Date();
@@ -1667,6 +1676,8 @@
                 const locDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), now.getHours(), now.getMinutes(), now.getSeconds());
                 timestamp = locDate.toISOString();
                 console.log(`📍 Merkintä lisätään ${entryDate} aikaleimalla: ${timestamp}`);
+            } else {
+                console.warn(`⚠️ Merkinnän päivämäärä ei saatavilla! Käytetään tämän päivän päivämäärää.`);
             }
 
             const locId = DB.addLocation({ lat, lon, name, notes, type: 'location', journeyId: journey ? journey.id : null, timestamp });
@@ -1691,9 +1702,15 @@
 
             const journey = DB.getActiveJourney();
 
-            // Jos merkintä on auki muokkaukseen, käytä sen päivämäärää
+            // Käytä tallennettua merkinnän päivämäärää (currentEditingEntryDate)
             let timestamp = new Date().toISOString();
-            const entryDate = document.getElementById('entryDate')?.value;
+            let entryDate = currentEditingEntryDate; // Ensin yritä globaalia muuttujaa
+
+            // Jos se ei ole asetettu, yritä HTML-kentästä
+            if (!entryDate) {
+                entryDate = document.getElementById('entryDate')?.value;
+            }
+
             if (entryDate && entryDate.trim()) {
                 // Aseta aikaleima siten että se on merkinnän päivällä
                 const now = new Date();
