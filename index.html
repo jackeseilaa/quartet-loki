@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.20 (Merkinnät oikealle päivälle - FIX)</title>
+    <title>Quartet Loki - v2030.21 (GPS-muunnos, CSV-tapahtumat, Muokkaus)</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -970,7 +970,7 @@
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.20';
+    const APP_VERSION = '2030.21';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1446,15 +1446,53 @@
                     let eventsHtml = '';
                     journeyEvents.forEach(loc => {
                         const time = new Date(loc.timestamp).toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+                        let eventContent = '';
+                        let bgColor = '#e0e7ff';
+                        let borderColor = '#4f46e5';
+                        let icon = '📍';
+
                         if (loc.type === 'captain-change') {
-                            eventsHtml += `<div style="padding: 6px; background: #fef3c7; border-left: 3px solid #f59e0b; margin-bottom: 6px; border-radius: 3px;">👔 ${time} - Kapteeni: ${loc.captain}</div>`;
+                            eventContent = `👔 ${time} - Kapteeni: ${loc.captain}`;
+                            bgColor = '#fef3c7';
+                            borderColor = '#f59e0b';
                         } else if (loc.type === 'gps-location') {
-                            eventsHtml += `<div style="padding: 6px; background: #dbeafe; border-left: 3px solid #0284c7; margin-bottom: 6px; border-radius: 3px;">🛰️ ${time} - ${loc.name}</div>`;
+                            eventContent = `🛰️ ${time} - ${loc.name}`;
+                            bgColor = '#dbeafe';
+                            borderColor = '#0284c7';
                         } else {
-                            eventsHtml += `<div style="padding: 6px; background: #e0e7ff; border-left: 3px solid #4f46e5; margin-bottom: 6px; border-radius: 3px;">📍 ${time} - ${loc.name}${loc.notes ? ': ' + loc.notes : ''}</div>`;
+                            eventContent = `📍 ${time} - ${loc.name}${loc.notes ? ': ' + loc.notes : ''}`;
                         }
+
+                        // PARANNUS: Lisää muokkaus ja poista nappet
+                        eventsHtml += `<div style="padding: 8px; background: ${bgColor}; border-left: 3px solid ${borderColor}; margin-bottom: 8px; border-radius: 3px; display: flex; justify-content: space-between; align-items: center;">
+                            <span>${eventContent}</span>
+                            <div style="display: flex; gap: 4px; flex-shrink: 0;">
+                                <button class="btn btn-primary edit-event-btn" data-id="${loc.id}" style="padding: 4px 8px; font-size: 0.75em; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">✏️</button>
+                                <button class="btn btn-danger delete-event-btn" data-id="${loc.id}" style="padding: 4px 8px; font-size: 0.75em; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer;">🗑️</button>
+                            </div>
+                        </div>`;
                     });
                     eventsList.innerHTML = eventsHtml;
+
+                    // Event listenerit muokkaus- ja poista-nappeille
+                    eventsList.querySelectorAll('.edit-event-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            const locId = btn.dataset.id;
+                            this.editEvent(locId);
+                        });
+                    });
+
+                    eventsList.querySelectorAll('.delete-event-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            const locId = btn.dataset.id;
+                            if (confirm('Poistetaanko tapahtuma?')) {
+                                DB.deleteLocation(locId);
+                                this.openEntryModal(entry.id); // Päivitä merkintä
+                            }
+                        });
+                    });
                 } else {
                     eventsInfo.style.display = 'none';
                 }
@@ -1680,18 +1718,65 @@
             );
         },
 
+        editEvent(locId) {
+            const locations = DB.getLocations();
+            const loc = locations.find(l => l.id === locId);
+
+            if (!loc) {
+                alert('Tapahtumaa ei löydy!');
+                return;
+            }
+
+            // Avaa ponnahdus-modaali muokkaus-moodissa
+            document.getElementById('locationModalModal').classList.add('active');
+
+            if (loc.type === 'captain-change') {
+                // Avaa kapteenin vaihto tab
+                document.querySelectorAll('.location-modal-tab').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.location-modal-content').forEach(c => c.style.display = 'none');
+                document.querySelector('[data-tab="captain-change"]').classList.add('active');
+                document.getElementById('location-captain-tab').style.display = 'block';
+
+                document.getElementById('locationModalCaptain').value = loc.captain || '';
+                document.getElementById('locationModalCaptainNotes').value = loc.notes || '';
+            } else {
+                // Avaa GPS tab
+                document.querySelectorAll('.location-modal-tab').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.location-modal-content').forEach(c => c.style.display = 'none');
+                document.querySelector('[data-tab="gps-location"]').classList.add('active');
+                document.getElementById('location-gps-tab').style.display = 'block';
+
+                const latDMS = formatCoordinateToDMS(loc.lat, false);
+                const lonDMS = formatCoordinateToDMS(loc.lon, true);
+                document.getElementById('locationModalLat').value = loc.lat.toString();
+                document.getElementById('locationModalLon').value = loc.lon.toString();
+                document.getElementById('locationModalName').value = loc.name || '';
+                document.getElementById('locationModalNotes').value = loc.notes || '';
+                document.getElementById('gpsCoordDisplayModal').textContent = `${latDMS} ${lonDMS}`;
+                document.getElementById('gpsCoordDisplayModal').style.display = 'block';
+            }
+
+            // Aseta tieto että tämä on muokkaus (ei uusi)
+            window.editingLocationId = locId;
+        },
+
         saveLocationModal() {
             // Tarkista, kumpi välilehti on aktiivinen
             const activeTab = document.querySelector('.location-modal-tab.active').dataset.tab;
 
             if (activeTab === 'gps-location') {
-                const lat = parseFloat(document.getElementById('locationModalLat').value);
-                const lon = parseFloat(document.getElementById('locationModalLon').value);
+                // PARANNUS: Hyväksy sekä desimaalit että DMS-muoto
+                const latInput = document.getElementById('locationModalLat').value.trim();
+                const lonInput = document.getElementById('locationModalLon').value.trim();
+
+                let lat = this.parseCoordinate(latInput);
+                let lon = this.parseCoordinate(lonInput);
+
                 const name = document.getElementById('locationModalName').value || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
                 const notes = document.getElementById('locationModalNotes').value || '';
 
                 if (isNaN(lat) || isNaN(lon)) {
-                    alert('Syötä kelvolliset koordinaatit');
+                    alert('Syötä kelvolliset koordinaatit (desimaalit tai DMS-muoto)');
                     return;
                 }
 
@@ -1707,7 +1792,7 @@
                 }
 
                 const journey = DB.getActiveJourney();
-                DB.addLocation({
+                const locationData = {
                     lat,
                     lon,
                     name,
@@ -1716,9 +1801,22 @@
                     journeyId: journey ? journey.id : null,
                     entryId: currentEditingEntryId, // ← KRIITTINEN LINKITYS
                     timestamp
-                });
+                };
 
-                console.log(`✅ Paikka tallennettu merkinnälle ${currentEditingEntryId}`);
+                // PARANNUS: Tarkista onko editointi vai uusi
+                if (window.editingLocationId) {
+                    const locations = DB.getLocations();
+                    const locIndex = locations.findIndex(l => l.id === window.editingLocationId);
+                    if (locIndex !== -1) {
+                        locations[locIndex] = { ...locations[locIndex], ...locationData };
+                        DB.setLocations(locations);
+                        console.log(`✅ Paikka päivitetty: ${window.editingLocationId}`);
+                        window.editingLocationId = null;
+                    }
+                } else {
+                    DB.addLocation(locationData);
+                    console.log(`✅ Paikka tallennettu merkinnälle ${currentEditingEntryId}`);
+                }
             } else if (activeTab === 'captain-change') {
                 const captain = document.getElementById('locationModalCaptain').value;
                 const notes = document.getElementById('locationModalCaptainNotes').value || '';
@@ -1739,16 +1837,29 @@
                 }
 
                 const journey = DB.getActiveJourney();
-                DB.addLocation({
+                const locationData = {
                     captain: captain || '—',
                     notes: notes || '—',
                     type: 'captain-change',
                     journeyId: journey ? journey.id : null,
                     entryId: currentEditingEntryId, // ← KRIITTINEN LINKITYS
                     timestamp
-                });
+                };
 
-                console.log(`✅ Kapteenin vaihto tallennettu merkinnälle ${currentEditingEntryId}`);
+                // PARANNUS: Tarkista onko editointi vai uusi
+                if (window.editingLocationId) {
+                    const locations = DB.getLocations();
+                    const locIndex = locations.findIndex(l => l.id === window.editingLocationId);
+                    if (locIndex !== -1) {
+                        locations[locIndex] = { ...locations[locIndex], ...locationData };
+                        DB.setLocations(locations);
+                        console.log(`✅ Kapteenin vaihto päivitetty: ${window.editingLocationId}`);
+                        window.editingLocationId = null;
+                    }
+                } else {
+                    DB.addLocation(locationData);
+                    console.log(`✅ Kapteenin vaihto tallennettu merkinnälle ${currentEditingEntryId}`);
+                }
             }
 
             // Sulje ponnahdusikkuna
@@ -1801,6 +1912,46 @@
 
             this.closeEntryModal();
             this.render();
+        },
+
+        // PARANNUS: Parsii sekä desimaaleja että DMS-muotoa
+        parseCoordinate(input) {
+            if (!input) return NaN;
+
+            // Poista välilyönnit
+            input = input.trim();
+
+            // Yritä desimaalinumeroksi
+            const decimal = parseFloat(input);
+            if (!isNaN(decimal) && input.match(/^-?\d+\.?\d*$/)) {
+                return decimal;
+            }
+
+            // Yritä DMS-muotoa: 60°08'54.0"N tai 60:08:54N
+            // Muodot:
+            // - 60°08'54.0"N
+            // - 60°08'54"N
+            // - 60:08:54N
+            // - 60 08 54 N
+
+            const dmsMatch = input.match(/(\d+)[°:\s]+(\d+)[':;\s]+(\d+\.?\d*)["\s]*(N|S|E|W)?/i);
+            if (dmsMatch) {
+                const deg = parseFloat(dmsMatch[1]);
+                const min = parseFloat(dmsMatch[2]);
+                const sec = parseFloat(dmsMatch[3]);
+                const dir = dmsMatch[4];
+
+                let decimal = deg + (min / 60) + (sec / 3600);
+
+                // Jos on suunta (S tai W), negatiivinen
+                if (dir && (dir.toUpperCase() === 'S' || dir.toUpperCase() === 'W')) {
+                    decimal = -decimal;
+                }
+
+                return decimal;
+            }
+
+            return NaN;
         },
 
         render() {
@@ -2438,9 +2589,9 @@
             let filename = '';
 
             if (reportType === 'daily') {
-                // Vuorokausikohtainen raportti
+                // Vuorokausikohtainen raportti - PARANNUS: lisätään tapahtumat
                 filename = `lokikirja_paivittain_${new Date().toISOString().split('T')[0]}.csv`;
-                csv = 'Päivämäärä,Entiteetti,Käyttötarkoitus,Kapteeni,Lähtö,Tulo,Mailit (nm),Tunnit (h),Loki alku,Loki loppu,Sää,Miehistö,Merkinnät\n';
+                csv = 'Päivämäärä,Entiteetti,Käyttötarkoitus,Kapteeni,Lähtö,Tulo,Mailit (nm),Tunnit (h),Loki alku,Loki loppu,Sää,Miehistö,Merkinnät,Matkan Aikana Tapahtumat\n';
 
                 const entriesByDate = {};
                 entries.forEach(e => {
@@ -2448,10 +2599,29 @@
                     entriesByDate[e.date].push(e);
                 });
 
+                const locations = DB.getLocations();
+
                 Object.keys(entriesByDate).sort().reverse().forEach(date => {
                     entriesByDate[date].forEach(entry => {
                         const hours = (parseFloat(entry.engineHoursEnd) || 0) - (parseFloat(entry.engineHoursStart) || 0);
-                        csv += `"${date}","${entry.vuokralainen}","${entry.kayttotarkoitus}","${entry.captain}","${entry.departurePort || ''}","${entry.arrivalPort || ''}","${entry.nauticalMiles || 0}","${hours.toFixed(1)}","${entry.engineHoursStart || 0}","${entry.engineHoursEnd || 0}","${entry.weather || ''}","${entry.personnel || ''}","${entry.notes || ''}"\n`;
+
+                        // Etsi tapahtumat tämän merkinnän entryId:n perusteella
+                        const entryEvents = locations.filter(loc => loc.entryId === entry.id);
+                        let eventsStr = '';
+                        if (entryEvents.length > 0) {
+                            eventsStr = entryEvents.map(loc => {
+                                const time = new Date(loc.timestamp).toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+                                if (loc.type === 'captain-change') {
+                                    return `${time} - Kpt: ${loc.captain}`;
+                                } else if (loc.type === 'gps-location') {
+                                    return `${time} - GPS: ${loc.name}`;
+                                } else {
+                                    return `${time} - ${loc.name}`;
+                                }
+                            }).join(' | ');
+                        }
+
+                        csv += `"${date}","${entry.vuokralainen}","${entry.kayttotarkoitus}","${entry.captain}","${entry.departurePort || ''}","${entry.arrivalPort || ''}","${entry.nauticalMiles || 0}","${hours.toFixed(1)}","${entry.engineHoursStart || 0}","${entry.engineHoursEnd || 0}","${entry.weather || ''}","${entry.personnel || ''}","${entry.notes || ''}","${eventsStr}"\n`;
                     });
                 });
             } else if (reportType === 'journey') {
