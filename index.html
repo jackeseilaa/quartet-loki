@@ -207,6 +207,24 @@
         user-select: text !important;
     }
 
+    /* Varmista kapteenin kentän täydellinen interaktiivisuus */
+    #locationModalCaptain,
+    #locationModalCaptainNotes {
+        background-color: white !important;
+        color: #333 !important;
+        cursor: text !important;
+        border: 1px solid #ddd !important;
+        padding: 10px !important;
+        -webkit-user-select: text !important;
+        user-select: text !important;
+        -webkit-user-modify: read-write !important;
+        all: revert !important;
+        font: inherit;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+    }
+
 
     .form-row {
         display: grid;
@@ -769,7 +787,7 @@
                 <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
                 <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                     <strong>Quartet Loki PREMIUM</strong><br>
-                    <span id="versionDetail">v2030.20 - Merkinnät oikealle päivälle (FIXED)</span><br>
+                    <span id="versionDetail">v2030.22 - Captain input fix</span><br>
                     Offline-pohjainen arkkitehtuuri<br>
                     <span id="dbSize"></span><br>
                     <span id="lastBackup"></span>
@@ -977,11 +995,11 @@
             <div class="form-section">
                 <div class="form-group">
                     <label>Uusi kapteeni / Skiperi <span class="required">*</span></label>
-                    <input type="text" id="locationModalCaptain" placeholder="esim. Jukka Virtanen">
+                    <input type="text" id="locationModalCaptain" placeholder="esim. Jukka Virtanen" autocomplete="off" spellcheck="false">
                 </div>
                 <div class="form-group">
                     <label>Merkinnät</label>
-                    <textarea id="locationModalCaptainNotes" placeholder="Lisähuomautukset..." style="resize: vertical; min-height: 60px;"></textarea>
+                    <textarea id="locationModalCaptainNotes" placeholder="Lisähuomautukset..." style="resize: vertical; min-height: 60px;" autocomplete="off" spellcheck="false"></textarea>
                 </div>
             </div>
         </div>
@@ -1379,7 +1397,8 @@
             // Location Modal tabs
             const locationModalTabs = document.querySelectorAll('.location-modal-tab');
             locationModalTabs.forEach(btn => {
-                addTouchListener(btn, (e) => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
                     locationModalTabs.forEach(b => b.classList.remove('active'));
                     document.querySelectorAll('.location-modal-content').forEach(c => c.style.display = 'none');
                     btn.classList.add('active');
@@ -1387,14 +1406,17 @@
                     const tabElement = document.getElementById(`location-${tabName}-tab`);
                     tabElement.style.display = 'block';
 
-                    // KORJAUS: Automaattinen fokus vastaavaan kenttään
-                    setTimeout(() => {
-                        if (tabName === 'captain-change') {
-                            document.getElementById('locationModalCaptain')?.focus();
-                        } else if (tabName === 'gps-location') {
-                            document.getElementById('locationModalLat')?.focus();
+                    // Fokus suoraan ilman viiveä
+                    if (tabName === 'captain-change') {
+                        const captainField = document.getElementById('locationModalCaptain');
+                        if (captainField) {
+                            captainField.focus();
+                            captainField.click();
                         }
-                    }, 50);
+                    } else if (tabName === 'gps-location') {
+                        const latField = document.getElementById('locationModalLat');
+                        if (latField) latField.focus();
+                    }
                 });
             });
 
@@ -1698,13 +1720,23 @@
             document.getElementById('locationModalDate').textContent = entry.date;
             document.getElementById('locationModalRoute').textContent = route;
 
-            // Tyhjenni input-kentät
-            document.getElementById('locationModalLat').value = '';
-            document.getElementById('locationModalLon').value = '';
-            document.getElementById('locationModalName').value = '';
-            document.getElementById('locationModalNotes').value = '';
-            document.getElementById('locationModalCaptain').value = '';
-            document.getElementById('locationModalCaptainNotes').value = '';
+            // Tyhjenni input-kentät ja varmista että ne eivät ole disabled
+            const latField = document.getElementById('locationModalLat');
+            const lonField = document.getElementById('locationModalLon');
+            const nameField = document.getElementById('locationModalName');
+            const notesField = document.getElementById('locationModalNotes');
+            const captainField = document.getElementById('locationModalCaptain');
+            const captainNotesField = document.getElementById('locationModalCaptainNotes');
+
+            [latField, lonField, nameField, notesField, captainField, captainNotesField].forEach(field => {
+                if (field) {
+                    field.value = '';
+                    field.disabled = false;
+                    field.readOnly = false;
+                    field.removeAttribute('readonly');
+                }
+            });
+
             document.getElementById('gpsCoordDisplayModal').style.display = 'none';
 
             // Aseta GPS-tab aktiiviseksi
