@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.24</title>
+    <title>Quartet Loki - v2030.30</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -24,6 +24,11 @@
             -webkit-user-select: none;
         }
 
+        [contenteditable="true"] {
+        -webkit-user-select: text;
+        user-select: text;
+        -webkit-touch-callout: default;
+    }
 
     html, body {
         width: 100%;
@@ -945,8 +950,8 @@
 
         <!-- Paikka-merkintä VÄLILEHDET -->
         <div style="display: flex; gap: 8px; margin: 12px 0; border-bottom: 2px solid #e0e0e0;">
-            <button class="tab-btn location-modal-tab active" data-tab="gps-location" style="flex: 1; border: none; background: none; padding: 8px; border-bottom: 3px solid #667eea; cursor: pointer;">📍 GPS Paikan merkintä</button>
-            <button class="tab-btn location-modal-tab" data-tab="captain-change" style="flex: 1; border: none; background: none; padding: 8px; border-bottom: 3px solid transparent; cursor: pointer;">👔 Kapteenin vaihto</button>
+            <button id="tabGpsBtn" class="tab-btn location-modal-tab active" data-tab="gps-location" style="flex: 1; border: none; background: none; padding: 8px; border-bottom: 3px solid #667eea; cursor: pointer;" onclick="switchTab('gps-location')">📍 GPS Paikan merkintä</button>
+            <button id="tabCaptainBtn" class="tab-btn location-modal-tab" data-tab="captain-change" style="flex: 1; border: none; background: none; padding: 8px; border-bottom: 3px solid transparent; cursor: pointer;" onclick="switchTab('captain-change')">👔 Kapteenin vaihto</button>
         </div>
 
         <!-- GPS PAIKAN MERKINTÄ TAB -->
@@ -977,11 +982,15 @@
         <div id="location-captain-tab" class="location-modal-content" style="display: none; padding: 16px;">
             <div style="margin-bottom: 16px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">Uusi kapteeni / Skiperi *</label>
-                <input type="text" id="locationModalCaptain" placeholder="esim. Jukka Virtanen" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;">
+                <div id="locationModalCaptain" contenteditable="true" spellcheck="false" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 4px; font-size: 16px; min-height: 40px; background: white; color: #333; line-height: 1.5;" data-placeholder="esim. Jukka Virtanen"></div>
             </div>
-            <div>
+            <div style="margin-bottom: 16px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">Merkinnät</label>
-                <textarea id="locationModalCaptainNotes" placeholder="Lisähuomautukset..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; resize: vertical; min-height: 80px;"></textarea>
+                <div id="locationModalCaptainNotes" contenteditable="true" spellcheck="false" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 4px; font-size: 16px; min-height: 80px; background: white; color: #333; line-height: 1.5;" data-placeholder="Lisähuomautukset..."></div>
+            </div>
+            <div style="background: #fff3cd; padding: 12px; border-radius: 4px; margin-top: 16px;">
+                <button id="testCaptainBtn" style="width: 100%; padding: 10px; background: #ffc107; border: none; border-radius: 4px; font-size: 14px; font-weight: 600; cursor: pointer;">🧪 TEST: Lisää teksti</button>
+                <div id="testStatus" style="margin-top: 8px; font-size: 12px; color: #666;"></div>
             </div>
         </div>
 
@@ -999,7 +1008,7 @@
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.24';
+    const APP_VERSION = '2030.28';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1010,6 +1019,46 @@
     const DEFAULT_DEPARTURE_PORT = 'Roihuvuori, RVK';
     const DEFAULT_DEPARTURE_LAT = '60°08\'54.0"N'; // 60.148333
     const DEFAULT_DEPARTURE_LON = '24°59\'23.3"E'; // 24.989806
+
+    // ==================== VÄLILEHDEN VAIHTAMINEN ====================
+    function switchTab(tabName) {
+        // Poista aktiivinen-luokka kaikista napeista
+        document.querySelectorAll('.location-modal-tab').forEach(btn => {
+            btn.classList.remove('active');
+            btn.style.borderBottom = '3px solid transparent';
+        });
+
+        // Piilota kaikki välilehden sisällöt
+        document.querySelectorAll('.location-modal-content').forEach(content => {
+            content.style.display = 'none';
+        });
+
+        // Aktivoi klikattu nappula
+        const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+            activeBtn.style.borderBottom = '3px solid #667eea';
+        }
+
+        // Näytä valittu välilehti
+        const tabElement = document.getElementById(`location-${tabName}-tab`);
+        if (tabElement) {
+            tabElement.style.display = 'block';
+        }
+
+        // Aseta fokus oikeaan kenttään
+        if (tabName === 'captain-change') {
+            const captainField = document.getElementById('locationModalCaptain');
+            if (captainField) {
+                captainField.focus();
+            }
+        } else if (tabName === 'gps-location') {
+            const latField = document.getElementById('locationModalLat');
+            if (latField) {
+                latField.focus();
+            }
+        }
+    }
 
     // ==================== DATA MANAGEMENT ====================
     // ==================== KOORDINAATTIEN MUOTOILU ====================
@@ -1375,31 +1424,33 @@
             addTouchListener(document.getElementById('saveLocationModalBtn'), () => this.saveLocationModal());
             addTouchListener(document.getElementById('closeLocationModalBtn'), () => this.closeLocationModal());
 
-            // Location Modal tabs
-            const locationModalTabs = document.querySelectorAll('.location-modal-tab');
-            locationModalTabs.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    locationModalTabs.forEach(b => b.classList.remove('active'));
-                    document.querySelectorAll('.location-modal-content').forEach(c => c.style.display = 'none');
-                    btn.classList.add('active');
-                    const tabName = btn.dataset.tab;
-                    const tabElement = document.getElementById(`location-${tabName}-tab`);
-                    tabElement.style.display = 'block';
+            // Location Modal tabs - poistettu, käytetään onclick attribuuttia sen sijaan
 
-                    // Fokus suoraan ilman viiveä
-                    if (tabName === 'captain-change') {
-                        const captainField = document.getElementById('locationModalCaptain');
-                        if (captainField) {
-                            captainField.focus();
-                            captainField.click();
+            // TEST BUTTON for captain field
+            const testBtn = document.getElementById('testCaptainBtn');
+            if (testBtn) {
+                testBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const captainField = document.getElementById('locationModalCaptain');
+                    const statusDiv = document.getElementById('testStatus');
+
+                    if (captainField) {
+                        captainField.value = 'Test Kapteeni ' + new Date().getHours() + ':' + new Date().getMinutes();
+                        captainField.focus();
+
+                        if (captainField.value) {
+                            statusDiv.textContent = '✅ Teksti lisätty onnistuneesti! Kenttä toimii.';
+                            statusDiv.style.color = 'green';
+                        } else {
+                            statusDiv.textContent = '❌ Tekstin lisääminen epäonnistui.';
+                            statusDiv.style.color = 'red';
                         }
-                    } else if (tabName === 'gps-location') {
-                        const latField = document.getElementById('locationModalLat');
-                        if (latField) latField.focus();
+                    } else {
+                        statusDiv.textContent = '❌ Kenttää ei löydy!';
+                        statusDiv.style.color = 'red';
                     }
                 });
-            });
+            }
 
             // Journey buttons
             const changeCaptainBtn = document.getElementById('changeCaptainBtn');
@@ -1793,8 +1844,8 @@
                 document.querySelector('[data-tab="captain-change"]').classList.add('active');
                 document.getElementById('location-captain-tab').style.display = 'block';
 
-                document.getElementById('locationModalCaptain').value = loc.captain || '';
-                document.getElementById('locationModalCaptainNotes').value = loc.notes || '';
+                document.getElementById('locationModalCaptain').textContent = loc.captain || '';
+                document.getElementById('locationModalCaptainNotes').textContent = loc.notes || '';
             } else {
                 // Avaa GPS tab
                 document.querySelectorAll('.location-modal-tab').forEach(b => b.classList.remove('active'));
@@ -1874,8 +1925,8 @@
                     console.log(`✅ Paikka tallennettu merkinnälle ${currentEditingEntryId}`);
                 }
             } else if (activeTab === 'captain-change') {
-                const captain = document.getElementById('locationModalCaptain').value;
-                const notes = document.getElementById('locationModalCaptainNotes').value || '';
+                const captain = document.getElementById('locationModalCaptain').textContent.trim();
+                const notes = (document.getElementById('locationModalCaptainNotes').textContent || '').trim();
 
                 if (!captain) {
                     alert('Syötä kapteenin nimi');
@@ -2268,41 +2319,12 @@
             const timeStr = locDate.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
 
             if (location.type === 'captain-change') {
-                const newCaptain = prompt('Uusi kapteeni:', location.captain);
-                if (newCaptain !== null) {
-                    location.captain = newCaptain;
-                    const newNotes = prompt('Merkinnät:', location.notes === '—' ? '' : location.notes);
-                    if (newNotes !== null) {
-                        location.notes = newNotes || '—';
-                        const newDate = prompt(`Päivämäärä (YYYY-MM-DD)\nNykyinen: ${dateStr}`, dateStr);
-                        if (newDate !== null && newDate.trim()) {
-                            const [year, month, day] = newDate.split('-');
-                            const now = new Date(location.timestamp);
-                            const newTimestamp = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), now.getHours(), now.getMinutes(), now.getSeconds());
-                            location.timestamp = newTimestamp.toISOString();
-                        }
-                        DB.setLocations(locations);
-                        this.renderLocations();
-                    }
-                }
+                // KORJAUS: Käytä modal-pohjaista muokkausta prompt-dialogin sijaan
+                app.editEvent(location.id);
+                return;
             } else {
-                const newName = prompt('Paikan nimi:', location.name);
-                if (newName !== null) {
-                    location.name = newName;
-                    const newNotes = prompt('Merkinnät:', location.notes || '');
-                    if (newNotes !== null) {
-                        location.notes = newNotes;
-                        const newDate = prompt(`Päivämäärä (YYYY-MM-DD)\nNykyinen: ${dateStr}`, dateStr);
-                        if (newDate !== null && newDate.trim()) {
-                            const [year, month, day] = newDate.split('-');
-                            const now = new Date(location.timestamp);
-                            const newTimestamp = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), now.getHours(), now.getMinutes(), now.getSeconds());
-                            location.timestamp = newTimestamp.toISOString();
-                        }
-                        DB.setLocations(locations);
-                        this.renderLocations();
-                    }
-                }
+                // KORJAUS: Käytä modal-pohjaista muokkausta prompt-dialogin sijaan
+                app.editEvent(location.id);
             }
         },
 
