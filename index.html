@@ -180,25 +180,33 @@
         box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
 
-    /* Varmista että kaikki syöttökentät ovat interaktiivisia */
-    input[type="text"],
-    input[type="number"],
-    input[type="datetime-local"],
-    textarea,
-    select {
-        -webkit-user-select: text;
-        user-select: text;
-        pointer-events: auto !important;
+    /* Varmista input-kenttien perusominaisuudet */
+    input[type="text"] {
+        -webkit-appearance: textfield;
+        appearance: textfield;
+        caret-color: #333;
     }
 
-    /* Erityinen varmistus kapteenin kentälle */
-    #locationModalCaptain {
+    input[type="text"]:disabled {
+        background-color: #f0f0f0;
+        color: #999;
+        cursor: not-allowed;
+    }
+
+    input[type="text"]:not(:disabled) {
+        background-color: white;
+        color: #333;
+        cursor: text;
+    }
+
+    /* Poista globaali user-select: none input-kentistä */
+    input,
+    textarea,
+    select {
         -webkit-user-select: text !important;
         user-select: text !important;
-        pointer-events: auto !important;
-        -webkit-appearance: none;
-        appearance: none;
     }
+
 
     .form-row {
         display: grid;
@@ -1376,7 +1384,17 @@
                     document.querySelectorAll('.location-modal-content').forEach(c => c.style.display = 'none');
                     btn.classList.add('active');
                     const tabName = btn.dataset.tab;
-                    document.getElementById(`location-${tabName}-tab`).style.display = 'block';
+                    const tabElement = document.getElementById(`location-${tabName}-tab`);
+                    tabElement.style.display = 'block';
+
+                    // KORJAUS: Automaattinen fokus vastaavaan kenttään
+                    setTimeout(() => {
+                        if (tabName === 'captain-change') {
+                            document.getElementById('locationModalCaptain')?.focus();
+                        } else if (tabName === 'gps-location') {
+                            document.getElementById('locationModalLat')?.focus();
+                        }
+                    }, 50);
                 });
             });
 
