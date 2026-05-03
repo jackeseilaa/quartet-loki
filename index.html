@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.18 (Merkinnät oikealle päivälle)</title>
+    <title>Quartet Loki - v2030.19 (Merkinnät oikealle päivälle - FIX)</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -726,7 +726,7 @@
                 <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
                 <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                     <strong>Quartet Loki PREMIUM</strong><br>
-                    <span id="versionDetail">v2030.18 - Merkinnät oikealle päivälle</span><br>
+                    <span id="versionDetail">v2030.19 - Merkinnät oikealle päivälle (FIXED)</span><br>
                     Offline-pohjainen arkkitehtuuri<br>
                     <span id="dbSize"></span><br>
                     <span id="lastBackup"></span>
@@ -891,7 +891,7 @@
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.18';
+    const APP_VERSION = '2030.19';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1239,6 +1239,9 @@
                 document.querySelector('[data-tab="locations"]').click();
             });
             addTouchListener(document.getElementById('addJourneyEventBtn'), () => {
+                // currentEditingEntryDate on jo asetettu openEntryModal-funktiossa
+                // Ei tarvitse yritä päivittää sitä - vain varmista että se on käytössä
+                console.log(`🎯 Käytetään merkinnän päivämäärää: ${currentEditingEntryDate}`);
                 this.closeEntryModal();
                 document.querySelector('[data-tab="locations"]').click();
             });
@@ -1489,6 +1492,8 @@
         closeEntryModal() {
             document.getElementById('entryModal').classList.remove('active');
             this.currentEditingId = null;
+            // Älä tyhjennä currentEditingEntryDate heti - se tarvitaan vielä paikat-välilehdellä
+            // Se tyhjennetään vasta kun käyttäjä navigoi merkinnät-välilehdelle tai sulkee selaimen
         },
 
         saveEntry() {
@@ -1660,14 +1665,34 @@
 
             const journey = DB.getActiveJourney();
 
+            // DEBUG: Näytä mikä on currentEditingEntryDate ja HTML-kenttä
+            console.log(`🔍 currentEditingEntryDate: "${currentEditingEntryDate}"`);
+            console.log(`🔍 entryDate HTML-kenttä: "${document.getElementById('entryDate')?.value}"`);
+
             // Käytä tallennettua merkinnän päivämäärää (currentEditingEntryDate)
             let timestamp = new Date().toISOString();
-            let entryDate = currentEditingEntryDate; // Ensin yritä globaalia muuttujaa
+            let entryDate = currentEditingEntryDate?.trim() ? currentEditingEntryDate : null;
 
-            // Jos se ei ole asetettu, yritä HTML-kentästä
+            // Jos global muuttuja ei ole asetettu, yritä HTML-kentästä
             if (!entryDate) {
-                entryDate = document.getElementById('entryDate')?.value;
+                entryDate = document.getElementById('entryDate')?.value?.trim() || null;
+                if (entryDate) {
+                    console.log(`🔄 currentEditingEntryDate oli tyhjä, käytetään HTML-kentästä: "${entryDate}"`);
+                }
+            } else {
+                console.log(`✅ Käytetään currentEditingEntryDate: "${entryDate}"`);
             }
+
+            // Yritä vielä yksi fallback: aktiivisen merkinnän päivämäärä
+            if (!entryDate && this.currentEditingId) {
+                const activeEntry = DB.getEntries().find(e => e.id === this.currentEditingId);
+                if (activeEntry && activeEntry.date) {
+                    entryDate = activeEntry.date;
+                    console.log(`🔄 Käytetään aktiivisen merkinnän päivämäärää: "${entryDate}"`);
+                }
+            }
+
+            console.log(`📅 Lopullinen käytettävä päivämäärä: ${entryDate}`);
 
             if (entryDate && entryDate.trim()) {
                 // Aseta aikaleima siten että se on merkinnän päivällä
@@ -1675,9 +1700,13 @@
                 const [year, month, day] = entryDate.split('-');
                 const locDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), now.getHours(), now.getMinutes(), now.getSeconds());
                 timestamp = locDate.toISOString();
-                console.log(`📍 Merkintä lisätään ${entryDate} aikaleimalla: ${timestamp}`);
+                const locDateCheck = timestamp.split('T')[0];
+                console.log(`✅ Merkintä lisätään päivälle ${entryDate} aikaleimalla: ${timestamp} (ISO päivä: ${locDateCheck})`);
             } else {
-                console.warn(`⚠️ Merkinnän päivämäärä ei saatavilla! Käytetään tämän päivän päivämäärää.`);
+                console.warn(`⚠️ VAROITUS: Merkinnän päivämäärä ei saatavilla! Käytetään tämän päivän päivämäärää.`);
+                console.log(`⚠️ Nykyinen aika: ${timestamp}`);
+                const todayDateCheck = timestamp.split('T')[0];
+                console.log(`⚠️ Tänään on: ${todayDateCheck}`);
             }
 
             const locId = DB.addLocation({ lat, lon, name, notes, type: 'location', journeyId: journey ? journey.id : null, timestamp });
@@ -1704,11 +1733,19 @@
 
             // Käytä tallennettua merkinnän päivämäärää (currentEditingEntryDate)
             let timestamp = new Date().toISOString();
-            let entryDate = currentEditingEntryDate; // Ensin yritä globaalia muuttujaa
+            let entryDate = currentEditingEntryDate?.trim() ? currentEditingEntryDate : null;
 
-            // Jos se ei ole asetettu, yritä HTML-kentästä
+            // Jos global muuttuja ei ole asetettu, yritä HTML-kentästä
             if (!entryDate) {
-                entryDate = document.getElementById('entryDate')?.value;
+                entryDate = document.getElementById('entryDate')?.value?.trim() || null;
+            }
+
+            // Yritä vielä yksi fallback: aktiivisen merkinnän päivämäärä
+            if (!entryDate && this.currentEditingId) {
+                const activeEntry = DB.getEntries().find(e => e.id === this.currentEditingId);
+                if (activeEntry && activeEntry.date) {
+                    entryDate = activeEntry.date;
+                }
             }
 
             if (entryDate && entryDate.trim()) {
@@ -1717,6 +1754,9 @@
                 const [year, month, day] = entryDate.split('-');
                 const locDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), now.getHours(), now.getMinutes(), now.getSeconds());
                 timestamp = locDate.toISOString();
+                console.log(`✅ Kapteenin vaihto lisätään päivälle ${entryDate} aikaleimalla: ${timestamp}`);
+            } else {
+                console.warn(`⚠️ VAROITUS: Kapteenin vaihdon päivämäärä ei saatavilla! Käytetään tämän päivän päivämäärää.`);
             }
 
             DB.addLocation({
