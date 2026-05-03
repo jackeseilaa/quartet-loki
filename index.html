@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.19 (Merkinnät oikealle päivälle - FIX)</title>
+    <title>Quartet Loki - v2030.20 (Merkinnät oikealle päivälle - FIX)</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -398,6 +398,19 @@
         border-top: 1px solid rgba(0,0,0,0.1);
     }
 
+    .location-modal-tab.active {
+        border-bottom-color: #667eea !important;
+        color: #667eea !important;
+    }
+
+    .location-modal-content {
+        display: none;
+    }
+
+    .location-modal-content.active {
+        display: block;
+    }
+
     @media (max-width: 480px) {
         header h1 {
             font-size: 1.2em;
@@ -726,7 +739,7 @@
                 <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
                 <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                     <strong>Quartet Loki PREMIUM</strong><br>
-                    <span id="versionDetail">v2030.19 - Merkinnät oikealle päivälle (FIXED)</span><br>
+                    <span id="versionDetail">v2030.20 - Merkinnät oikealle päivälle (FIXED)</span><br>
                     Offline-pohjainen arkkitehtuuri<br>
                     <span id="dbSize"></span><br>
                     <span id="lastBackup"></span>
@@ -884,6 +897,72 @@
     </div>
 </div>
 
+<!-- PONNAHDUSIKKUNA: Paikkojen lisääminen merkinnän yhteydessä -->
+<div id="locationModalModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            📍 Lisää tapahtuma merkinnälle: <strong id="locationModalEntryLabel">—</strong>
+        </div>
+
+        <!-- Merkinnän yhteenveto -->
+        <div class="form-section" style="background: #e0e7ff; border-left: 4px solid #4f46e5;">
+            <div style="font-size: 0.9em; line-height: 1.6;">
+                <div><strong>Päivämäärä:</strong> <span id="locationModalDate">—</span></div>
+                <div><strong>Matka:</strong> <span id="locationModalRoute">—</span></div>
+            </div>
+        </div>
+
+        <!-- Paikka-merkintä VÄLILEHDET -->
+        <div style="display: flex; gap: 8px; margin: 12px 0; border-bottom: 2px solid #e0e0e0;">
+            <button class="tab-btn location-modal-tab active" data-tab="gps-location" style="flex: 1; border: none; background: none; padding: 8px; border-bottom: 3px solid #667eea; cursor: pointer;">📍 GPS Paikan merkintä</button>
+            <button class="tab-btn location-modal-tab" data-tab="captain-change" style="flex: 1; border: none; background: none; padding: 8px; border-bottom: 3px solid transparent; cursor: pointer;">👔 Kapteenin vaihto</button>
+        </div>
+
+        <!-- GPS PAIKAN MERKINTÄ TAB -->
+        <div id="location-gps-tab" class="location-modal-content active">
+            <div class="form-section">
+                <div class="form-group">
+                    <label>Leveysaste (Latitude) DD°MM'SS" <span class="required">*</span></label>
+                    <input type="text" id="locationModalLat" placeholder="60°08'54.0&quot;N" style="font-family: monospace;">
+                </div>
+                <div class="form-group">
+                    <label>Pituusaste (Longitude) DD°MM'SS" <span class="required">*</span></label>
+                    <input type="text" id="locationModalLon" placeholder="24°59'23.3&quot;E" style="font-family: monospace;">
+                </div>
+                <div class="form-group">
+                    <label>Paikan nimi (valinnainen)</label>
+                    <input type="text" id="locationModalName" placeholder="esim. Tallinna, avomeri jne">
+                </div>
+                <div class="form-group">
+                    <label>Merkinnät (tapahtumat, poikkeavuudet)</label>
+                    <textarea id="locationModalNotes" placeholder="Esim. sään muutos, tekninen vika, muu poikkeavuus..." style="resize: vertical; min-height: 60px;"></textarea>
+                </div>
+                <div id="gpsCoordDisplayModal" style="font-family: monospace; font-size: 0.85em; color: #0c4a6e; background: #dbeafe; padding: 8px; border-radius: 4px; margin-bottom: 12px; display: none;"></div>
+                <button class="btn btn-primary" id="useGpsModalBtn" style="width: 100%; margin-bottom: 8px;">📡 Käytä GPS:ää</button>
+            </div>
+        </div>
+
+        <!-- KAPTEENIN VAIHTO TAB -->
+        <div id="location-captain-tab" class="location-modal-content" style="display: none;">
+            <div class="form-section">
+                <div class="form-group">
+                    <label>Uusi kapteeni / Skiperi <span class="required">*</span></label>
+                    <input type="text" id="locationModalCaptain" placeholder="esim. Jukka Virtanen">
+                </div>
+                <div class="form-group">
+                    <label>Merkinnät</label>
+                    <textarea id="locationModalCaptainNotes" placeholder="Lisähuomautukset..." style="resize: vertical; min-height: 60px;"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="closeLocationModalBtn">Peruuta</button>
+            <button class="btn btn-success" id="saveLocationModalBtn">✅ Tallenna tapahtuma</button>
+        </div>
+    </div>
+</div>
+
 <!-- Hidden file inputs for iOS -->
 <input type="file" id="csvImportInput" accept=".csv" style="display:none;" />
 <input type="file" id="jsonRestoreInput" accept=".json" style="display:none;" />
@@ -891,10 +970,11 @@
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.19';
+    const APP_VERSION = '2030.20';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
+    let currentEditingEntryId = null; // KRIITTINEN: Säilytä merkinnän ID - paikat linkitetään tähän
     const ICLOUD_SYNC_INTERVAL = 60 * 60 * 1000; // 1 hour
     
     // Roihuvuoren Venekerho (Helsinki) - s/y Quartet kotilaiturin osoite
@@ -1239,11 +1319,10 @@
                 document.querySelector('[data-tab="locations"]').click();
             });
             addTouchListener(document.getElementById('addJourneyEventBtn'), () => {
-                // currentEditingEntryDate on jo asetettu openEntryModal-funktiossa
-                // Ei tarvitse yritä päivittää sitä - vain varmista että se on käytössä
-                console.log(`🎯 Käytetään merkinnän päivämäärää: ${currentEditingEntryDate}`);
-                this.closeEntryModal();
-                document.querySelector('[data-tab="locations"]').click();
+                // KRIITTINEN: Säilytä merkinnän ID ja avaa ponnahdusikkuna
+                currentEditingEntryId = this.currentEditingId;
+                console.log(`🎯 Avataan paikan lisäys-ponnahdus merkinnälle: ${currentEditingEntryId}`);
+                this.openLocationModal(currentEditingEntryId);
             });
             addTouchListener(document.getElementById('saveEntryBtn'), () => this.saveEntry());
             addTouchListener(document.getElementById('exportDataBtn'), () => this.exportData());
@@ -1262,6 +1341,23 @@
             addTouchListener(document.getElementById('fetchWeatherBtn'), () => this.fetchWeatherForEntry());
             addTouchListener(document.getElementById('depGpsBtn'), () => this.getGpsForPort('entryDeparturePort', 'depGpsCoords'));
             addTouchListener(document.getElementById('arrGpsBtn'), () => this.getGpsForPort('entryArrivalPort', 'arrGpsCoords'));
+
+            // Location Modal buttons
+            addTouchListener(document.getElementById('useGpsModalBtn'), () => this.useGPSModal());
+            addTouchListener(document.getElementById('saveLocationModalBtn'), () => this.saveLocationModal());
+            addTouchListener(document.getElementById('closeLocationModalBtn'), () => this.closeLocationModal());
+
+            // Location Modal tabs
+            const locationModalTabs = document.querySelectorAll('.location-modal-tab');
+            locationModalTabs.forEach(btn => {
+                addTouchListener(btn, (e) => {
+                    locationModalTabs.forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.location-modal-content').forEach(c => c.style.display = 'none');
+                    btn.classList.add('active');
+                    const tabName = btn.dataset.tab;
+                    document.getElementById(`location-${tabName}-tab`).style.display = 'block';
+                });
+            });
 
             // Journey buttons
             const changeCaptainBtn = document.getElementById('changeCaptainBtn');
@@ -1319,27 +1415,25 @@
 
                 console.log(`✏️ Muokataan merkintää: ${entry.date}`);
 
-                // Näytä merkinnän tapahtumien lista - käytä JOURNEYID:tä jos olemassa
+                // Näytä merkinnän tapahtumien lista - ENSIN entryId:n perusteella
                 const locations = DB.getLocations().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
                 let journeyEvents = [];
 
-                // Yritä ensin löytää merkinnän aikaisen reitin ID:n perusteella
-                const activeJourney = DB.getActiveJourney();
-                if (entry.id) {
-                    // Jos merkinnällä on reitti-ID, käytä sitä
-                    journeyEvents = locations.filter(loc =>
-                        loc.journeyId && entry.entryJourneyId && loc.journeyId === entry.entryJourneyId
-                    );
-                }
+                // KRIITTINEN: Etsi ensin paikat tämän merkinnän entryId:n perusteella
+                journeyEvents = locations.filter(loc => loc.entryId === entry.id);
+                console.log(`🔍 Merkinnälle ${entry.id} löytyi ${journeyEvents.length} paikkaa entryId:n perusteella`);
 
-                // Jos journeyId-hakua ei löytynyt, etsi päivämäärän perusteella
+                // Jos entryId-hakua ei löytynyt, yritä vanha päivämäärä-haku (yhteensopivuus)
                 if (journeyEvents.length === 0) {
                     journeyEvents = locations.filter(loc => {
                         if (!loc.timestamp) return false;
                         const locDate = new Date(loc.timestamp).toISOString().split('T')[0];
-                        return locDate === entry.date;
+                        return locDate === entry.date && !loc.entryId; // Vain entryId:ttömät
                     });
+                    if (journeyEvents.length > 0) {
+                        console.log(`🔄 Merkinnälle ${entry.date} löytyi ${journeyEvents.length} paikkaa päivämäärän perusteella (legacy)`);
+                    }
                 }
 
                 const eventsInfo = document.getElementById('entryEventsInfo');
@@ -1368,7 +1462,9 @@
                 // Lataa KAIKKI kentät
                 document.getElementById('entryDate').value = entry.date || '';
                 currentEditingEntryDate = entry.date; // Säilytä päivämäärä paikat-välilehdelle
+                currentEditingEntryId = entry.id; // KRIITTINEN: Säilytä ID, jotta paikat linkitetään oikein
                 console.log(`📌 Merkinnän päivämäärä tallennettu: ${currentEditingEntryDate}`);
+                console.log(`📌 Merkinnän ID tallennettu: ${currentEditingEntryId}`);
                 document.getElementById('entryCaptain').value = entry.captain || DEFAULT_CAPTAIN;
                 document.getElementById('entryDeparturePort').value = entry.departurePort || '';
                 document.getElementById('entryArrivalPort').value = entry.arrivalPort || '';
@@ -1386,6 +1482,10 @@
                 document.getElementById('entryNotes').value = entry.notes || '';
             } else {
                 // Uusi merkintä - aseta oletusarvot
+                // KRIITTINEN: Nollaa entryId, koska paikkojen pitää linkittyä uuteen merkintään
+                currentEditingEntryId = null;
+                currentEditingEntryDate = null;
+
                 const now = new Date();
                 document.getElementById('entryCaptain').value = DEFAULT_CAPTAIN;
                 document.getElementById('entryDeparturePort').value = DEFAULT_DEPARTURE_PORT;
@@ -1405,7 +1505,7 @@
                     }
                 }
 
-                console.log('📝 Uusi merkintä');
+                console.log('📝 Uusi merkintä - entryId nollattu');
             }
 
             modal.classList.add('active');
@@ -1494,6 +1594,166 @@
             this.currentEditingId = null;
             // Älä tyhjennä currentEditingEntryDate heti - se tarvitaan vielä paikat-välilehdellä
             // Se tyhjennetään vasta kun käyttäjä navigoi merkinnät-välilehdelle tai sulkee selaimen
+        },
+
+        // ========== PONNAHDUSIKKUNA: PAIKKOJEN LISÄÄMINEN ==========
+        openLocationModal(entryId) {
+            if (!entryId) {
+                console.error('❌ Merkinnän ID puuttuu!');
+                alert('Virhe: Merkintää ei ole avattu!');
+                return;
+            }
+
+            const entry = DB.getEntries().find(e => e.id === entryId);
+            if (!entry) {
+                console.error(`❌ Merkintää ${entryId} ei löydy!`);
+                alert('Virhe: Merkintää ei löydy!');
+                return;
+            }
+
+            // Näytä merkinnän tiedot ponnahduksessa
+            const route = `${entry.departurePort || '?'} → ${entry.arrivalPort || '?'}`;
+            document.getElementById('locationModalEntryLabel').textContent = entry.date;
+            document.getElementById('locationModalDate').textContent = entry.date;
+            document.getElementById('locationModalRoute').textContent = route;
+
+            // Tyhjenni input-kentät
+            document.getElementById('locationModalLat').value = '';
+            document.getElementById('locationModalLon').value = '';
+            document.getElementById('locationModalName').value = '';
+            document.getElementById('locationModalNotes').value = '';
+            document.getElementById('locationModalCaptain').value = '';
+            document.getElementById('locationModalCaptainNotes').value = '';
+            document.getElementById('gpsCoordDisplayModal').style.display = 'none';
+
+            // Aseta GPS-tab aktiiviseksi
+            document.querySelectorAll('.location-modal-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.location-modal-content').forEach(c => c.style.display = 'none');
+            document.querySelector('[data-tab="gps-location"]').classList.add('active');
+            document.getElementById('location-gps-tab').style.display = 'block';
+
+            // Sulje merkintä-modaali ja näytä ponnahdusikkuna
+            this.closeEntryModal();
+            document.getElementById('locationModalModal').classList.add('active');
+            console.log(`📍 Ponnahdusikkuna avattu merkinnälle: ${entryId}`);
+        },
+
+        closeLocationModal() {
+            document.getElementById('locationModalModal').classList.remove('active');
+            // Älä tyhjennä currentEditingEntryId - merkinnä voi lisätä useita paikkoja
+            console.log(`📍 Ponnahdusikkuna suljettu`);
+        },
+
+        useGPSModal() {
+            // Sama logiikka kuin useGPS(), mutta käyttää ponnahdus-modaalin kenttiä
+            const useGpsBtn = document.getElementById('useGpsModalBtn');
+            useGpsBtn.textContent = '📡 Etsitään...';
+            useGpsBtn.disabled = true;
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+
+                    document.getElementById('locationModalLat').value = lat.toString();
+                    document.getElementById('locationModalLon').value = lon.toString();
+
+                    const latDMS = formatCoordinateToDMS(lat, false);
+                    const lonDMS = formatCoordinateToDMS(lon, true);
+                    document.getElementById('gpsCoordDisplayModal').textContent = `${latDMS} ${lonDMS}`;
+                    document.getElementById('gpsCoordDisplayModal').style.display = 'block';
+
+                    const now = new Date().toLocaleString('fi-FI');
+                    console.log(`✅ GPS haku (modal): ${latDMS} ${lonDMS} @ ${now}`);
+
+                    useGpsBtn.textContent = '✅ GPS OK';
+                    setTimeout(() => {
+                        useGpsBtn.textContent = '📡 Käytä GPS:ää';
+                        useGpsBtn.disabled = false;
+                    }, 2000);
+                },
+                (error) => {
+                    alert('GPS-virhe: ' + error.message);
+                    useGpsBtn.textContent = '📡 Käytä GPS:ää';
+                    useGpsBtn.disabled = false;
+                }
+            );
+        },
+
+        saveLocationModal() {
+            // Tarkista, kumpi välilehti on aktiivinen
+            const activeTab = document.querySelector('.location-modal-tab.active').dataset.tab;
+
+            if (activeTab === 'gps-location') {
+                const lat = parseFloat(document.getElementById('locationModalLat').value);
+                const lon = parseFloat(document.getElementById('locationModalLon').value);
+                const name = document.getElementById('locationModalName').value || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+                const notes = document.getElementById('locationModalNotes').value || '';
+
+                if (isNaN(lat) || isNaN(lon)) {
+                    alert('Syötä kelvolliset koordinaatit');
+                    return;
+                }
+
+                // KRIITTINEN: Käytä currentEditingEntryId ja currentEditingEntryDate
+                let timestamp = new Date().toISOString();
+                let entryDate = currentEditingEntryDate?.trim() ? currentEditingEntryDate : null;
+
+                if (entryDate && entryDate.trim()) {
+                    const now = new Date();
+                    const [year, month, day] = entryDate.split('-');
+                    const locDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), now.getHours(), now.getMinutes(), now.getSeconds());
+                    timestamp = locDate.toISOString();
+                }
+
+                const journey = DB.getActiveJourney();
+                DB.addLocation({
+                    lat,
+                    lon,
+                    name,
+                    notes,
+                    type: 'location',
+                    journeyId: journey ? journey.id : null,
+                    entryId: currentEditingEntryId, // ← KRIITTINEN LINKITYS
+                    timestamp
+                });
+
+                console.log(`✅ Paikka tallennettu merkinnälle ${currentEditingEntryId}`);
+            } else if (activeTab === 'captain-change') {
+                const captain = document.getElementById('locationModalCaptain').value;
+                const notes = document.getElementById('locationModalCaptainNotes').value || '';
+
+                if (!captain) {
+                    alert('Syötä kapteenin nimi');
+                    return;
+                }
+
+                let timestamp = new Date().toISOString();
+                let entryDate = currentEditingEntryDate?.trim() ? currentEditingEntryDate : null;
+
+                if (entryDate && entryDate.trim()) {
+                    const now = new Date();
+                    const [year, month, day] = entryDate.split('-');
+                    const locDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), now.getHours(), now.getMinutes(), now.getSeconds());
+                    timestamp = locDate.toISOString();
+                }
+
+                const journey = DB.getActiveJourney();
+                DB.addLocation({
+                    captain: captain || '—',
+                    notes: notes || '—',
+                    type: 'captain-change',
+                    journeyId: journey ? journey.id : null,
+                    entryId: currentEditingEntryId, // ← KRIITTINEN LINKITYS
+                    timestamp
+                });
+
+                console.log(`✅ Kapteenin vaihto tallennettu merkinnälle ${currentEditingEntryId}`);
+            }
+
+            // Sulje ponnahdusikkuna
+            this.closeLocationModal();
+            alert('✅ Tapahtuma tallennettu merkinnälle!');
         },
 
         saveEntry() {
@@ -1709,8 +1969,18 @@
                 console.log(`⚠️ Tänään on: ${todayDateCheck}`);
             }
 
-            const locId = DB.addLocation({ lat, lon, name, notes, type: 'location', journeyId: journey ? journey.id : null, timestamp });
-            console.log(`✅ Tallennettu ID ${locId.id}`);
+            // KRIITTINEN: Linkitä paikka merkintään entryId:llä
+            const locId = DB.addLocation({
+                lat,
+                lon,
+                name,
+                notes,
+                type: 'location',
+                journeyId: journey ? journey.id : null,
+                entryId: currentEditingEntryId, // ← Linkitys merkintään!
+                timestamp
+            });
+            console.log(`✅ Tallennettu paikka ID ${locId.id} merkinnälle ${currentEditingEntryId}`);
 
             document.getElementById('locationLat').value = '';
             document.getElementById('locationLon').value = '';
@@ -1759,13 +2029,16 @@
                 console.warn(`⚠️ VAROITUS: Kapteenin vaihdon päivämäärä ei saatavilla! Käytetään tämän päivän päivämäärää.`);
             }
 
+            // KRIITTINEN: Linkitä kapteenin vaihto merkintään entryId:llä
             DB.addLocation({
                 captain: captain || '—',
                 notes: notes || '—',
                 type: 'captain-change',
                 journeyId: journey ? journey.id : null,
+                entryId: currentEditingEntryId, // ← Linkitys merkintään!
                 timestamp
             });
+            console.log(`✅ Kapteenin vaihto tallennettu merkinnälle ${currentEditingEntryId}`);
 
             document.getElementById('locationCaptain').value = '';
             document.getElementById('locationNotes').value = '';
