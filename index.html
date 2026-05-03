@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.8 (Optimized Entry Flow)</title>
+    <title>Quartet Loki - v2030.10 (Export & Reports)</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -595,6 +595,25 @@
                 </div>
             </div>
 
+            <div class="form-section">
+                <h3 style="margin-bottom: 12px;">👔 KAPTEENIN VAIHTO</h3>
+                <p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">Merkitse vastuullisen päällikön vaihto ja tapahtuneet poikkeavuudet.</p>
+
+                <div class="form-group">
+                    <label>Uusi kapteeni / Skiperi</label>
+                    <input type="text" id="locationCaptain" placeholder="esim. Jukka Virtanen">
+                </div>
+
+                <div class="form-group">
+                    <label>Merkinnät (poikkeavuudet, tapahtumat)</label>
+                    <textarea id="locationNotes" placeholder="Esim. sään muutos, tekninen vika, muu poikkeavuus..." style="resize: vertical; min-height: 60px;"></textarea>
+                </div>
+
+                <div class="action-buttons" style="margin-bottom: 12px;">
+                    <button class="btn btn-warning" id="addCaptainChangeBtn">👔 Tallenna kapteenin vaihto</button>
+                </div>
+            </div>
+
             <div style="margin-top: 20px;">
                 <h3 style="margin-bottom: 12px; font-size: 1em;">Merkityt paikat</h3>
                 <div id="locationsList"></div>
@@ -603,26 +622,52 @@
 
         <!-- ACCOUNTING TAB -->
         <div id="accounting" class="tab-content">
-            <h2 style="margin-bottom: 16px; font-size: 1.1em;">📊 Kirjanpito</h2>
-            <div id="accountingStats"></div>
+            <h2 style="margin-bottom: 16px; font-size: 1.1em;">📊 Kirjanpito - Käytön jakautuminen</h2>
+
+            <div class="form-section">
+                <h3 style="margin-bottom: 12px;">📈 Käyttöjakautuma yhteensä</h3>
+                <div id="accountingStats"></div>
+            </div>
+
             <div class="report-section">
-                <h3>Tmi - Tuotot ja Kulut</h3>
+                <h3>👔 Tmi - Käyttötunnit ja jakautuma</h3>
                 <div id="tmiAccounting"></div>
             </div>
             <div class="report-section">
-                <h3>Oy - Tuotot ja Kulut</h3>
+                <h3>👔 Oy - Käyttötunnit ja jakautuma</h3>
                 <div id="oyAccounting"></div>
             </div>
             <div class="report-section">
-                <h3>Oma - Tuotot ja Kulut</h3>
+                <h3>👤 Oma - Käyttötunnit ja jakautuma</h3>
                 <div id="omaAccounting"></div>
             </div>
         </div>
 
         <!-- REPORTING TAB -->
         <div id="reporting" class="tab-content">
-            <h2 style="margin-bottom: 16px; font-size: 1.1em;">📈 Raportointi</h2>
+            <h2 style="margin-bottom: 16px; font-size: 1.1em;">📈 Lokikirjan raportointi</h2>
+
             <div class="form-section">
+                <h3 style="margin-bottom: 12px;">📥 Lataa lokikirja</h3>
+                <p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">Vie tiedot CSV-muodossa (Excel, Google Sheets, jne.)</p>
+
+                <div class="form-group">
+                    <label>Raportin tyyppi</label>
+                    <select id="exportReportType">
+                        <option value="daily">Vuorokausikohtainen (päivä)</option>
+                        <option value="journey">Purjehduskohtainen (matka)</option>
+                        <option value="summary">Yhteenveto</option>
+                    </select>
+                </div>
+
+                <div class="action-buttons" style="margin-bottom: 12px;">
+                    <button class="btn btn-success" id="exportCsvBtn">📥 Lataa CSV</button>
+                    <button class="btn btn-primary" id="exportPdfBtn">📄 Lataa PDF</button>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3 style="margin-bottom: 12px;">📊 Näytä raportti</h3>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Raportin tyyppi</label>
@@ -674,7 +719,7 @@
                 <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
                 <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                     <strong>Quartet Loki PREMIUM</strong><br>
-                    <span id="versionDetail">v2030.8 - Optimoitu merkintävirta</span><br>
+                    <span id="versionDetail">v2030.10 - Lokikirjan vienti CSV:nä</span><br>
                     Offline-pohjainen arkkitehtuuri<br>
                     <span id="dbSize"></span><br>
                     <span id="lastBackup"></span>
@@ -715,8 +760,8 @@
             <input type="text" id="entryCaptain" placeholder="vastuussa oleva henkilö">
         </div>
 
-        <!-- PURJEHDYKSEN ALKU -->
-        <div style="margin: 20px 0 12px; padding: 8px 0; border-bottom: 2px solid #667eea; font-weight: 600; color: #667eea; font-size: 0.9em;">🚤 PURJEHDYKSEN ALKU</div>
+        <!-- PURJEHDUKSEN ALKU -->
+        <div style="margin: 20px 0 12px; padding: 8px 0; border-bottom: 2px solid #667eea; font-weight: 600; color: #667eea; font-size: 0.9em;">🚤 PURJEHDUKSEN ALKU</div>
 
         <div class="form-group">
             <label>Loki aloitus (aika) <span style="font-size: 0.85em; color: #666;">(oletuksena nyt)</span> <span class="required">*</span></label>
@@ -754,8 +799,8 @@
             <input type="text" id="entryCrew" placeholder="esim. Jukka, Liisa, Mikko">
         </div>
 
-        <!-- PURJEHDYKSEN LOPPU -->
-        <div style="margin: 20px 0 12px; padding: 8px 0; border-bottom: 2px solid #10b981; font-weight: 600; color: #10b981; font-size: 0.9em;">⚓ PURJEHDYKSEN LOPPU</div>
+        <!-- PURJEHDUKSEN LOPPU -->
+        <div style="margin: 20px 0 12px; padding: 8px 0; border-bottom: 2px solid #10b981; font-weight: 600; color: #10b981; font-size: 0.9em;">⚓ PURJEHDUKSEN LOPPU</div>
 
         <div class="form-group">
             <label>Tulosatama</label>
@@ -825,7 +870,7 @@
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.8';
+    const APP_VERSION = '2030.10';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     const ICLOUD_SYNC_INTERVAL = 60 * 60 * 1000; // 1 hour
@@ -1140,6 +1185,8 @@
                     if (tabId === 'locations') {
                         this.renderJourneyStatus();
                         this.renderLocations();
+                    } else if (tabId === 'accounting') {
+                        this.renderAccountingStats();
                     }
                 }
             };
@@ -1171,11 +1218,14 @@
             addTouchListener(document.getElementById('restoreAutoBackupBtn'), () => this.restoreLatestAutoBackup());
             addTouchListener(document.getElementById('clearAllBtn'), () => this.clearAll());
             addTouchListener(document.getElementById('generateReportBtn'), () => this.generateReport());
+            addTouchListener(document.getElementById('exportCsvBtn'), () => this.exportToCSV());
+            addTouchListener(document.getElementById('exportPdfBtn'), () => this.exportToPDF());
             addTouchListener(document.getElementById('syncNowBtn'), () => this.syncToICloud());
 
             // Location buttons
             addTouchListener(document.getElementById('useGpsBtn'), () => this.useGPS());
             addTouchListener(document.getElementById('addLocationBtn'), () => this.addLocation());
+            addTouchListener(document.getElementById('addCaptainChangeBtn'), () => this.addCaptainChange());
             addTouchListener(document.getElementById('fetchWeatherBtn'), () => this.fetchWeatherForEntry());
             addTouchListener(document.getElementById('depGpsBtn'), () => this.getGpsForPort('entryDeparturePort', 'depGpsCoords'));
             addTouchListener(document.getElementById('arrGpsBtn'), () => this.getGpsForPort('entryArrivalPort', 'arrGpsCoords'));
@@ -1509,11 +1559,32 @@
                 return;
             }
 
-            DB.addLocation({ lat, lon, name });
+            DB.addLocation({ lat, lon, name, type: 'location' });
 
             document.getElementById('locationLat').value = '';
             document.getElementById('locationLon').value = '';
             document.getElementById('locationName').value = '';
+
+            this.renderLocations();
+        },
+
+        addCaptainChange() {
+            const captain = document.getElementById('locationCaptain').value;
+            const notes = document.getElementById('locationNotes').value;
+
+            if (!captain && !notes) {
+                alert('Syötä kapteenin nimi tai merkinnät');
+                return;
+            }
+
+            DB.addLocation({
+                captain: captain || '—',
+                notes: notes || '—',
+                type: 'captain-change'
+            });
+
+            document.getElementById('locationCaptain').value = '';
+            document.getElementById('locationNotes').value = '';
 
             this.renderLocations();
         },
@@ -1559,12 +1630,65 @@
             }
         },
 
+        renderAccountingStats() {
+            const entries = DB.getEntries();
+            const statsDiv = document.getElementById('accountingStats');
+
+            if (!statsDiv) return;
+
+            // Laskut yhteensä
+            const totalHours = entries.reduce((sum, e) => {
+                const start = parseFloat(e.engineHoursStart) || 0;
+                const end = parseFloat(e.engineHoursEnd) || 0;
+                return sum + (end - start);
+            }, 0);
+
+            const totalMiles = entries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0);
+
+            // Jakautuma entiteetteittäin
+            const tmiEntries = entries.filter(e => e.vuokralainen === 'tmi');
+            const oyEntries = entries.filter(e => e.vuokralainen === 'oy');
+            const omaEntries = entries.filter(e => e.vuokralainen === 'oma' || !e.vuokralainen);
+
+            const calcStats = (entriesArray) => {
+                const hours = entriesArray.reduce((sum, e) => {
+                    const start = parseFloat(e.engineHoursStart) || 0;
+                    const end = parseFloat(e.engineHoursEnd) || 0;
+                    return sum + (end - start);
+                }, 0);
+                const miles = entriesArray.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0);
+                const percent = totalHours > 0 ? ((hours / totalHours) * 100).toFixed(1) : 0;
+                return { hours, miles, percent, count: entriesArray.length };
+            };
+
+            const tmiStats = calcStats(tmiEntries);
+            const oyStats = calcStats(oyEntries);
+            const omaStats = calcStats(omaEntries);
+
+            let html = '<table class="data-table"><tbody>';
+            html += '<tr><th style="background: #f5f5f5;">Entiteetti</th><th style="background: #f5f5f5;">Merkinnät</th><th style="background: #f5f5f5;">Tunnit</th><th style="background: #f5f5f5;">Osuus %</th><th style="background: #f5f5f5;">Mailit</th></tr>';
+            html += `<tr><td><strong>Tmi</strong></td><td>${tmiStats.count}</td><td>${tmiStats.hours.toFixed(1)} h</td><td>${tmiStats.percent}%</td><td>${tmiStats.miles.toFixed(1)} nm</td></tr>`;
+            html += `<tr><td><strong>Oy</strong></td><td>${oyStats.count}</td><td>${oyStats.hours.toFixed(1)} h</td><td>${oyStats.percent}%</td><td>${oyStats.miles.toFixed(1)} nm</td></tr>`;
+            html += `<tr><td><strong>Oma</strong></td><td>${omaStats.count}</td><td>${omaStats.hours.toFixed(1)} h</td><td>${omaStats.percent}%</td><td>${omaStats.miles.toFixed(1)} nm</td></tr>`;
+            html += '<tr style="background: #f5f5f5; font-weight: 600;"><td>YHTEENSÄ</td><td>' + entries.length + '</td><td>' + totalHours.toFixed(1) + ' h</td><td>100%</td><td>' + totalMiles.toFixed(1) + ' nm</td></tr>';
+            html += '</tbody></table>';
+
+            // Entiteetti-yksityiskohdat
+            html += '<div style="margin-top: 16px;">';
+            html += '<div class="form-section" style="background: #dbeafe; border-left: 4px solid #0284c7;"><strong>Tmi:</strong> ' + tmiStats.hours.toFixed(1) + ' h (' + tmiStats.percent + '%) | ' + tmiStats.miles.toFixed(1) + ' nm</div>';
+            html += '<div class="form-section" style="background: #d1fae5; border-left: 4px solid #10b981;"><strong>Oy:</strong> ' + oyStats.hours.toFixed(1) + ' h (' + oyStats.percent + '%) | ' + oyStats.miles.toFixed(1) + ' nm</div>';
+            html += '<div class="form-section" style="background: #fce7f3; border-left: 4px solid #ec4899;"><strong>Oma:</strong> ' + omaStats.hours.toFixed(1) + ' h (' + omaStats.percent + '%) | ' + omaStats.miles.toFixed(1) + ' nm</div>';
+            html += '</div>';
+
+            statsDiv.innerHTML = html;
+        },
+
         renderLocations() {
             const locations = DB.getLocations().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             const container = document.getElementById('locationsList');
 
             if (locations.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #999;">Ei merkittyjä paikkoja vielä.</p>';
+                container.innerHTML = '<p style="text-align: center; color: #999;">Ei merkittyjä paikkoja tai tapahtumia vielä.</p>';
                 return;
             }
 
@@ -1572,16 +1696,42 @@
             locations.forEach(loc => {
                 const time = new Date(loc.timestamp);
                 const timeStr = time.toLocaleString('fi-FI');
-                const latDMS = formatCoordinateToDMS(loc.lat, false);
-                const lonDMS = formatCoordinateToDMS(loc.lon, true);
-                html += `<div class="location-item">
-                    <div>
-                        <div style="font-weight: 600;">${loc.name}</div>
-                        <div style="font-size: 0.8em; color: #666;">📍 ${latDMS} ${lonDMS}</div>
-                        <div class="location-time">${timeStr}</div>
-                    </div>
-                    <button class="btn btn-danger delete-loc-btn" data-id="${loc.id}" style="padding: 4px 8px; font-size: 0.8em;">Poista</button>
-                </div>`;
+
+                if (loc.type === 'captain-change') {
+                    // Kapteenin vaihto -merkintä
+                    html += `<div class="location-item" style="background: #fef3c7; border-left: 4px solid #f59e0b;">
+                        <div>
+                            <div style="font-weight: 600;">👔 Kapteenin vaihto: ${loc.captain}</div>
+                            <div style="font-size: 0.85em; color: #333; margin-top: 4px;">${loc.notes}</div>
+                            <div class="location-time">${timeStr}</div>
+                        </div>
+                        <button class="btn btn-danger delete-loc-btn" data-id="${loc.id}" style="padding: 4px 8px; font-size: 0.8em;">Poista</button>
+                    </div>`;
+                } else if (loc.type === 'gps-location') {
+                    // GPS-haku merkintä
+                    const latDMS = formatCoordinateToDMS(loc.lat, false);
+                    const lonDMS = formatCoordinateToDMS(loc.lon, true);
+                    html += `<div class="location-item" style="background: #dbeafe; border-left: 4px solid #0284c7;">
+                        <div>
+                            <div style="font-weight: 600;">🛰️ ${loc.name}</div>
+                            <div style="font-size: 0.8em; color: #0c4a6e;">📍 ${latDMS} ${lonDMS}</div>
+                            <div class="location-time">${timeStr}</div>
+                        </div>
+                        <button class="btn btn-danger delete-loc-btn" data-id="${loc.id}" style="padding: 4px 8px; font-size: 0.8em;">Poista</button>
+                    </div>`;
+                } else {
+                    // Manuaalinen GPS-paikka
+                    const latDMS = formatCoordinateToDMS(loc.lat, false);
+                    const lonDMS = formatCoordinateToDMS(loc.lon, true);
+                    html += `<div class="location-item">
+                        <div>
+                            <div style="font-weight: 600;">${loc.name}</div>
+                            <div style="font-size: 0.8em; color: #666;">📍 ${latDMS} ${lonDMS}</div>
+                            <div class="location-time">${timeStr}</div>
+                        </div>
+                        <button class="btn btn-danger delete-loc-btn" data-id="${loc.id}" style="padding: 4px 8px; font-size: 0.8em;">Poista</button>
+                    </div>`;
+                }
             });
 
             container.innerHTML = html;
@@ -1699,6 +1849,14 @@
                         portField.value = '(GPS: ' + coordStr + ')';
                     }
 
+                    // Tallenna GPS-haku merkintönä paikat-välilehteen aika-leimalla
+                    DB.addLocation({
+                        lat: pos.coords.latitude,
+                        lon: pos.coords.longitude,
+                        name: `${portName} (GPS-haku)`,
+                        type: 'gps-location'
+                    });
+
                     btn.textContent = '✅ OK';
                     setTimeout(() => {
                         btn.textContent = '🛰️ GPS';
@@ -1729,6 +1887,106 @@
             html += '</tbody></table></div>';
 
             document.getElementById('reportOutput').innerHTML = html;
+        },
+
+        exportToCSV() {
+            const reportType = document.getElementById('exportReportType').value;
+            const entries = DB.getEntries();
+
+            if (entries.length === 0) {
+                alert('Ei merkintöjä ladattavaksi');
+                return;
+            }
+
+            let csv = '';
+            let filename = '';
+
+            if (reportType === 'daily') {
+                // Vuorokausikohtainen raportti
+                filename = `lokikirja_paivittain_${new Date().toISOString().split('T')[0]}.csv`;
+                csv = 'Päivämäärä,Entiteetti,Käyttötarkoitus,Kapteeni,Lähtö,Tulo,Mailit (nm),Tunnit (h),Loki alku,Loki loppu,Sää,Miehistö,Merkinnät\n';
+
+                const entriesByDate = {};
+                entries.forEach(e => {
+                    if (!entriesByDate[e.date]) entriesByDate[e.date] = [];
+                    entriesByDate[e.date].push(e);
+                });
+
+                Object.keys(entriesByDate).sort().reverse().forEach(date => {
+                    entriesByDate[date].forEach(entry => {
+                        const hours = (parseFloat(entry.engineHoursEnd) || 0) - (parseFloat(entry.engineHoursStart) || 0);
+                        csv += `"${date}","${entry.vuokralainen}","${entry.kayttotarkoitus}","${entry.captain}","${entry.departurePort || ''}","${entry.arrivalPort || ''}","${entry.nauticalMiles || 0}","${hours.toFixed(1)}","${entry.engineHoursStart || 0}","${entry.engineHoursEnd || 0}","${entry.weather || ''}","${entry.personnel || ''}","${entry.notes || ''}"\n`;
+                    });
+                });
+            } else if (reportType === 'journey') {
+                // Purjehduskohtainen raportti
+                filename = `lokikirja_purjehdus_${new Date().toISOString().split('T')[0]}.csv`;
+                csv = 'Purjehdus #,Päivä,Kapteeni,Lähtösatama,Tulosatama,Entiteetti,Käyttötarkoitus,Mailit (nm),Tunnit (h),Loki alku,Loki loppu,Sää,Miehistö,Merkinnät\n';
+
+                let journeyNum = 1;
+                let currentJourney = null;
+                let journeyEntries = [];
+
+                entries.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(entry => {
+                    // Ryhmittele merkinnät purjehduksiksi (samana päivänä, samasta lähtösatamasta)
+                    if (!currentJourney || currentJourney.date !== entry.date || currentJourney.departurePort !== entry.departurePort) {
+                        if (currentJourney && journeyEntries.length > 0) {
+                            // Kirjoita edellinen purjehdus
+                            const totalHours = journeyEntries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
+                            const totalMiles = journeyEntries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0);
+                            const firstEntry = journeyEntries[0];
+                            const lastEntry = journeyEntries[journeyEntries.length - 1];
+                            csv += `"${journeyNum}","${currentJourney.date}","${currentJourney.captain}","${currentJourney.departurePort}","${lastEntry.arrivalPort || '—'}","${currentJourney.vuokralainen}","${currentJourney.kayttotarkoitus}","${totalMiles.toFixed(1)}","${totalHours.toFixed(1)}","${firstEntry.engineHoursStart || 0}","${lastEntry.engineHoursEnd || 0}","${firstEntry.weather || ''}","${firstEntry.personnel || ''}","${firstEntry.notes || ''}"\n`;
+                            journeyNum++;
+                            journeyEntries = [];
+                        }
+                        currentJourney = { date: entry.date, departurePort: entry.departurePort, captain: entry.captain, vuokralainen: entry.vuokralainen, kayttotarkoitus: entry.kayttotarkoitus };
+                    }
+                    journeyEntries.push(entry);
+                });
+
+                // Viimeinen purjehdus
+                if (currentJourney && journeyEntries.length > 0) {
+                    const totalHours = journeyEntries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
+                    const totalMiles = journeyEntries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0);
+                    const firstEntry = journeyEntries[0];
+                    const lastEntry = journeyEntries[journeyEntries.length - 1];
+                    csv += `"${journeyNum}","${currentJourney.date}","${currentJourney.captain}","${currentJourney.departurePort}","${lastEntry.arrivalPort || '—'}","${currentJourney.vuokralainen}","${currentJourney.kayttotarkoitus}","${totalMiles.toFixed(1)}","${totalHours.toFixed(1)}","${firstEntry.engineHoursStart || 0}","${lastEntry.engineHoursEnd || 0}","${firstEntry.weather || ''}","${firstEntry.personnel || ''}","${firstEntry.notes || ''}"\n`;
+                }
+            } else {
+                // Yhteenveto
+                filename = `lokikirja_yhteenveto_${new Date().toISOString().split('T')[0]}.csv`;
+                csv = 'LOKIKIRJAN YHTEENVETO\n\n';
+                csv += 'Tilastot\n';
+                csv += 'Merkintöjä,' + entries.length + '\n';
+                const totalMiles = entries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0);
+                const totalHours = entries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
+                csv += 'Mailit (nm),' + totalMiles.toFixed(1) + '\n';
+                csv += 'Tunnit (h),' + totalHours.toFixed(1) + '\n\n';
+
+                csv += 'Jakautuma entiteetittäin\n';
+                csv += 'Entiteetti,Merkinnät,Tunnit,Mailit,Osuus %\n';
+                ['tmi', 'oy', 'oma'].forEach(entity => {
+                    const entityEntries = entries.filter(e => e.vuokralainen === entity || (!e.vuokralainen && entity === 'oma'));
+                    const hours = entityEntries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
+                    const miles = entityEntries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0);
+                    const percent = totalHours > 0 ? ((hours / totalHours) * 100).toFixed(1) : 0;
+                    csv += `"${entity}",${entityEntries.length},${hours.toFixed(1)},${miles.toFixed(1)},${percent}%\n`;
+                });
+            }
+
+            // Lataa CSV
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+
+            alert('✅ Tiedosto ladattu: ' + filename);
+        },
+
+        exportToPDF() {
+            alert('⚠️ PDF-vientitoiminto on rakenteilla. Käytä CSV-viennin ja avaa Excel tai Google Sheets:ssä.');
         },
 
         exportData() {
