@@ -168,6 +168,8 @@
         border-radius: 6px;
         font-size: 16px;
         font-family: inherit;
+        -webkit-user-select: text;
+        user-select: text;
     }
 
     .form-group input:focus,
@@ -176,6 +178,17 @@
         outline: none;
         border-color: #667eea;
         box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    /* Varmista että kaikki syöttökentät ovat interaktiivisia */
+    input[type="text"],
+    input[type="number"],
+    input[type="datetime-local"],
+    textarea,
+    select {
+        -webkit-user-select: text;
+        user-select: text;
+        pointer-events: auto !important;
     }
 
     .form-row {
@@ -995,14 +1008,14 @@
         const minutesDecimal = (abs - degrees) * 60;
         const minutes = Math.floor(minutesDecimal);
         const secondsRaw = (minutesDecimal - minutes) * 60;
-        const seconds = Math.round(secondsRaw);
+        const seconds = secondsRaw.toFixed(1);
 
-        // Formaatti: DDMMSSN (esim. 601152N 250413E) - ilman symboleja, asteet ilman etu nollia
-        const degStr = String(degrees); // Ei padStart - poista etu nollia
+        // Formaatti: DD°MM'SS.S"N (esim. 60°08'54.0"N 24°59'23.3"E)
+        const degStr = String(degrees);
         const minStr = String(minutes).padStart(2, '0');
-        const secStr = String(seconds).padStart(2, '0');
+        const secStr = String(seconds).padStart(4, '0');
 
-        return `${degStr}${minStr}${secStr}${direction}`;
+        return `${degStr}°${minStr}'${secStr}"${direction}`;
     }
 
     // ==================== MERISÄÄ-HAKU ====================
