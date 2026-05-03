@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.16 (Merkinnät näkyvät oikein)</title>
+    <title>Quartet Loki - v2030.17 (Päivämäärä muokattavissa)</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -726,7 +726,7 @@
                 <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
                 <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                     <strong>Quartet Loki PREMIUM</strong><br>
-                    <span id="versionDetail">v2030.16 - Merkinnät näkyvät oikein</span><br>
+                    <span id="versionDetail">v2030.17 - Päivämäärä muokattavissa</span><br>
                     Offline-pohjainen arkkitehtuuri<br>
                     <span id="dbSize"></span><br>
                     <span id="lastBackup"></span>
@@ -891,7 +891,7 @@
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.16';
+    const APP_VERSION = '2030.17';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     const ICLOUD_SYNC_INTERVAL = 60 * 60 * 1000; // 1 hour
@@ -1660,16 +1660,17 @@
             // Jos merkintä on auki muokkaukseen, käytä sen päivämäärää
             let timestamp = new Date().toISOString();
             const entryDate = document.getElementById('entryDate')?.value;
-            if (entryDate) {
+            if (entryDate && entryDate.trim()) {
                 // Aseta aikaleima siten että se on merkinnän päivällä
                 const now = new Date();
                 const [year, month, day] = entryDate.split('-');
-                const locDate = new Date(year, parseInt(month) - 1, day, now.getHours(), now.getMinutes(), now.getSeconds());
+                const locDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), now.getHours(), now.getMinutes(), now.getSeconds());
                 timestamp = locDate.toISOString();
-                console.log(`📍 Merkintä lisätään ${entryDate} aikaleimalla`);
+                console.log(`📍 Merkintä lisätään ${entryDate} aikaleimalla: ${timestamp}`);
             }
 
-            DB.addLocation({ lat, lon, name, notes, type: 'location', journeyId: journey ? journey.id : null, timestamp });
+            const locId = DB.addLocation({ lat, lon, name, notes, type: 'location', journeyId: journey ? journey.id : null, timestamp });
+            console.log(`✅ Tallennettu ID ${locId.id}`);
 
             document.getElementById('locationLat').value = '';
             document.getElementById('locationLon').value = '';
@@ -1693,11 +1694,11 @@
             // Jos merkintä on auki muokkaukseen, käytä sen päivämäärää
             let timestamp = new Date().toISOString();
             const entryDate = document.getElementById('entryDate')?.value;
-            if (entryDate) {
+            if (entryDate && entryDate.trim()) {
                 // Aseta aikaleima siten että se on merkinnän päivällä
                 const now = new Date();
                 const [year, month, day] = entryDate.split('-');
-                const locDate = new Date(year, parseInt(month) - 1, day, now.getHours(), now.getMinutes(), now.getSeconds());
+                const locDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), now.getHours(), now.getMinutes(), now.getSeconds());
                 timestamp = locDate.toISOString();
             }
 
@@ -1724,6 +1725,11 @@
                 return;
             }
 
+            // Näytä päivämäärä ja aika
+            const locDate = new Date(location.timestamp);
+            const dateStr = locDate.toISOString().split('T')[0];
+            const timeStr = locDate.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+
             if (location.type === 'captain-change') {
                 const newCaptain = prompt('Uusi kapteeni:', location.captain);
                 if (newCaptain !== null) {
@@ -1731,6 +1737,13 @@
                     const newNotes = prompt('Merkinnät:', location.notes === '—' ? '' : location.notes);
                     if (newNotes !== null) {
                         location.notes = newNotes || '—';
+                        const newDate = prompt(`Päivämäärä (YYYY-MM-DD)\nNykyinen: ${dateStr}`, dateStr);
+                        if (newDate !== null && newDate.trim()) {
+                            const [year, month, day] = newDate.split('-');
+                            const now = new Date(location.timestamp);
+                            const newTimestamp = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), now.getHours(), now.getMinutes(), now.getSeconds());
+                            location.timestamp = newTimestamp.toISOString();
+                        }
                         DB.setLocations(locations);
                         this.renderLocations();
                     }
@@ -1742,6 +1755,13 @@
                     const newNotes = prompt('Merkinnät:', location.notes || '');
                     if (newNotes !== null) {
                         location.notes = newNotes;
+                        const newDate = prompt(`Päivämäärä (YYYY-MM-DD)\nNykyinen: ${dateStr}`, dateStr);
+                        if (newDate !== null && newDate.trim()) {
+                            const [year, month, day] = newDate.split('-');
+                            const now = new Date(location.timestamp);
+                            const newTimestamp = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), now.getHours(), now.getMinutes(), now.getSeconds());
+                            location.timestamp = newTimestamp.toISOString();
+                        }
                         DB.setLocations(locations);
                         this.renderLocations();
                     }
