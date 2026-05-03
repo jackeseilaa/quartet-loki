@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-
-<html lang="fi">
-<head>
-    <meta charset="UTF-8">
+<!-- saved from url=(0066)file:///Users/jarmoaaltonen/Downloads/quartet_loki_v2030_33_1.html -->
+<html lang="fi"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.32</title>
+    <title>Quartet Loki - v2030.33</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -572,12 +571,12 @@
         <header>
             <h1>🎼 Quartet Loki - PREMIUM</h1>
             <div class="subtitle">
-                <span class="version-badge" id="versionBadge">⏳ Ladataan...</span>
-                <span id="lastSyncTime">Offline</span>
+                <span class="version-badge" id="versionBadge">v2030.33</span>
+                <span id="lastSyncTime">Ready</span>
                 <span class="sync-indicator" id="syncIndicator"></span>
             </div>
             <!-- DEBUG: Versio-indikaattori -->
-            <div id="versionDebug" style="font-size: 0.7em; color: rgba(255,255,255,0.6); margin-top: 4px; font-family: monospace;"></div>
+            <div id="versionDebug" style="font-size: 0.7em; color: rgb(74, 222, 128); margin-top: 4px; font-family: monospace;">v2030.33 ✅</div>
         </header>
 
 
@@ -586,7 +585,7 @@
         <select id="yearFilter" style="padding: 6px 10px; border-radius: 4px; border: 1px solid #ddd;">
             <option value="2024">2024</option>
             <option value="2025">2025</option>
-            <option value="2026" selected>2026</option>
+            <option value="2026" selected="">2026</option>
             <option value="2027">2027</option>
             <option value="all">Kaikki</option>
         </select>
@@ -611,7 +610,37 @@
                     <button class="btn btn-secondary" id="exportDataBtn">📤 Vie</button>
                 </div>
             </div>
-            <div id="entriesList"></div>
+            <div id="entriesList"><table class="data-table"><thead><tr><th>Päivä</th><th>Vuokr.</th><th>Reitti</th><th>Mailit</th><th>Lokimittari alku</th><th>Lokimittari loppu</th><th>Tunnit</th><th>Sää</th><th>Toiminnot</th></tr></thead><tbody><tr>
+                    <td>2026-05-03</td>
+                    <td><span class="badge badge-"></span></td>
+                    <td>-</td>
+                    <td>0</td>
+                    <td style="font-family: monospace; font-size: 0.9em;">313.80</td>
+                    <td style="font-family: monospace; font-size: 0.9em;">0.00</td>
+                    <td>-313.80</td>
+                    <td style="font-size: 0.85em; max-width: 100px; word-break: break-word;">Pilvinen, 5.4 m/s WS</td>
+                    <td>
+                        <div class="edit-buttons">
+                            <button class="btn btn-secondary edit-btn" data-id="1777810047995" data-action="edit">Muokkaa</button>
+                            <button class="btn btn-danger edit-btn" data-id="1777810047995" data-action="delete">Poista</button>
+                        </div>
+                    </td>
+                </tr><tr>
+                    <td>2026-05-03</td>
+                    <td><span class="badge badge-"></span></td>
+                    <td>-</td>
+                    <td>0</td>
+                    <td style="font-family: monospace; font-size: 0.9em;">0.00</td>
+                    <td style="font-family: monospace; font-size: 0.9em;">0.00</td>
+                    <td>0.00</td>
+                    <td style="font-size: 0.85em; max-width: 100px; word-break: break-word;">—</td>
+                    <td>
+                        <div class="edit-buttons">
+                            <button class="btn btn-secondary edit-btn" data-id="1777810654586" data-action="edit">Muokkaa</button>
+                            <button class="btn btn-danger edit-btn" data-id="1777810654586" data-action="delete">Poista</button>
+                        </div>
+                    </td>
+                </tr></tbody></table></div>
         </div>
 
         <!-- LOCATIONS TAB -->
@@ -627,11 +656,11 @@
 
                 <div class="form-group">
                     <label>Leveysaste (Latitude) DD°MM'SS"</label>
-                    <input type="text" id="locationLat" placeholder="60°08'54.0&quot;N" style="font-family: monospace;">
+                    <input type="text" id="locationLat" placeholder="60°08&#39;54.0&quot;N" style="font-family: monospace;">
                 </div>
                 <div class="form-group">
                     <label>Pituusaste (Longitude) DD°MM'SS"</label>
-                    <input type="text" id="locationLon" placeholder="24°59'23.3&quot;E" style="font-family: monospace;">
+                    <input type="text" id="locationLon" placeholder="24°59&#39;23.3&quot;E" style="font-family: monospace;">
                 </div>
                 <div class="form-group">
                     <label>Paikan nimi (valinnainen)</label>
@@ -767,13 +796,13 @@
             </div>
 
             <div class="form-section">
-                <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
+                <h3 style="margin-bottom: 12px;">Versio &amp; Tiedot</h3>
                 <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                     <strong>Quartet Loki PREMIUM</strong><br>
-                    <span id="versionDetail">v2030.22 - Captain input fix</span><br>
+                    <span id="versionDetail">v2030.33 - GPS-muunnos, CSV-tapahtumat, Event editing</span><br>
                     Offline-pohjainen arkkitehtuuri<br>
-                    <span id="dbSize"></span><br>
-                    <span id="lastBackup"></span>
+                    <span id="dbSize">📊 Koko: 56.17 kB</span><br>
+                    <span id="lastBackup">⏰ Päivitetty: 3.5.2026 klo 18.45.18</span>
                 </p>
             </div>
         </div>
@@ -788,7 +817,7 @@
         <!-- PAKOLLISET TIEDOT -->
         <div class="form-group">
             <label>Käyttötarkoitus <span class="required">*</span></label>
-            <select id="entryKayttotarkoitus" required>
+            <select id="entryKayttotarkoitus" required="">
                 <option value="">-- Valitse --</option>
                 <option value="charter">Charter</option>
                 <option value="koulutus">Koulutus</option>
@@ -816,12 +845,12 @@
 
         <div class="form-group">
             <label>Loki aloitus (aika) <span style="font-size: 0.85em; color: #666;">(oletuksena nyt)</span> <span class="required">*</span></label>
-            <input type="datetime-local" id="entryStartTime" required>
+            <input type="datetime-local" id="entryStartTime" required="">
         </div>
 
         <div class="form-group">
             <label>Lokimittari alku (h) <span style="font-size: 0.85em; color: #666;">(auto edellisestä)</span></label>
-            <input type="number" id="entryEngineHoursStart" step="0.1" placeholder="0.0">
+            <input type="number" id="entryEngineHoursStart" step="0.01" placeholder="0.00">
         </div>
 
         <div class="form-group">
@@ -864,12 +893,12 @@
 
         <div class="form-group">
             <label>Logi lopetus (aika) <span style="font-size: 0.85em; color: #666;">(oletuksena nyt)</span> <span class="required">*</span></label>
-            <input type="datetime-local" id="entryEndTime" required>
+            <input type="datetime-local" id="entryEndTime" required="">
         </div>
 
         <div class="form-group">
             <label>Lokimittari loppu (h) <span style="font-size: 0.85em; color: #666;">(→ seuraavan alku)</span></label>
-            <input type="number" id="entryEngineHoursEnd" step="0.1" placeholder="0.0">
+            <input type="number" id="entryEngineHoursEnd" step="0.01" placeholder="0.00">
         </div>
 
         <!-- Automaattinen laskenta: Konetunnit -->
@@ -945,8 +974,8 @@
 
         <!-- Paikka-merkintä VÄLILEHDET -->
         <div style="display: flex; gap: 8px; margin: 12px 0; border-bottom: 2px solid #e0e0e0;">
-            <button id="tabGpsBtn" class="tab-btn location-modal-tab active" data-tab="gps-location" style="flex: 1; border: none; background: none; padding: 8px; border-bottom: 3px solid #667eea; cursor: pointer;" onclick="switchTab('gps-location')">📍 GPS Paikan merkintä</button>
-            <button id="tabCaptainBtn" class="tab-btn location-modal-tab" data-tab="captain-change" style="flex: 1; border: none; background: none; padding: 8px; border-bottom: 3px solid transparent; cursor: pointer;" onclick="switchTab('captain-change')">👔 Kapteenin vaihto</button>
+            <button id="tabGpsBtn" class="tab-btn location-modal-tab active" data-tab="gps-location" style="flex: 1; border: none; background: none; padding: 8px; border-bottom: 3px solid #667eea; cursor: pointer;" onclick="switchTab(&#39;gps-location&#39;)">📍 GPS Paikan merkintä</button>
+            <button id="tabCaptainBtn" class="tab-btn location-modal-tab" data-tab="captain-change" style="flex: 1; border: none; background: none; padding: 8px; border-bottom: 3px solid transparent; cursor: pointer;" onclick="switchTab(&#39;captain-change&#39;)">👔 Kapteenin vaihto</button>
         </div>
 
         <!-- GPS PAIKAN MERKINTÄ TAB -->
@@ -954,11 +983,11 @@
             <div class="form-section">
                 <div class="form-group">
                     <label>Leveysaste (Latitude) DD°MM'SS" <span class="required">*</span></label>
-                    <input type="text" id="locationModalLat" placeholder="60°08'54.0&quot;N" style="font-family: monospace;">
+                    <input type="text" id="locationModalLat" placeholder="60°08&#39;54.0&quot;N" style="font-family: monospace;">
                 </div>
                 <div class="form-group">
                     <label>Pituusaste (Longitude) DD°MM'SS" <span class="required">*</span></label>
-                    <input type="text" id="locationModalLon" placeholder="24°59'23.3&quot;E" style="font-family: monospace;">
+                    <input type="text" id="locationModalLon" placeholder="24°59&#39;23.3&quot;E" style="font-family: monospace;">
                 </div>
                 <div class="form-group">
                     <label>Paikan nimi (valinnainen)</label>
@@ -997,13 +1026,13 @@
 </div>
 
 <!-- Hidden file inputs for iOS -->
-<input type="file" id="csvImportInput" accept=".csv" style="display:none;" />
-<input type="file" id="jsonRestoreInput" accept=".json" style="display:none;" />
-<input type="file" id="icloudLoadInput" accept=".json" style="display:none;" />
+<input type="file" id="csvImportInput" accept=".csv" style="display:none;">
+<input type="file" id="jsonRestoreInput" accept=".json" style="display:none;">
+<input type="file" id="icloudLoadInput" accept=".json" style="display:none;">
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.28';
+    const APP_VERSION = '2030.33';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1190,6 +1219,11 @@
             entry.id = Date.now().toString();
             entry.createdAt = new Date().toISOString();
             entry.year = new Date(entry.date).getFullYear().toString();
+            console.log('🔍 DB.addEntry tarkastelu:', {
+                engineHoursStart: entry.engineHoursStart,
+                engineHoursEnd: entry.engineHoursEnd,
+                kokonaisuus: entry
+            });
             entries.push(entry);
             this.setEntries(entries);
             return entry;
@@ -1678,7 +1712,7 @@
                     const diffHours = diffMs / (1000 * 60 * 60);
 
                     if (diffHours >= 0) {
-                        display.textContent = `${diffHours.toFixed(1)} h`;
+                        display.textContent = `${diffHours.toFixed(2)} h`;
                         display.style.color = '#0369a1';
                     } else {
                         display.textContent = '⚠️ Lopetus ennen alkua!';
@@ -2021,6 +2055,8 @@
                 notes: document.getElementById('entryNotes').value,
                 entryJourneyId: activeJourney ? activeJourney.id : null
             };
+            
+            console.log(`💾 Merkintä tallennetaan: Alku=${entry.engineHoursStart}, Loppu=${entry.engineHoursEnd}, Tunnit=${entry.engineHoursEnd - entry.engineHoursStart}`);
 
             if (this.currentEditingId) {
                 DB.updateEntry(this.currentEditingId, entry);
@@ -2088,18 +2124,23 @@
                 return;
             }
 
-            let html = '<table class="data-table"><thead><tr><th>Päivä</th><th>Vuokr.</th><th>Reitti</th><th>Mailit</th><th>h</th><th>Sää</th><th>Toiminnot</th></tr></thead><tbody>';
+            let html = '<table class="data-table"><thead><tr><th>Päivä</th><th>Vuokr.</th><th>Reitti</th><th>Mailit</th><th>Lokimittari alku</th><th>Lokimittari loppu</th><th>Tunnit</th><th>Sää</th><th>Toiminnot</th></tr></thead><tbody>';
 
             entries.forEach(entry => {
                 const hours = (parseFloat(entry.engineHoursEnd) || 0) - (parseFloat(entry.engineHoursStart) || 0);
-                const weatherDisplay = entry.weather ? entry.weather.substring(0, 30) : '—';
+                const weatherDisplay = entry.weather ? entry.weather.substring(0, 20) : '—';
+                const engineStart = parseFloat(entry.engineHoursStart) || 0;
+                const engineEnd = parseFloat(entry.engineHoursEnd) || 0;
+                console.log(`📊 Render: ${entry.date} - Alku=${engineStart.toFixed(2)}, Loppu=${engineEnd.toFixed(2)}, Tunnit=${hours.toFixed(2)}`);
                 html += `<tr>
                     <td>${entry.date}</td>
                     <td><span class="badge badge-${entry.vuokralainen}">${entry.vuokralainen.toUpperCase()}</span></td>
                     <td>${entry.route || '-'}</td>
                     <td>${entry.nauticalMiles || 0}</td>
-                    <td>${hours.toFixed(1)}</td>
-                    <td style="font-size: 0.85em; max-width: 150px; word-break: break-word;">${weatherDisplay}</td>
+                    <td style="font-family: monospace; font-size: 0.9em;">${engineStart.toFixed(2)}</td>
+                    <td style="font-family: monospace; font-size: 0.9em;">${engineEnd.toFixed(2)}</td>
+                    <td>${hours.toFixed(2)}</td>
+                    <td style="font-size: 0.85em; max-width: 100px; word-break: break-word;">${weatherDisplay}</td>
                     <td>
                         <div class="edit-buttons">
                             <button class="btn btn-secondary edit-btn" data-id="${entry.id}" data-action="edit">Muokkaa</button>
@@ -3073,5 +3114,6 @@
 </script>
 
 
-</body>
-</html>
+
+
+</body></html>
