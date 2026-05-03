@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.10 (Export & Reports)</title>
+    <title>Quartet Loki - v2030.11 (Journey Events & Locations)</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -589,6 +589,11 @@
                     <input type="text" id="locationName" placeholder="esim. Tallinna, avomeri jne">
                 </div>
 
+                <div class="form-group">
+                    <label>Merkinnät (tapahtumat, poikkeavuudet)</label>
+                    <textarea id="locationNotes" placeholder="Esim. sään muutos, tekninen vika, muu poikkeavuus..." style="resize: vertical; min-height: 60px;"></textarea>
+                </div>
+
                 <div class="action-buttons" style="margin-bottom: 12px;">
                     <button class="btn btn-primary" id="useGpsBtn">📡 Käytä GPS:ää</button>
                     <button class="btn btn-success" id="addLocationBtn">Lisää paikka</button>
@@ -597,16 +602,11 @@
 
             <div class="form-section">
                 <h3 style="margin-bottom: 12px;">👔 KAPTEENIN VAIHTO</h3>
-                <p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">Merkitse vastuullisen päällikön vaihto ja tapahtuneet poikkeavuudet.</p>
+                <p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">Merkitse vastuullisen päällikön vaihto.</p>
 
                 <div class="form-group">
                     <label>Uusi kapteeni / Skiperi</label>
                     <input type="text" id="locationCaptain" placeholder="esim. Jukka Virtanen">
-                </div>
-
-                <div class="form-group">
-                    <label>Merkinnät (poikkeavuudet, tapahtumat)</label>
-                    <textarea id="locationNotes" placeholder="Esim. sään muutos, tekninen vika, muu poikkeavuus..." style="resize: vertical; min-height: 60px;"></textarea>
                 </div>
 
                 <div class="action-buttons" style="margin-bottom: 12px;">
@@ -719,7 +719,7 @@
                 <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
                 <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                     <strong>Quartet Loki PREMIUM</strong><br>
-                    <span id="versionDetail">v2030.10 - Lokikirjan vienti CSV:nä</span><br>
+                    <span id="versionDetail">v2030.11 - Tapahtuma-merkinnät & Paikat</span><br>
                     Offline-pohjainen arkkitehtuuri<br>
                     <span id="dbSize"></span><br>
                     <span id="lastBackup"></span>
@@ -733,6 +733,14 @@
 <div id="entryModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">Merkinnän tiedot</div>
+
+        <!-- MERKINNÄN TAPAHTUMAT -->
+        <div id="entryEventsInfo" style="background: #f0f9ff; padding: 12px; border-radius: 6px; margin-bottom: 16px; border-left: 4px solid #0284c7; display: none;">
+            <div style="font-size: 0.9em; color: #0c4a6e;">
+                <span id="eventsCount">0</span> tapahtumaa merkitty matkalla
+                <button class="btn btn-primary" id="viewEventsBtn" style="float: right; padding: 4px 8px; font-size: 0.8em; margin: 0;">📍 Näytä paikat</button>
+            </div>
+        </div>
 
         <!-- PAKOLLISET TIEDOT -->
         <div class="form-group">
@@ -870,7 +878,7 @@
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.10';
+    const APP_VERSION = '2030.11';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     const ICLOUD_SYNC_INTERVAL = 60 * 60 * 1000; // 1 hour
@@ -1212,6 +1220,10 @@
             // Entry buttons
             addTouchListener(document.getElementById('newEntryBtn'), () => this.openEntryModal());
             addTouchListener(document.getElementById('closeModalBtn'), () => this.closeEntryModal());
+            addTouchListener(document.getElementById('viewEventsBtn'), () => {
+                this.closeEntryModal();
+                document.querySelector('[data-tab="locations"]').click();
+            });
             addTouchListener(document.getElementById('saveEntryBtn'), () => this.saveEntry());
             addTouchListener(document.getElementById('exportDataBtn'), () => this.exportData());
             addTouchListener(document.getElementById('backupBtn'), () => this.backup());
@@ -1285,6 +1297,21 @@
                 }
 
                 console.log(`✏️ Muokataan merkintää: ${entry.date}`);
+
+                // Näytä merkinnän tapahtumien lukumäärä
+                const locations = DB.getLocations();
+                const eventCount = locations.filter(loc =>
+                    loc.timestamp &&
+                    new Date(loc.timestamp).toLocaleDateString('fi-FI') === entry.date
+                ).length;
+
+                const eventsInfo = document.getElementById('entryEventsInfo');
+                if (eventCount > 0) {
+                    eventsInfo.style.display = 'block';
+                    document.getElementById('eventsCount').textContent = eventCount;
+                } else {
+                    eventsInfo.style.display = 'none';
+                }
 
                 // Lataa KAIKKI kentät
                 document.getElementById('entryDate').value = entry.date || '';
@@ -1535,6 +1562,11 @@
                     const lon = formatCoordinateToDMS(position.coords.longitude, true);
                     document.getElementById('locationLat').value = lat;
                     document.getElementById('locationLon').value = lon;
+
+                    // Tallenna GPS-haku aika-leimalla
+                    const now = new Date().toLocaleString('fi-FI');
+                    console.log(`✅ GPS haku: ${lat} ${lon} @ ${now}`);
+
                     useGpsBtn.textContent = '✅ GPS OK';
                     setTimeout(() => {
                         useGpsBtn.textContent = '📡 Käytä GPS:ää';
@@ -1553,17 +1585,19 @@
             const lat = parseFloat(document.getElementById('locationLat').value);
             const lon = parseFloat(document.getElementById('locationLon').value);
             const name = document.getElementById('locationName').value || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+            const notes = document.getElementById('locationNotes').value || '';
 
             if (isNaN(lat) || isNaN(lon)) {
                 alert('Syötä kelvolliset koordinaatit');
                 return;
             }
 
-            DB.addLocation({ lat, lon, name, type: 'location' });
+            DB.addLocation({ lat, lon, name, notes, type: 'location' });
 
             document.getElementById('locationLat').value = '';
             document.getElementById('locationLon').value = '';
             document.getElementById('locationName').value = '';
+            document.getElementById('locationNotes').value = '';
 
             this.renderLocations();
         },
@@ -1725,8 +1759,9 @@
                     const lonDMS = formatCoordinateToDMS(loc.lon, true);
                     html += `<div class="location-item">
                         <div>
-                            <div style="font-weight: 600;">${loc.name}</div>
-                            <div style="font-size: 0.8em; color: #666;">📍 ${latDMS} ${lonDMS}</div>
+                            <div style="font-weight: 600;">📍 ${loc.name}</div>
+                            <div style="font-size: 0.8em; color: #666;">${latDMS} ${lonDMS}</div>
+                            ${loc.notes ? `<div style="font-size: 0.85em; color: #333; margin-top: 4px; padding: 8px; background: #f9f9f9; border-radius: 4px;">📝 ${loc.notes}</div>` : ''}
                             <div class="location-time">${timeStr}</div>
                         </div>
                         <button class="btn btn-danger delete-loc-btn" data-id="${loc.id}" style="padding: 4px 8px; font-size: 0.8em;">Poista</button>
