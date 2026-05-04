@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.35</title>
+    <title>Quartet Loki - v2030.36</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -773,15 +773,23 @@ button.btn {
 
         <div class="form-section">
             <h3 style="margin-bottom: 12px;">Tietokannan hallinta</h3>
-            <p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">⚠️ Poista kaikki tiedot (ei voi kumota).</p>
-            <button class="btn btn-danger" id="clearAllBtn">🗑️ Tyhjennä kaikki</button>
+            <p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">⚠️ Poista kaikki tiedot (ei voi kumota). Vaatii kaksinkertaisen varmistuksen.</p>
+            <button class="btn btn-danger" id="clearAllBtn" style="width: 100%;">🗑️ Tyhjennä kaikki</button>
+            <div id="clearAllConfirm" style="display: none; margin-top: 12px; padding: 12px; background: #fce7f3; border-radius: 6px; border-left: 4px solid #ec4899;">
+                <div style="font-weight: 600; margin-bottom: 8px; color: #9f1239;">⚠️ OLETKO VARMA?</div>
+                <div style="font-size: 0.9em; margin-bottom: 12px; color: #831843;">Tämä poistaa KAIKKI merkinnät. Tätä ei voi kumota!</div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-danger" id="clearAllConfirmYes" style="flex: 1;">🗑️ Kyllä, poista kaikki</button>
+                    <button class="btn btn-secondary" id="clearAllCancel" style="flex: 1;">❌ Peruuta</button>
+                </div>
+            </div>
         </div>
 
         <div class="form-section">
             <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
             <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                 <strong>Quartet Loki PREMIUM</strong><br>
-                <span id="versionDetail">v2030.35 - CSV Import</span><br>
+                <span id="versionDetail">v2030.36 - Double Confirm Delete</span><br>
                 Offline-pohjainen arkkitehtuuri<br>
                 <span id="dbSize"></span><br>
                 <span id="lastBackup"></span>
@@ -1039,7 +1047,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.35';
+    const APP_VERSION = '2030.36';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1441,7 +1449,13 @@ button.btn {
             addTouchListener(document.getElementById('exportDataBtn'), () => this.exportData());
             addTouchListener(document.getElementById('backupBtn'), () => this.backup());
             addTouchListener(document.getElementById('restoreAutoBackupBtn'), () => this.restoreLatestAutoBackup());
-            addTouchListener(document.getElementById('clearAllBtn'), () => this.clearAll());
+            addTouchListener(document.getElementById('clearAllBtn'), () => {
+                document.getElementById('clearAllConfirm').style.display = 'block';
+            });
+            addTouchListener(document.getElementById('clearAllConfirmYes'), () => this.clearAll());
+            addTouchListener(document.getElementById('clearAllCancel'), () => {
+                document.getElementById('clearAllConfirm').style.display = 'none';
+            });
             addTouchListener(document.getElementById('generateReportBtn'), () => this.generateReport());
             addTouchListener(document.getElementById('exportCsvBtn'), () => this.exportToCSV());
             addTouchListener(document.getElementById('exportPdfBtn'), () => this.exportToPDF());
@@ -2885,6 +2899,156 @@ button.btn {
             document.getElementById('reportOutput').innerHTML = html;
         },
 
+        importCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const csv = e.target.result;
+                    const lines = csv.split('\n');
+                    const statusDiv = document.getElementById('csvImportStatus');
+
+                    if (lines.length < 2) {
+                        statusDiv.innerHTML = '<div style="background: #fca5a5; color: #7f1d1d; padding: 10px; border-radius: 6px;">❌ CSV-tiedosto on tyhjä</div>';
+                        statusDiv.style.display = 'block';
+                        return;
+                    }
+
+                    // Ohita header rivi
+                    let importedCount = 0;
+                    let skippedCount = 0;
+                    const entries = [];
+
+                    // Parse CSV (puolipiste-erottelija)
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+
+                        const parts = line.split(';').map(p => p.trim());
+                        
+                        // Ohita rivit ilman päivämäärää
+                        if (!parts[0]) {
+                            skippedCount++;
+                            continue;
+                        }
+
+                        const dateStr = parts[0]; // DD.MM.YYYY
+                        const personnel = parts[1] || '';
+                        const logReadingStart = parseFloat(parts[2]) || 0;
+                        const engineHoursStart = parts[3] || '0.00';
+                        const startTimeStr = parts[4] || '';
+                        const departurePort = parts[5] || '';
+                        const route = parts[6] || '';
+                        const endTimeStr = parts[7] || '';
+                        const arrivalPort = parts[8] || '';
+                        const miles = parseFloat(parts[9]) || 0;
+                        const windSpeed = parts[10] || '';
+                        const windDir = parts[11] || '';
+                        const weather = parts[12] || '';
+                        const notes = parts[13] || '';
+
+                        // Muunna pvm DD.MM.YYYY → YYYY-MM-DD
+                        const [day, month, year] = dateStr.split('.');
+                        const date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+
+                        // Yhdistä sää
+                        const fullWeather = [windSpeed && `${windSpeed}m/s ${windDir}`, weather].filter(Boolean).join(', ');
+
+                        // Määritä käyttötarkoitus
+                        let kayttotarkoitus = 'charter';
+                        if (notes.toLowerCase().includes('koulutus') || 
+                            notes.toLowerCase().includes('naps') || 
+                            notes.toLowerCase().includes('pory') ||
+                            notes.toLowerCase().includes('gastin') ||
+                            notes.toLowerCase().includes('op kippa')) {
+                            kayttotarkoitus = 'koulutus';
+                        }
+
+                        // Lokilukema loppu = alku + mailit
+                        const logReadingEnd = logReadingStart + miles;
+
+                        const entry = {
+                            id: Date.now().toString() + Math.random(),
+                            date,
+                            captain: DEFAULT_CAPTAIN,
+                            vuokralainen: 'tmi',
+                            kayttotarkoitus,
+                            departurePort,
+                            arrivalPort,
+                            startTime: startTimeStr ? `${date}T${startTimeStr}` : '',
+                            endTime: endTimeStr ? `${date}T${endTimeStr}` : '',
+                            route,
+                            logReadingStart,
+                            logReadingEnd: logReadingEnd.toFixed(1),
+                            engineHoursStart: engineHoursStart.replace(',', '.'),
+                            engineHoursEnd: '0.00',
+                            personnel,
+                            weather: fullWeather,
+                            notes,
+                            createdAt: new Date().toISOString(),
+                            year: year.toString()
+                        };
+
+                        entries.push(entry);
+                        importedCount++;
+                    }
+
+                    // Linkitä konetunnit loppu seuraavan aloitukseen
+                    for (let i = 0; i < entries.length - 1; i++) {
+                        entries[i].engineHoursEnd = entries[i + 1].engineHoursStart;
+                    }
+                    // Viimeisen konetunnit loppu = 1452
+                    if (entries.length > 0) {
+                        entries[entries.length - 1].engineHoursEnd = '1452.00';
+                    }
+
+                    // Tallenna kaikki merkinnät - poista duplikaatit samalta päivältä
+                    const existingEntries = DB.getEntries();
+                    
+                    // Tarkista duplikaatit (sama päivä + sama lähtösatama)
+                    let mergedEntries = [...existingEntries];
+                    let duplicateCount = 0;
+                    
+                    entries.forEach(newEntry => {
+                        const hasDuplicate = existingEntries.some(existing => 
+                            existing.date === newEntry.date && 
+                            existing.departurePort === newEntry.departurePort &&
+                            existing.route === newEntry.route
+                        );
+                        
+                        if (hasDuplicate) {
+                            duplicateCount++;
+                            console.log(`⚠️ Duplikaatti: ${newEntry.date} ${newEntry.departurePort} (ohitettu)`);
+                        } else {
+                            mergedEntries.push(newEntry);
+                        }
+                    });
+                    
+                    DB.setEntries(mergedEntries);
+
+                    // Päivitä UI
+                    this.render();
+
+                    const duplicateMsg = duplicateCount > 0 ? `<br>⚠️ ${duplicateCount} duplikaatti ohitettu (jo olemassa)` : '';
+                    statusDiv.innerHTML = `<div style="background: #d1f5d3; color: #065f46; padding: 10px; border-radius: 6px;">✅ Tuotu ${importedCount} merkintää (ohitettu: ${skippedCount})${duplicateMsg}</div>`;
+                    statusDiv.style.display = 'block';
+
+                    // Nollaa file input
+                    event.target.value = '';
+
+                    console.log(`✅ CSV-tuonti valmis: ${importedCount} merkintää, ${skippedCount} ohitettu, ${duplicateCount} duplikaatti`);
+                } catch (error) {
+                    const statusDiv = document.getElementById('csvImportStatus');
+                    statusDiv.innerHTML = `<div style="background: #fca5a5; color: #7f1d1d; padding: 10px; border-radius: 6px;">❌ Virhe: ${error.message}</div>`;
+                    statusDiv.style.display = 'block';
+                    console.error('CSV-virhe:', error);
+                }
+            };
+            reader.readAsText(file);
+        },
+
         exportToCSV() {
             const reportType = document.getElementById('exportReportType').value;
             const entries = DB.getEntries();
@@ -3171,12 +3335,22 @@ button.btn {
         },
 
         clearAll() {
-            if (confirm('Oletko varma? Tämä poistaa KAIKKI tiedot!')) {
-                if (confirm('Oletko TODELLA varma?')) {
-                    DB.clear();
-                    this.render();
-                    alert('Kaikki tiedot poistettu.');
-                }
+            // Piilota varmistus ja näytä success-viesti
+            document.getElementById('clearAllConfirm').style.display = 'none';
+            
+            if (confirm('🗑️ VIIMEINEN VARMISTUS: Poistetaanko TODELLA kaikki merkinnät? Tätä ei voi kumota!')) {
+                DB.clear();
+                this.render();
+                
+                const statusDiv = document.getElementById('clearAllConfirm');
+                statusDiv.innerHTML = `<div style="background: #dcfce7; color: #166534; padding: 12px; border-radius: 6px; border-left: 4px solid #22c55e;">✅ Kaikki tiedot poistettu onnistuneesti. Sivu ladataan uudelleen...</div>`;
+                statusDiv.style.display = 'block';
+                
+                console.log('🗑️ Kaikki tiedot poistettu');
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                // Peruutettiin, piilota varmistus
+                document.getElementById('clearAllConfirm').style.display = 'none';
             }
         },
 
