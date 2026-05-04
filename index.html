@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.39</title>
+    <title>Quartet Loki - v2030.40</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -789,7 +789,7 @@ button.btn {
             <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
             <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                 <strong>Quartet Loki PREMIUM</strong><br>
-                <span id="versionDetail">v2030.39 - Debug Duplicate Filter</span><br>
+                <span id="versionDetail">v2030.40 - Fixed Duplicate Removal</span><br>
                 Offline-pohjainen arkkitehtuuri<br>
                 <span id="dbSize"></span><br>
                 <span id="lastBackup"></span>
@@ -1047,7 +1047,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.39';
+    const APP_VERSION = '2030.40';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -3004,21 +3004,26 @@ button.btn {
                     }
 
                     // **POISTA DUPLIKAATIT ENNEN linkitystä**
+                    // Duplikaatti = lokilukema alku on tyhjä/0 TAI mailit = 0 JA logilukema loppu = 0
                     const filteredEntries = entries.filter(entry => {
-                        const logStart = parseFloat(entry.logReadingStart);
-                        const logEnd = parseFloat(entry.logReadingEnd);
-                        const isDuplicate = (logStart === 0 && logEnd === 0);
+                        const logStart = parseFloat(entry.logReadingStart) || 0;
+                        const logEnd = parseFloat(entry.logReadingEnd) || 0;
+                        const miles = logEnd - logStart; // Laske mailit lokilukemista
                         
-                        if (entry.date === '2025-10-12' || entry.date === '2025-10-07') {
-                            console.log(`🔍 ${entry.date}: logStart=${logStart}, logEnd=${logEnd}, isDuplicate=${isDuplicate}`, entry);
+                        // Duplikaatti = lokilukema alku TYHJÄ/0 JA mailit 0
+                        const isDuplicate = (logStart === 0 && miles === 0);
+                        
+                        if (entry.date === '2025-10-12' || entry.date === '2025-10-07' || entry.date === '2025-09-30' || entry.date === '2025-09-20' || entry.date === '2025-09-19' || entry.date === '2025-09-18') {
+                            console.log(`🔍 ${entry.date}: start=${logStart}, end=${logEnd}, miles=${miles}, isDuplicate=${isDuplicate}`);
                         }
                         
                         if (isDuplicate) {
                             importedCount--;
                             skippedCount++;
-                            console.log(`🗑️ Duplikaatti poistettu: ${entry.date} (lokilukema=${logStart}, loppu=${logEnd})`);
+                            console.log(`🗑️ POISTETTU: ${entry.date} ${entry.route} (lokilukema=${logStart}-${logEnd}, mailit=${miles})`);
+                            return false; // Poista tämä rivi
                         }
-                        return !isDuplicate;
+                        return true; // Säilytä rivi
                     });
 
                     // Linkitä konetunnit loppu seuraavan aloitukseen (PUHDISTETULLA DATALLA)
