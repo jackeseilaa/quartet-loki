@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.37</title>
+    <title>Quartet Loki - v2030.38</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -789,7 +789,7 @@ button.btn {
             <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
             <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                 <strong>Quartet Loki PREMIUM</strong><br>
-                <span id="versionDetail">v2030.37 - CSV Duplicate Filter</span><br>
+                <span id="versionDetail">v2030.38 - CSV Duplicate Purge</span><br>
                 Offline-pohjainen arkkitehtuuri<br>
                 <span id="dbSize"></span><br>
                 <span id="lastBackup"></span>
@@ -1047,7 +1047,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.37';
+    const APP_VERSION = '2030.38';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -3003,13 +3003,24 @@ button.btn {
                         importedCount++;
                     }
 
-                    // Linkitä konetunnit loppu seuraavan aloitukseen
-                    for (let i = 0; i < entries.length - 1; i++) {
-                        entries[i].engineHoursEnd = entries[i + 1].engineHoursStart;
+                    // **POISTA DUPLIKAATIT ENNEN linkitystä**
+                    const filteredEntries = entries.filter(entry => {
+                        const isDuplicate = (parseFloat(entry.logReadingStart) === 0 && parseFloat(entry.logReadingEnd) === 0);
+                        if (isDuplicate) {
+                            importedCount--;
+                            skippedCount++;
+                            console.log(`🗑️ Duplikaatti poistettu: ${entry.date} (lokilukema=0, mailit=0)`);
+                        }
+                        return !isDuplicate;
+                    });
+
+                    // Linkitä konetunnit loppu seuraavan aloitukseen (PUHDISTETULLA DATALLA)
+                    for (let i = 0; i < filteredEntries.length - 1; i++) {
+                        filteredEntries[i].engineHoursEnd = filteredEntries[i + 1].engineHoursStart;
                     }
                     // Viimeisen konetunnit loppu = 1452
-                    if (entries.length > 0) {
-                        entries[entries.length - 1].engineHoursEnd = '1452.00';
+                    if (filteredEntries.length > 0) {
+                        filteredEntries[filteredEntries.length - 1].engineHoursEnd = '1452.00';
                     }
 
                     // Tallenna kaikki merkinnät - poista duplikaatit samalta päivältä
@@ -3019,7 +3030,7 @@ button.btn {
                     let mergedEntries = [...existingEntries];
                     let duplicateCount = 0;
                     
-                    entries.forEach(newEntry => {
+                    filteredEntries.forEach(newEntry => {
                         const hasDuplicate = existingEntries.some(existing => 
                             existing.date === newEntry.date && 
                             existing.departurePort === newEntry.departurePort &&
