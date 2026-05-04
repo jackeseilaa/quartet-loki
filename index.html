@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.43</title>
+    <title>Quartet Loki - v2030.44</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -796,7 +796,7 @@ button.btn {
             <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
             <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                 <strong>Quartet Loki PREMIUM</strong><br>
-                <span id="versionDetail">v2030.43 - Notes Column Visible</span><br>
+                <span id="versionDetail">v2030.44 - Auto Log & Engine Link</span><br>
                 Offline-pohjainen arkkitehtuuri<br>
                 <span id="dbSize"></span><br>
                 <span id="lastBackup"></span>
@@ -1054,7 +1054,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.43';
+    const APP_VERSION = '2030.44';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -2104,6 +2104,11 @@ button.btn {
                 DB.addEntry(entry);
             }
 
+            // **LINKITÄ LOKILUKEMA: tämän loppu = seuraavan alku**
+            this.linkLogReadings();
+            // **LINKITÄ KONETUNNIT: tämän loppu = seuraavan alku**
+            this.linkEngineHours();
+
             this.closeEntryModal();
             this.render();
         },
@@ -2146,6 +2151,40 @@ button.btn {
             }
 
             return NaN;
+        },
+
+        // **LINKITÄ LOKILUKEMA: loppu = seuraavan alku**
+        linkLogReadings() {
+            let entries = DB.getEntries().sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            for (let i = 0; i < entries.length - 1; i++) {
+                const currentEntry = entries[i];
+                const nextEntry = entries[i + 1];
+                
+                // Aseta nykyisen loppu = seuraavan alku
+                if (nextEntry.logReadingStart > 0) {
+                    currentEntry.logReadingEnd = nextEntry.logReadingStart;
+                    DB.updateEntry(currentEntry.id, currentEntry);
+                }
+            }
+            console.log('🔗 Lokilukema linkitys valmis');
+        },
+
+        // **LINKITÄ KONETUNNIT: loppu = seuraavan alku**
+        linkEngineHours() {
+            let entries = DB.getEntries().sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            for (let i = 0; i < entries.length - 1; i++) {
+                const currentEntry = entries[i];
+                const nextEntry = entries[i + 1];
+                
+                // Aseta nykyisen loppu = seuraavan alku
+                if (nextEntry.engineHoursStart && nextEntry.engineHoursStart !== '0.00') {
+                    currentEntry.engineHoursEnd = nextEntry.engineHoursStart;
+                    DB.updateEntry(currentEntry.id, currentEntry);
+                }
+            }
+            console.log('🔗 Konetunnit linkitys valmis');
         },
 
         render() {
