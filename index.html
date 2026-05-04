@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.36</title>
+    <title>Quartet Loki - v2030.37</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -789,7 +789,7 @@ button.btn {
             <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
             <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                 <strong>Quartet Loki PREMIUM</strong><br>
-                <span id="versionDetail">v2030.36 - Double Confirm Delete</span><br>
+                <span id="versionDetail">v2030.37 - CSV Duplicate Filter</span><br>
                 Offline-pohjainen arkkitehtuuri<br>
                 <span id="dbSize"></span><br>
                 <span id="lastBackup"></span>
@@ -1047,7 +1047,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.36';
+    const APP_VERSION = '2030.37';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -2948,6 +2948,14 @@ button.btn {
                         const windDir = parts[11] || '';
                         const weather = parts[12] || '';
                         const notes = parts[13] || '';
+
+                        // **FILTTERÖINTI: Ohita virheelliset duplikaatit**
+                        // Rivi on virheellinen jos: lokilukema alku = 0 JA mailit = 0
+                        if (logReadingStart === 0 && miles === 0) {
+                            skippedCount++;
+                            console.log(`⏭️ Ohitettu duplikaatti: ${dateStr} (lokilukema=0, mailit=0)`);
+                            continue;
+                        }
 
                         // Muunna pvm DD.MM.YYYY → YYYY-MM-DD
                         const [day, month, year] = dateStr.split('.');
