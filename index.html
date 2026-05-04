@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.42</title>
+    <title>Quartet Loki - v2030.43</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -266,8 +266,15 @@ button.btn {
     background: white;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
-    overflow: hidden;
+    overflow: visible;
     margin-bottom: 16px;
+    font-size: 0.85em;
+}
+
+.data-table-container {
+    overflow-x: auto;
+    width: 100%;
+    border-radius: 8px;
 }
 
 .data-table th {
@@ -612,7 +619,7 @@ button.btn {
                 <button class="btn btn-secondary" id="exportDataBtn">📤 Vie</button>
             </div>
         </div>
-        <div id="entriesList"></div>
+        <div id="entriesList" class="data-table-container"></div>
     </div>
 
     <!-- LOCATIONS TAB -->
@@ -789,7 +796,7 @@ button.btn {
             <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
             <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                 <strong>Quartet Loki PREMIUM</strong><br>
-                <span id="versionDetail">v2030.42 - Show Notes in Table</span><br>
+                <span id="versionDetail">v2030.43 - Notes Column Visible</span><br>
                 Offline-pohjainen arkkitehtuuri<br>
                 <span id="dbSize"></span><br>
                 <span id="lastBackup"></span>
@@ -1047,7 +1054,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.42';
+    const APP_VERSION = '2030.43';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
