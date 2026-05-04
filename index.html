@@ -2436,19 +2436,15 @@ button.btn {
 
             if (!statsDiv) return;
 
-            // Laskut yhteensä
-            const totalHours = entries.reduce((sum, e) => {
-                const start = parseFloat(e.engineHoursStart) || 0;
-                const end = parseFloat(e.engineHoursEnd) || 0;
-                return sum + (end - start);
-            }, 0);
-
-            const totalMiles = entries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0);
-
-            // Jakautuma entiteetteittäin
-            const tmiEntries = entries.filter(e => e.vuokralainen === 'tmi');
-            const oyEntries = entries.filter(e => e.vuokralainen === 'oy');
-            const omaEntries = entries.filter(e => e.vuokralainen === 'oma' || !e.vuokralainen);
+            // Ryhmitä merkinnät vuosittain
+            const entriesByYear = {};
+            entries.forEach(e => {
+                const year = e.date ? e.date.substring(0, 4) : '2025';
+                if (!entriesByYear[year]) {
+                    entriesByYear[year] = [];
+                }
+                entriesByYear[year].push(e);
+            });
 
             const calcStats = (entriesArray) => {
                 const hours = entriesArray.reduce((sum, e) => {
@@ -2456,28 +2452,89 @@ button.btn {
                     const end = parseFloat(e.engineHoursEnd) || 0;
                     return sum + (end - start);
                 }, 0);
-                const miles = entriesArray.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0);
-                const percent = totalHours > 0 ? ((hours / totalHours) * 100).toFixed(1) : 0;
-                return { hours, miles, percent, count: entriesArray.length };
+                const miles = entriesArray.reduce((sum, e) => sum + (parseFloat(e.logReadingEnd || 0) - parseFloat(e.logReadingStart || 0)), 0);
+                
+                // Entiteettien jakautuma
+                const tmi = entriesArray.filter(e => e.vuokralainen === 'tmi');
+                const oy = entriesArray.filter(e => e.vuokralainen === 'oy');
+                const oma = entriesArray.filter(e => e.vuokralainen === 'oma' || !e.vuokralainen);
+                
+                const tmiHours = tmi.reduce((sum, e) => sum + (parseFloat(e.engineHoursEnd || 0) - parseFloat(e.engineHoursStart || 0)), 0);
+                const oyHours = oy.reduce((sum, e) => sum + (parseFloat(e.engineHoursEnd || 0) - parseFloat(e.engineHoursStart || 0)), 0);
+                const omaHours = oma.reduce((sum, e) => sum + (parseFloat(e.engineHoursEnd || 0) - parseFloat(e.engineHoursStart || 0)), 0);
+                
+                const tmiMiles = tmi.reduce((sum, e) => sum + (parseFloat(e.logReadingEnd || 0) - parseFloat(e.logReadingStart || 0)), 0);
+                const oyMiles = oy.reduce((sum, e) => sum + (parseFloat(e.logReadingEnd || 0) - parseFloat(e.logReadingStart || 0)), 0);
+                const omaMiles = oma.reduce((sum, e) => sum + (parseFloat(e.logReadingEnd || 0) - parseFloat(e.logReadingStart || 0)), 0);
+                
+                return { 
+                    hours, miles, count: entriesArray.length,
+                    tmi: { hours: tmiHours, miles: tmiMiles, count: tmi.length },
+                    oy: { hours: oyHours, miles: oyMiles, count: oy.length },
+                    oma: { hours: omaHours, miles: omaMiles, count: oma.length }
+                };
             };
 
-            const tmiStats = calcStats(tmiEntries);
-            const oyStats = calcStats(oyEntries);
-            const omaStats = calcStats(omaEntries);
+            let html = '<div class="form-section"><h3>📅 Vuositasoinen käyttövertailu</h3>';
+            html += '<table class="data-table"><thead><tr><th>Vuosi</th><th>Entiteetti</th><th>Merkinnät</th><th>Tunnit (h)</th><th>Mailit (nm)</th></tr></thead><tbody>';
 
-            let html = '<table class="data-table"><tbody>';
-            html += '<tr><th style="background: #f5f5f5;">Entiteetti</th><th style="background: #f5f5f5;">Merkinnät</th><th style="background: #f5f5f5;">Tunnit</th><th style="background: #f5f5f5;">Osuus %</th><th style="background: #f5f5f5;">Mailit</th></tr>';
-            html += `<tr><td><strong>Tmi</strong></td><td>${tmiStats.count}</td><td>${tmiStats.hours.toFixed(1)} h</td><td>${tmiStats.percent}%</td><td>${tmiStats.miles.toFixed(1)} nm</td></tr>`;
-            html += `<tr><td><strong>Oy</strong></td><td>${oyStats.count}</td><td>${oyStats.hours.toFixed(1)} h</td><td>${oyStats.percent}%</td><td>${oyStats.miles.toFixed(1)} nm</td></tr>`;
-            html += `<tr><td><strong>Oma</strong></td><td>${omaStats.count}</td><td>${omaStats.hours.toFixed(1)} h</td><td>${omaStats.percent}%</td><td>${omaStats.miles.toFixed(1)} nm</td></tr>`;
-            html += '<tr style="background: #f5f5f5; font-weight: 600;"><td>YHTEENSÄ</td><td>' + entries.length + '</td><td>' + totalHours.toFixed(1) + ' h</td><td>100%</td><td>' + totalMiles.toFixed(1) + ' nm</td></tr>';
-            html += '</tbody></table>';
+            const years = Object.keys(entriesByYear).sort().reverse();
+            
+            years.forEach(year => {
+                const yearStats = calcStats(entriesByYear[year]);
+                
+                // Tmi rivi
+                html += `<tr>
+                    <td rowspan="4" style="font-weight: bold; font-size: 1.1em; vertical-align: middle;">${year}</td>
+                    <td><strong style="color: #0284c7;">Tmi</strong></td>
+                    <td>${yearStats.tmi.count}</td>
+                    <td>${yearStats.tmi.hours.toFixed(2)}</td>
+                    <td>${yearStats.tmi.miles.toFixed(1)}</td>
+                </tr>`;
+                
+                // Oy rivi
+                html += `<tr>
+                    <td><strong style="color: #10b981;">Oy</strong></td>
+                    <td>${yearStats.oy.count}</td>
+                    <td>${yearStats.oy.hours.toFixed(2)}</td>
+                    <td>${yearStats.oy.miles.toFixed(1)}</td>
+                </tr>`;
+                
+                // Oma rivi
+                html += `<tr>
+                    <td><strong style="color: #ec4899;">Oma</strong></td>
+                    <td>${yearStats.oma.count}</td>
+                    <td>${yearStats.oma.hours.toFixed(2)}</td>
+                    <td>${yearStats.oma.miles.toFixed(1)}</td>
+                </tr>`;
+                
+                // Yhteensä rivi
+                html += `<tr style="background: #f5f5f5; font-weight: 600;">
+                    <td><strong>YHTEENSÄ</strong></td>
+                    <td>${yearStats.count}</td>
+                    <td>${yearStats.hours.toFixed(2)}</td>
+                    <td>${yearStats.miles.toFixed(1)}</td>
+                </tr>`;
+            });
 
-            // Entiteetti-yksityiskohdat
-            html += '<div style="margin-top: 16px;">';
-            html += '<div class="form-section" style="background: #dbeafe; border-left: 4px solid #0284c7;"><strong>Tmi:</strong> ' + tmiStats.hours.toFixed(1) + ' h (' + tmiStats.percent + '%) | ' + tmiStats.miles.toFixed(1) + ' nm</div>';
-            html += '<div class="form-section" style="background: #d1fae5; border-left: 4px solid #10b981;"><strong>Oy:</strong> ' + oyStats.hours.toFixed(1) + ' h (' + oyStats.percent + '%) | ' + oyStats.miles.toFixed(1) + ' nm</div>';
-            html += '<div class="form-section" style="background: #fce7f3; border-left: 4px solid #ec4899;"><strong>Oma:</strong> ' + omaStats.hours.toFixed(1) + ' h (' + omaStats.percent + '%) | ' + omaStats.miles.toFixed(1) + ' nm</div>';
+            html += '</tbody></table></div>';
+
+            // Yhteenveto korteissa
+            html += '<div style="margin-top: 20px;">';
+            years.forEach(year => {
+                const yearStats = calcStats(entriesByYear[year]);
+                html += `
+                <div style="margin-bottom: 12px; padding: 12px; border-radius: 6px; background: #f9fafb; border-left: 4px solid #667eea;">
+                    <div style="font-weight: 600; margin-bottom: 8px; color: #111827;">${year}</div>
+                    <div style="font-size: 0.9em;">
+                        <div>🔵 Tmi: ${yearStats.tmi.hours.toFixed(2)}h (${yearStats.tmi.miles.toFixed(1)}nm)</div>
+                        <div>🟢 Oy: ${yearStats.oy.hours.toFixed(2)}h (${yearStats.oy.miles.toFixed(1)}nm)</div>
+                        <div>🔴 Oma: ${yearStats.oma.hours.toFixed(2)}h (${yearStats.oma.miles.toFixed(1)}nm)</div>
+                        <div style="font-weight: 600; margin-top: 4px;">⭐ Yhteensä: ${yearStats.hours.toFixed(2)}h (${yearStats.miles.toFixed(1)}nm)</div>
+                    </div>
+                </div>
+                `;
+            });
             html += '</div>';
 
             statsDiv.innerHTML = html;
