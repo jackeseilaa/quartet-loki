@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.41</title>
+    <title>Quartet Loki - v2030.42</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -789,7 +789,7 @@ button.btn {
             <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
             <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                 <strong>Quartet Loki PREMIUM</strong><br>
-                <span id="versionDetail">v2030.41 - Simplified Duplicate Filter</span><br>
+                <span id="versionDetail">v2030.42 - Show Notes in Table</span><br>
                 Offline-pohjainen arkkitehtuuri<br>
                 <span id="dbSize"></span><br>
                 <span id="lastBackup"></span>
@@ -1047,7 +1047,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.41';
+    const APP_VERSION = '2030.42';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -2157,11 +2157,12 @@ button.btn {
                 return;
             }
 
-            let html = '<table class="data-table"><thead><tr><th>Päivä</th><th>Vuokr.</th><th>Reitti</th><th>Lokilukema alku</th><th>Lokilukema loppu</th><th>Mailit</th><th>Moottori alku</th><th>Moottori loppu</th><th>Sää</th><th>Toiminnot</th></tr></thead><tbody>';
+            let html = '<table class="data-table"><thead><tr><th>Päivä</th><th>Vuokr.</th><th>Reitti</th><th>Lokilukema alku</th><th>Lokilukema loppu</th><th>Mailit</th><th>Moottori alku</th><th>Moottori loppu</th><th>Sää</th><th>Huomiot</th><th>Toiminnot</th></tr></thead><tbody>';
 
             entries.forEach(entry => {
                 const miles = (parseFloat(entry.logReadingEnd) || 0) - (parseFloat(entry.logReadingStart) || 0);
                 const weatherDisplay = entry.weather ? entry.weather.substring(0, 20) : '—';
+                const notesDisplay = entry.notes ? entry.notes.substring(0, 30) : '—';
                 const logStart = parseFloat(entry.logReadingStart) || 0;
                 const logEnd = parseFloat(entry.logReadingEnd) || 0;
                 const engineStart = entry.engineHoursStart || '0.00';
@@ -2177,6 +2178,7 @@ button.btn {
                     <td style="font-family: monospace; font-size: 0.9em;">${engineStart}</td>
                     <td style="font-family: monospace; font-size: 0.9em;">${engineEnd}</td>
                     <td style="font-size: 0.85em; max-width: 100px; word-break: break-word;">${weatherDisplay}</td>
+                    <td style="font-size: 0.85em; max-width: 120px; word-break: break-word; color: #666;">${notesDisplay}</td>
                     <td>
                         <div class="edit-buttons">
                             <button class="btn btn-secondary edit-btn" data-id="${entry.id}" data-action="edit">Muokkaa</button>
