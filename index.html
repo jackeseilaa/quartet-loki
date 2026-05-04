@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.44</title>
+    <title>Quartet Loki - v2030.45</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -796,7 +796,7 @@ button.btn {
             <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
             <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                 <strong>Quartet Loki PREMIUM</strong><br>
-                <span id="versionDetail">v2030.44 - Auto Log & Engine Link</span><br>
+                <span id="versionDetail">v2030.45 - Fixed Auto-Link Sort</span><br>
                 Offline-pohjainen arkkitehtuuri<br>
                 <span id="dbSize"></span><br>
                 <span id="lastBackup"></span>
@@ -1054,7 +1054,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.44';
+    const APP_VERSION = '2030.45';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1689,18 +1689,18 @@ button.btn {
                 // entryDate hidden field will be auto-populated from startTime on save
 
                 // Auto-link: Edellisen merkinnän lopetuslukema → tämän aloituslukema
-                const entries = DB.getEntries();
+                const entries = DB.getEntries().sort((a, b) => new Date(a.date) - new Date(b.date));
                 if (entries.length > 0) {
-                    const lastEntry = entries[entries.length - 1];
+                    const lastEntry = entries[entries.length - 1]; // Viimeisin päivämäärän mukaan
                     // Lokilukema: edellisen lopetus → tämän aloitus
-                    if (lastEntry.logReadingEnd) {
+                    if (lastEntry.logReadingEnd && parseFloat(lastEntry.logReadingEnd) > 0) {
                         document.getElementById('entryLogReadingStart').value = lastEntry.logReadingEnd;
-                        console.log(`🔗 Auto-linked: Lokilukema alku ${lastEntry.logReadingEnd} nm (edellisen lopetus)`);
+                        console.log(`🔗 Auto-linked: Lokilukema alku ${lastEntry.logReadingEnd} nm (edellisen ${lastEntry.date} lopetus)`);
                     }
                     // Moottoritunnit: edellisen lopetus → tämän aloitus
-                    if (lastEntry.engineHoursEnd) {
+                    if (lastEntry.engineHoursEnd && lastEntry.engineHoursEnd !== '0.00') {
                         document.getElementById('entryEngineHoursStart').value = lastEntry.engineHoursEnd;
-                        console.log(`🔗 Auto-linked: Moottori alku ${lastEntry.engineHoursEnd} (edellisen lopetus)`);
+                        console.log(`🔗 Auto-linked: Moottori alku ${lastEntry.engineHoursEnd} (edellisen ${lastEntry.date} lopetus)`);
                     }
                 }
 
