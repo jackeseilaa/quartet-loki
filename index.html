@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.34</title>
+    <title>Quartet Loki - v2030.35</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -750,7 +750,17 @@ button.btn {
         <h2 style="margin-bottom: 16px; font-size: 1.1em;">⚙️ Asetukset</h2>
 
 
-            <div class="form-section"><h3 style="margin-bottom: 12px;">☁️ iCloud Drive Synkronointi</h3><p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">Synkronoi tiedot iCloud Driven kautta. Kaikki laitteet näkevät samat tiedot.</p><div id="syncStatus" style="padding: 10px; background: #d1f5d3; border-radius: 6px; margin-bottom: 12px; font-size: 0.9em; color: #065f46; display: none;"></div><div class="action-buttons"><button class="btn btn-success" id="syncNowBtn">🔄 Lataa iCloud:iin</button><label for="icloudLoadInput" class="btn btn-primary" style="cursor: pointer; margin: 0; display: inline-block; flex: 1; min-width: 120px; text-align: center;">📥 Lataa iCloud:sta</label></div></div><div class="form-section"><h3 style="margin-bottom: 12px;">Varmuuskopiointi</h3>
+            <div class="form-section"><h3 style="margin-bottom: 12px;">☁️ iCloud Drive Synkronointi</h3><p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">Synkronoi tiedot iCloud Driven kautta. Kaikki laitteet näkevät samat tiedot.</p><div id="syncStatus" style="padding: 10px; background: #d1f5d3; border-radius: 6px; margin-bottom: 12px; font-size: 0.9em; color: #065f46; display: none;"></div><div class="action-buttons"><button class="btn btn-success" id="syncNowBtn">🔄 Lataa iCloud:iin</button><label for="icloudLoadInput" class="btn btn-primary" style="cursor: pointer; margin: 0; display: inline-block; flex: 1; min-width: 120px; text-align: center;">📥 Lataa iCloud:sta</label></div></div>
+
+        <div class="form-section">
+            <h3 style="margin-bottom: 12px;">📥 CSV-tiedoston tuonti</h3>
+            <p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">Tuo vanhoja merkintöjä CSV-tiedostosta (puolipiste-erottelija).</p>
+            <label for="csvImportInput" class="btn btn-primary" style="cursor: pointer; margin: 0; display: inline-block; width: 100%; text-align: center;">📤 Valitse CSV-tiedosto</label>
+            <input type="file" id="csvImportInput" accept=".csv" style="display: none;">
+            <div id="csvImportStatus" style="margin-top: 12px; padding: 10px; border-radius: 6px; display: none;"></div>
+        </div>
+
+        <div class="form-section"><h3 style="margin-bottom: 12px;">Varmuuskopiointi</h3>
             <p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">Lataa ja palauta varmuuskopiot.</p>
             <div class="action-buttons">
                 <button class="btn btn-secondary" id="backupBtn">💾 Lataa backup</button>
@@ -771,7 +781,7 @@ button.btn {
             <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
             <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                 <strong>Quartet Loki PREMIUM</strong><br>
-                <span id="versionDetail">v2030.34 - Yearly Usage Reports</span><br>
+                <span id="versionDetail">v2030.35 - CSV Import</span><br>
                 Offline-pohjainen arkkitehtuuri<br>
                 <span id="dbSize"></span><br>
                 <span id="lastBackup"></span>
@@ -1029,7 +1039,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.34';
+    const APP_VERSION = '2030.35';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1436,6 +1446,9 @@ button.btn {
             addTouchListener(document.getElementById('exportCsvBtn'), () => this.exportToCSV());
             addTouchListener(document.getElementById('exportPdfBtn'), () => this.exportToPDF());
             addTouchListener(document.getElementById('syncNowBtn'), () => this.syncToICloud());
+
+            // CSV Import
+            document.getElementById('csvImportInput')?.addEventListener('change', (e) => this.importCSV(e));
 
             // Location buttons
             addTouchListener(document.getElementById('useGpsBtn'), () => this.useGPS());
@@ -2979,19 +2992,19 @@ button.btn {
                 csv = 'LOKIKIRJAN YHTEENVETO\n\n';
                 csv += 'Tilastot\n';
                 csv += 'Merkintöjä,' + entries.length + '\n';
-                const totalMiles = entries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0);
+                const totalMiles = entries.reduce((sum, e) => sum + ((parseFloat(e.logReadingEnd) || 0) - (parseFloat(e.logReadingStart) || 0)), 0);
                 const totalHours = entries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
                 csv += 'Mailit (nm),' + totalMiles.toFixed(1) + '\n';
-                csv += 'Tunnit (h),' + totalHours.toFixed(1) + '\n\n';
+                csv += 'Tunnit (h),' + totalHours.toFixed(2) + '\n\n';
 
                 csv += 'Jakautuma entiteetittäin\n';
                 csv += 'Entiteetti,Merkinnät,Tunnit,Mailit,Osuus %\n';
                 ['tmi', 'oy', 'oma'].forEach(entity => {
                     const entityEntries = entries.filter(e => e.vuokralainen === entity || (!e.vuokralainen && entity === 'oma'));
                     const hours = entityEntries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
-                    const miles = entityEntries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0);
+                    const miles = entityEntries.reduce((sum, e) => sum + ((parseFloat(e.logReadingEnd) || 0) - (parseFloat(e.logReadingStart) || 0)), 0);
                     const percent = totalHours > 0 ? ((hours / totalHours) * 100).toFixed(1) : 0;
-                    csv += `"${entity}",${entityEntries.length},${hours.toFixed(1)},${miles.toFixed(1)},${percent}%\n`;
+                    csv += `"${entity}",${entityEntries.length},${hours.toFixed(2)},${miles.toFixed(1)},${percent}%\n`;
                 });
             }
 
