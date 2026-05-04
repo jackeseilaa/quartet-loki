@@ -2810,6 +2810,65 @@ button.btn {
 
             html += '</tbody></table></div>';
 
+            // Vuositasoinen käyttövertailu entiteettien mukaan
+            html += '<div class="form-section"><h3>🏢 Vuositasoinen käyttövertailu (Tmi/Oy/Oma)</h3>';
+            html += '<table class="data-table"><thead><tr><th>Vuosi</th><th>Entiteetti</th><th>Merkinnät</th><th>Tunnit (h)</th><th>Mailit (nm)</th></tr></thead><tbody>';
+
+            years.forEach(year => {
+                const yearEntries = entriesByYear[year];
+                
+                const tmi = yearEntries.filter(e => e.vuokralainen === 'tmi');
+                const oy = yearEntries.filter(e => e.vuokralainen === 'oy');
+                const oma = yearEntries.filter(e => e.vuokralainen === 'oma' || !e.vuokralainen);
+                
+                const calcStats = (arr) => {
+                    const hours = arr.reduce((sum, e) => sum + (parseFloat(e.engineHoursEnd || 0) - parseFloat(e.engineHoursStart || 0)), 0);
+                    const miles = arr.reduce((sum, e) => sum + (parseFloat(e.logReadingEnd || 0) - parseFloat(e.logReadingStart || 0)), 0);
+                    return { hours, miles, count: arr.length };
+                };
+                
+                const tmiStats = calcStats(tmi);
+                const oyStats = calcStats(oy);
+                const omaStats = calcStats(oma);
+                
+                // Tmi
+                html += `<tr>
+                    <td rowspan="4" style="font-weight: bold; vertical-align: middle;">${year}</td>
+                    <td><strong style="color: #0284c7;">Tmi</strong></td>
+                    <td>${tmiStats.count}</td>
+                    <td>${tmiStats.hours.toFixed(2)}</td>
+                    <td>${tmiStats.miles.toFixed(1)}</td>
+                </tr>`;
+                
+                // Oy
+                html += `<tr>
+                    <td><strong style="color: #10b981;">Oy</strong></td>
+                    <td>${oyStats.count}</td>
+                    <td>${oyStats.hours.toFixed(2)}</td>
+                    <td>${oyStats.miles.toFixed(1)}</td>
+                </tr>`;
+                
+                // Oma
+                html += `<tr>
+                    <td><strong style="color: #ec4899;">Oma</strong></td>
+                    <td>${omaStats.count}</td>
+                    <td>${omaStats.hours.toFixed(2)}</td>
+                    <td>${omaStats.miles.toFixed(1)}</td>
+                </tr>`;
+                
+                // Yhteensä
+                const totalYearHours = tmiStats.hours + oyStats.hours + omaStats.hours;
+                const totalYearMiles = tmiStats.miles + oyStats.miles + omaStats.miles;
+                html += `<tr style="background: #f5f5f5; font-weight: 600;">
+                    <td>YHTEENSÄ</td>
+                    <td>${tmiStats.count + oyStats.count + omaStats.count}</td>
+                    <td>${totalYearHours.toFixed(2)}</td>
+                    <td>${totalYearMiles.toFixed(1)}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+
             document.getElementById('reportOutput').innerHTML = html;
         },
 
@@ -2828,7 +2887,7 @@ button.btn {
             if (reportType === 'daily') {
                 // Vuorokausikohtainen raportti - PARANNUS: lisätään tapahtumat
                 filename = `lokikirja_paivittain_${new Date().toISOString().split('T')[0]}.csv`;
-                csv = 'Päivämäärä,Entiteetti,Käyttötarkoitus,Kapteeni,Lähtö,Tulo,Mailit (nm),Tunnit (h),Loki alku,Loki loppu,Sää,Miehistö,Merkinnät,Matkan Aikana Tapahtumat\n';
+                csv = 'Päivämäärä,Entiteetti,Käyttötarkoitus,Kapteeni,Lähtö,Tulo,Mailit (nm),Tunnit (h),Lokilukema alku,Lokilukema loppu,Konetunnit alku,Konetunnit loppu,Sää,Miehistö,Merkinnät,Matkan Aikana Tapahtumat\n';
 
                 const entriesByDate = {};
                 entries.forEach(e => {
@@ -2841,6 +2900,7 @@ button.btn {
                 Object.keys(entriesByDate).sort().reverse().forEach(date => {
                     entriesByDate[date].forEach(entry => {
                         const hours = (parseFloat(entry.engineHoursEnd) || 0) - (parseFloat(entry.engineHoursStart) || 0);
+                        const miles = (parseFloat(entry.logReadingEnd) || 0) - (parseFloat(entry.logReadingStart) || 0);
 
                         // Etsi tapahtumat tämän merkinnän entryId:n perusteella
                         const entryEvents = locations.filter(loc => loc.entryId === entry.id);
@@ -2858,13 +2918,13 @@ button.btn {
                             }).join(' | ');
                         }
 
-                        csv += `"${date}","${entry.vuokralainen}","${entry.kayttotarkoitus}","${entry.captain}","${entry.departurePort || ''}","${entry.arrivalPort || ''}","${entry.nauticalMiles || 0}","${hours.toFixed(1)}","${entry.engineHoursStart || 0}","${entry.engineHoursEnd || 0}","${entry.weather || ''}","${entry.personnel || ''}","${entry.notes || ''}","${eventsStr}"\n`;
+                        csv += `"${date}","${entry.vuokralainen}","${entry.kayttotarkoitus}","${entry.captain}","${entry.departurePort || ''}","${entry.arrivalPort || ''}","${miles.toFixed(1)}","${hours.toFixed(2)}","${entry.logReadingStart || 0}","${entry.logReadingEnd || 0}","${entry.engineHoursStart || 0}","${entry.engineHoursEnd || 0}","${entry.weather || ''}","${entry.personnel || ''}","${entry.notes || ''}","${eventsStr}"\n`;
                     });
                 });
             } else if (reportType === 'journey') {
                 // Purjehduskohtainen raportti
                 filename = `lokikirja_purjehdus_${new Date().toISOString().split('T')[0]}.csv`;
-                csv = 'Purjehdus #,Päivä,Kapteeni,Lähtösatama,Tulosatama,Entiteetti,Käyttötarkoitus,Mailit (nm),Tunnit (h),Loki alku,Loki loppu,Sää,Miehistö,Merkinnät\n';
+                csv = 'Purjehdus #,Päivä,Kapteeni,Lähtösatama,Tulosatama,Entiteetti,Käyttötarkoitus,Mailit (nm),Tunnit (h),Lokilukema alku,Lokilukema loppu,Konetunnit alku,Konetunnit loppu,Sää,Miehistö,Merkinnät\n';
 
                 const locations = DB.getLocations();
                 let journeyNum = 1;
@@ -2877,10 +2937,10 @@ button.btn {
                         if (currentJourney && journeyEntries.length > 0) {
                             // Kirjoita edellinen purjehdus
                             const totalHours = journeyEntries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
-                            const totalMiles = journeyEntries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0);
+                            const totalMiles = journeyEntries.reduce((sum, e) => sum + ((parseFloat(e.logReadingEnd) || 0) - (parseFloat(e.logReadingStart) || 0)), 0);
                             const firstEntry = journeyEntries[0];
                             const lastEntry = journeyEntries[journeyEntries.length - 1];
-                            csv += `"${journeyNum}","${currentJourney.date}","${currentJourney.captain}","${currentJourney.departurePort}","${lastEntry.arrivalPort || '—'}","${currentJourney.vuokralainen}","${currentJourney.kayttotarkoitus}","${totalMiles.toFixed(1)}","${totalHours.toFixed(1)}","${firstEntry.engineHoursStart || 0}","${lastEntry.engineHoursEnd || 0}","${firstEntry.weather || ''}","${firstEntry.personnel || ''}","${firstEntry.notes || ''}"\n`;
+                            csv += `"${journeyNum}","${currentJourney.date}","${currentJourney.captain}","${currentJourney.departurePort}","${lastEntry.arrivalPort || '—'}","${currentJourney.vuokralainen}","${currentJourney.kayttotarkoitus}","${totalMiles.toFixed(1)}","${totalHours.toFixed(2)}","${firstEntry.logReadingStart || 0}","${lastEntry.logReadingEnd || 0}","${firstEntry.engineHoursStart || 0}","${lastEntry.engineHoursEnd || 0}","${firstEntry.weather || ''}","${firstEntry.personnel || ''}","${firstEntry.notes || ''}"\n`;
                             journeyNum++;
                             journeyEntries = [];
                         }
@@ -2892,10 +2952,10 @@ button.btn {
                 // Viimeinen purjehdus
                 if (currentJourney && journeyEntries.length > 0) {
                     const totalHours = journeyEntries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
-                    const totalMiles = journeyEntries.reduce((sum, e) => sum + (parseFloat(e.nauticalMiles) || 0), 0);
+                    const totalMiles = journeyEntries.reduce((sum, e) => sum + ((parseFloat(e.logReadingEnd) || 0) - (parseFloat(e.logReadingStart) || 0)), 0);
                     const firstEntry = journeyEntries[0];
                     const lastEntry = journeyEntries[journeyEntries.length - 1];
-                    csv += `"${journeyNum}","${currentJourney.date}","${currentJourney.captain}","${currentJourney.departurePort}","${lastEntry.arrivalPort || '—'}","${currentJourney.vuokralainen}","${currentJourney.kayttotarkoitus}","${totalMiles.toFixed(1)}","${totalHours.toFixed(1)}","${firstEntry.engineHoursStart || 0}","${lastEntry.engineHoursEnd || 0}","${firstEntry.weather || ''}","${firstEntry.personnel || ''}","${firstEntry.notes || ''}"\n`;
+                    csv += `"${journeyNum}","${currentJourney.date}","${currentJourney.captain}","${currentJourney.departurePort}","${lastEntry.arrivalPort || '—'}","${currentJourney.vuokralainen}","${currentJourney.kayttotarkoitus}","${totalMiles.toFixed(1)}","${totalHours.toFixed(2)}","${firstEntry.logReadingStart || 0}","${lastEntry.logReadingEnd || 0}","${firstEntry.engineHoursStart || 0}","${lastEntry.engineHoursEnd || 0}","${firstEntry.weather || ''}","${firstEntry.personnel || ''}","${firstEntry.notes || ''}"\n`;
                 }
 
                 // Lisää matkalla tapahtuneet tapahtumat jos niillä on journeyId
