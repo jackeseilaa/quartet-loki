@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.48</title>
+    <title>Quartet Loki - v2030.49</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -793,10 +793,31 @@ button.btn {
         </div>
 
         <div class="form-section">
+            <h3 style="margin-bottom: 12px;">🗑️ Poista vuosi</h3>
+            <p style="margin-bottom: 12px; color: #666; font-size: 0.9em;">Poista kaikki merkinnät valitusta vuodesta kerralla.</p>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <select id="yearToDelete" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    <option value="">— Valitse vuosi —</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                </select>
+                <button class="btn btn-danger" id="deleteYearBtn" style="flex: 1;">🗑️ Poista</button>
+            </div>
+            <div id="deleteYearConfirm" style="display: none; padding: 12px; background: #fce7f3; border-radius: 6px; border-left: 4px solid #ec4899;">
+                <div style="font-weight: 600; margin-bottom: 8px; color: #9f1239;">⚠️ OLETKO VARMA?</div>
+                <div style="font-size: 0.9em; margin-bottom: 12px; color: #831843;" id="deleteYearWarning"></div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-danger" id="deleteYearConfirmYes" style="flex: 1;">🗑️ Kyllä, poista vuosi</button>
+                    <button class="btn btn-secondary" id="deleteYearCancel" style="flex: 1;">❌ Peruuta</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
             <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
             <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                 <strong>Quartet Loki PREMIUM</strong><br>
-                <span id="versionDetail">v2030.48 - Save Crew Data</span><br>
+                <span id="versionDetail">v2030.49 - Delete Year Feature</span><br>
                 Offline-pohjainen arkkitehtuuri<br>
                 <span id="dbSize"></span><br>
                 <span id="lastBackup"></span>
@@ -1054,7 +1075,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.48';
+    const APP_VERSION = '2030.49';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1462,6 +1483,21 @@ button.btn {
             addTouchListener(document.getElementById('clearAllConfirmYes'), () => this.clearAll());
             addTouchListener(document.getElementById('clearAllCancel'), () => {
                 document.getElementById('clearAllConfirm').style.display = 'none';
+            });
+            
+            // Poista vuosi
+            addTouchListener(document.getElementById('deleteYearBtn'), () => {
+                const year = document.getElementById('yearToDelete').value;
+                if (!year) {
+                    alert('Valitse vuosi ensin!');
+                    return;
+                }
+                document.getElementById('deleteYearWarning').textContent = `Poistetaan kaikki ${year} merkinnät. Tätä ei voi kumota!`;
+                document.getElementById('deleteYearConfirm').style.display = 'block';
+            });
+            addTouchListener(document.getElementById('deleteYearConfirmYes'), () => this.deleteYear());
+            addTouchListener(document.getElementById('deleteYearCancel'), () => {
+                document.getElementById('deleteYearConfirm').style.display = 'none';
             });
             addTouchListener(document.getElementById('generateReportBtn'), () => this.generateReport());
             addTouchListener(document.getElementById('exportCsvBtn'), () => this.exportToCSV());
@@ -3407,6 +3443,36 @@ button.btn {
             } catch (err) {
                 alert('❌ Virhe: ' + err.message);
             }
+        },
+
+        deleteYear() {
+            const year = document.getElementById('yearToDelete').value;
+            if (!year) return;
+
+            // Hae kaikki merkinnät
+            let entries = DB.getEntries();
+            
+            // Suodata vain valitun vuoden merkinnät
+            const entriesToDelete = entries.filter(e => (e.year || '2025') === year);
+            const entriesToKeep = entries.filter(e => (e.year || '2025') !== year);
+
+            if (entriesToDelete.length === 0) {
+                alert(`Ei merkintöjä vuodelle ${year}!`);
+                return;
+            }
+
+            // Poista valitun vuoden merkinnät
+            entriesToDelete.forEach(entry => {
+                DB.deleteEntry(entry.id);
+            });
+
+            // Päivitä UI
+            document.getElementById('deleteYearConfirm').style.display = 'none';
+            document.getElementById('yearToDelete').value = '';
+            this.render();
+
+            console.log(`🗑️ Poistettu ${entriesToDelete.length} merkintää vuodelta ${year}`);
+            alert(`✅ Poistettu ${entriesToDelete.length} merkintää vuodelta ${year}`);
         },
 
         clearAll() {
