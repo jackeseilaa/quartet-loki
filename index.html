@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.46</title>
+    <title>Quartet Loki - v2030.47</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -796,7 +796,7 @@ button.btn {
             <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
             <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                 <strong>Quartet Loki PREMIUM</strong><br>
-                <span id="versionDetail">v2030.46 - Fixed Render Duplicate</span><br>
+                <span id="versionDetail">v2030.47 - Fixed Engine Hours Calc</span><br>
                 Offline-pohjainen arkkitehtuuri<br>
                 <span id="dbSize"></span><br>
                 <span id="lastBackup"></span>
@@ -1054,7 +1054,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.46';
+    const APP_VERSION = '2030.47';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1738,23 +1738,22 @@ button.btn {
         },
 
         setupAutoCalculations() {
-            // Matka-aika: laske aika aloitus ja lopetus välillä
-            const updateEngineHours = () => {
-                const startTime = document.getElementById('entryStartTime').value;
-                const endTime = document.getElementById('entryEndTime').value;
+            // **KONETUNNIT: laske konetuntien aloitus ja lopetus erosta**
+            const updateEngineHoursFromValues = () => {
+                const startHours = document.getElementById('entryEngineHoursStart').value;
+                const endHours = document.getElementById('entryEngineHoursEnd').value;
                 const display = document.getElementById('calculatedEngineTime');
 
-                if (startTime && endTime) {
-                    const start = new Date(startTime);
-                    const end = new Date(endTime);
-                    const diffMs = end - start;
-                    const diffHours = diffMs / (1000 * 60 * 60);
+                if (startHours && endHours) {
+                    const start = parseFloat(startHours.replace(',', '.'));
+                    const end = parseFloat(endHours.replace(',', '.'));
+                    const diff = end - start;
 
-                    if (diffHours >= 0) {
-                        display.textContent = `${diffHours.toFixed(2)} h`;
+                    if (diff >= 0) {
+                        display.textContent = `${diff.toFixed(2)} h`;
                         display.style.color = '#0369a1';
                     } else {
-                        display.textContent = '⚠️ Lopetus ennen alkua!';
+                        display.textContent = '⚠️ Lopetus < alku!';
                         display.style.color = '#dc2626';
                     }
                 }
@@ -1782,13 +1781,13 @@ button.btn {
             };
 
             // Lisää event listenerit
-            document.getElementById('entryStartTime')?.addEventListener('change', updateEngineHours);
-            document.getElementById('entryEndTime')?.addEventListener('change', updateEngineHours);
+            document.getElementById('entryEngineHoursStart')?.addEventListener('change', updateEngineHoursFromValues);
+            document.getElementById('entryEngineHoursEnd')?.addEventListener('change', updateEngineHoursFromValues);
             document.getElementById('entryLogReadingStart')?.addEventListener('input', updateMiles);
             document.getElementById('entryLogReadingEnd')?.addEventListener('input', updateMiles);
 
             // Käynnistä laskelmat auki
-            updateEngineHours();
+            updateEngineHoursFromValues();
             updateMiles();
         },
 
