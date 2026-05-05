@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2030.47</title>
+    <title>Quartet Loki - v2030.48</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -796,7 +796,7 @@ button.btn {
             <h3 style="margin-bottom: 12px;">Versio & Tiedot</h3>
             <p style="color: #666; font-size: 0.9em; line-height: 1.6;">
                 <strong>Quartet Loki PREMIUM</strong><br>
-                <span id="versionDetail">v2030.47 - Fixed Engine Hours Calc</span><br>
+                <span id="versionDetail">v2030.48 - Save Crew Data</span><br>
                 Offline-pohjainen arkkitehtuuri<br>
                 <span id="dbSize"></span><br>
                 <span id="lastBackup"></span>
@@ -1054,7 +1054,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2030.47';
+    const APP_VERSION = '2030.48';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -2090,6 +2090,7 @@ button.btn {
                 engineHoursStart: document.getElementById('entryEngineHoursStart').value || '0.00',
                 engineHoursEnd: document.getElementById('entryEngineHoursEnd').value || '0.00',
                 personnel: document.getElementById('entryPersonnel').value,
+                crew: document.getElementById('entryCrew').value,
                 weather: document.getElementById('entryWeather').value,
                 notes: document.getElementById('entryNotes').value,
                 entryJourneyId: activeJourney ? activeJourney.id : null
