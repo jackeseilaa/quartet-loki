@@ -1105,7 +1105,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.57';
+    const APP_VERSION = '2038.58';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -2602,8 +2602,13 @@ button.btn {
 
             const calc = (arr) => ({
                 count: arr.length,
-                miles: arr.reduce((s,e) => s + ((parseFloat(e.logReadingEnd)||0) - (parseFloat(e.logReadingStart)||0)), 0),
-                hours: arr.reduce((s,e) => s + ((parseFloat(e.engineHoursEnd)||0) - (parseFloat(e.engineHoursStart)||0)), 0)
+                miles: arr.reduce((s,e) => s + Math.max(0, (parseFloat(e.logReadingEnd)||0) - (parseFloat(e.logReadingStart)||0)), 0),
+                hours: arr.reduce((s,e) => {
+                    const start = parseFloat(e.engineHoursStart) || 0;
+                    const end   = parseFloat(e.engineHoursEnd)   || 0;
+                    const diff  = end - start;
+                    return s + (diff > 0 ? diff : 0); // ohita negatiiviset ja nolla
+                }, 0)
             });
 
             const tmi  = calc(entries.filter(e => e.vuokralainen === 'tmi'));
