@@ -1014,6 +1014,20 @@ button.btn {
         <textarea id="entryNotes" placeholder="Lisähuomautukset..." style="resize: vertical; min-height: 80px;"></textarea>
     </div>
 
+    <div class="form-group">
+        <label>⛽ Moottorin polttoainekulutus (L/h)</label>
+        <select id="entryFuelConsumption" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;background:white;">
+            <option value="3">3 L/h — Kevyt ajo / ralenti</option>
+            <option value="3.5">3.5 L/h</option>
+            <option value="4" selected>4 L/h — Normaali (oletus)</option>
+            <option value="4.5">4.5 L/h</option>
+            <option value="5">5 L/h — Täysi teho</option>
+            <option value="5.5">5.5 L/h</option>
+            <option value="6">6 L/h — Maksimiteho</option>
+        </select>
+        <div style="font-size:0.78em;color:#6b7280;margin-top:4px;">Polttoainemittari käyttää tätä arvoa tälle merkinnälle</div>
+    </div>
+
     <!-- HIDDEN INPUT FOR DATE DERIVATION FROM STARTTIME -->
     <input type="hidden" id="entryDate">
 
@@ -1109,7 +1123,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.52';
+    const APP_VERSION = '2038.53';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1639,6 +1653,8 @@ button.btn {
             document.getElementById('entryStartTime').value = '';
             document.getElementById('entryEndTime').value = '';
             document.getElementById('entryNotes').value = '';
+            const fcEl = document.getElementById('entryFuelConsumption');
+            if (fcEl) fcEl.value = '4';
 
             if (id) {
                 // Etsi merkintä ID:llä
@@ -1756,6 +1772,8 @@ button.btn {
                 document.getElementById('entryStartTime').value = entry.startTime || '';
                 document.getElementById('entryEndTime').value = entry.endTime || '';
                 document.getElementById('entryNotes').value = entry.notes || '';
+                const fcLoad = document.getElementById('entryFuelConsumption');
+                if (fcLoad) fcLoad.value = entry.fuelConsumption || '4';
             } else {
                 // Uusi merkintä - aseta oletusarvot
                 // KRIITTINEN: Nollaa entryId, koska paikkojen pitää linkittyä uuteen merkintään
@@ -2176,6 +2194,7 @@ button.btn {
                 crew: document.getElementById('entryCrew').value,
                 weather: document.getElementById('entryWeather').value,
                 notes: document.getElementById('entryNotes').value,
+                fuelConsumption: parseFloat(document.getElementById('entryFuelConsumption')?.value) || 4,
                 entryJourneyId: activeJourney ? activeJourney.id : null
             };
             
@@ -3649,15 +3668,33 @@ button.btn {
         calcCurrentFuel() {
             const log = this.getFuelLog();
             if (log.length === 0) return null;
-            const TANK = 80, LPERH = 5;
-            const entries = DB.getEntries();
+            const TANK = 80;
+            const DEFAULT_LPERH = 4; // oletuskulutus
+            const allEntries = DB.getEntries().sort((a,b) =>
+                new Date(a.startTime||a.date) - new Date(b.startTime||b.date));
 
-            // Moottoritunnit kahden aikaleiman välillä
-            const engineHoursBetween = (fromISO, toISO) => {
+            // Laske kulutus kahden aikaleiman välillä käyttäen merkintäkohtaista kulutusta
+            const consumedBetween = (fromISO, toISO) => {
+                const from = fromISO ? new Date(fromISO) : null;
+                const to   = toISO   ? new Date(toISO)   : new Date();
+                let liters = 0;
+                allEntries.forEach(e => {
+                    const t = new Date(e.startTime || (e.date + 'T00:00:00'));
+                    const diff = (parseFloat(e.engineHoursEnd)||0) - (parseFloat(e.engineHoursStart)||0);
+                    const rate = parseFloat(e.fuelConsumption) || DEFAULT_LPERH;
+                    if (diff > 0 && (!from || t >= from) && t <= to) {
+                        liters += diff * rate;
+                    }
+                });
+                return liters;
+            };
+
+            // Laske myös moottoritunnit (näyttöä varten)
+            const hoursBetween = (fromISO, toISO) => {
                 const from = fromISO ? new Date(fromISO) : null;
                 const to   = toISO   ? new Date(toISO)   : new Date();
                 let h = 0;
-                entries.forEach(e => {
+                allEntries.forEach(e => {
                     const t = new Date(e.startTime || (e.date + 'T00:00:00'));
                     const diff = (parseFloat(e.engineHoursEnd)||0) - (parseFloat(e.engineHoursStart)||0);
                     if (diff > 0 && (!from || t >= from) && t <= to) h += diff;
@@ -3665,14 +3702,13 @@ button.btn {
                 return h;
             };
 
-            // Toista historia järjestyksessä
+            // Toista polttoainekirjaushistoria järjestyksessä
             const sorted = [...log].sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp));
             let current = 0, lastTime = null, totalConsumed = 0, totalAdded = 0;
 
             for (const entry of sorted) {
                 if (lastTime !== null) {
-                    const h = engineHoursBetween(lastTime, entry.timestamp);
-                    const c = h * LPERH;
+                    const c = consumedBetween(lastTime, entry.timestamp);
                     current = Math.max(0, current - c);
                     totalConsumed += c;
                 }
@@ -3680,20 +3716,29 @@ button.btn {
                     current = Math.min(TANK, current + entry.liters);
                     totalAdded += entry.liters;
                 } else {
-                    current = entry.liters; // absoluuttinen asetus
+                    current = entry.liters;
                 }
                 lastTime = entry.timestamp;
             }
 
-            // Kulutus viimeisestä kirjauksesta tähän hetkeen
-            const engineHoursAfter = engineHoursBetween(lastTime, null);
-            const consumedAfterLast = engineHoursAfter * LPERH;
+            // Kulutus viimeisestä kirjauksesta nyt
+            const consumedAfterLast = consumedBetween(lastTime, null);
+            const engineHoursAfter  = hoursBetween(lastTime, null);
             current = Math.max(0, current - consumedAfterLast);
             totalConsumed += consumedAfterLast;
+
+            // Jäljellä oleva aika nykyisellä arvioidulla kulutuksella
+            // Käytä viimeisimmän merkinnän kulutusarvoa ennusteessa
+            const lastEntryWithConsumption = [...allEntries].reverse()
+                .find(e => parseFloat(e.engineHoursEnd||0) > parseFloat(e.engineHoursStart||0));
+            const currentRate = lastEntryWithConsumption
+                ? (parseFloat(lastEntryWithConsumption.fuelConsumption) || DEFAULT_LPERH)
+                : DEFAULT_LPERH;
 
             const lastEntry = sorted[sorted.length - 1];
             return {
                 current, totalConsumed, totalAdded, engineHoursAfter,
+                currentRate,
                 lastLiters: lastEntry.liters,
                 lastType: lastEntry.type || 'set',
                 lastTime: new Date(lastEntry.timestamp)
@@ -3704,15 +3749,15 @@ button.btn {
             const el = document.getElementById('fuelGaugeDisplay');
             if (!el) return;
             const data = this.calcCurrentFuel();
-            const TANK = 80, LPERH = 5;
+            const TANK = 80;
 
             if (!data) {
                 el.innerHTML = '<div style="text-align:center;color:#92400e;padding:20px;font-size:0.9em;">Ei polttoainelukemaa. Aseta nykyinen litramäärä alla.</div>';
                 return;
             }
-            const { current, totalConsumed, totalAdded, lastLiters, lastType, lastTime, engineHoursAfter } = data;
+            const { current, totalConsumed, totalAdded, lastLiters, lastType, lastTime, engineHoursAfter, currentRate } = data;
             const pct = Math.max(0, Math.min(100, (current / TANK) * 100));
-            const hoursLeft = current / LPERH;
+            const hoursLeft = currentRate > 0 ? current / currentRate : 0;
             const gaugeColor = pct > 50 ? '#10b981' : pct > 25 ? '#f59e0b' : '#ef4444';
             const warningTxt = pct < 10 ? '🚨 KRIITTISEN MATALA!' : pct < 25 ? '⚠️ MATALA POLTTOAINE!' : '';
 
@@ -3774,7 +3819,7 @@ button.btn {
                 <div style="font-weight:700;font-size:1.05em;margin-top:4px;color:#92400e;">🔵 Arv. jäljellä: ${current.toFixed(1)} L / ${TANK} L (${pct.toFixed(0)}%)</div>
               </div>
               <div style="font-size:0.82em;background:#ecfdf5;border-radius:6px;padding:8px 10px;margin-top:8px;border-left:3px solid #10b981;color:#065f46;">
-                ⏱️ Moottoria jäljellä arv.: <strong>${hoursLeft.toFixed(1)} h</strong> (5 L/h kulutuksella)
+                ⏱️ Moottoria jäljellä arv.: <strong>${hoursLeft.toFixed(1)} h</strong> (kulutus ${currentRate} L/h — viim. merkintä)
               </div>
             </div>`;
         },
