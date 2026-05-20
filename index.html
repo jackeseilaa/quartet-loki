@@ -722,16 +722,6 @@ button.btn {
     <div id="accounting" class="tab-content">
         <h2 style="margin-bottom: 16px; font-size: 1.1em;">📊 Kirjanpito - Käytön jakautuminen</h2>
 
-        <!-- ⛽ POLTTOAINEMITTARI -->
-        <div class="form-section" id="fuelGaugeSection" style="border-left: 4px solid #f59e0b; background: #fffbeb;">
-            <h3 style="margin-bottom: 16px; color: #92400e;">⛽ Polttoainemittari — s/y Quartet</h3>
-            <div id="fuelGaugeDisplay"></div>
-            <div style="margin-top:12px;font-size:0.8em;color:#92400e;text-align:center;">
-                Kirjaa polttoaine Merkinnät-välilehdellä (⛽-palkki ylhäällä)
-            </div>
-            <div id="fuelLog" style="margin-top: 14px;"></div>
-        </div>
-
         <div class="form-section">
             <h3 style="margin-bottom: 12px;">📈 Käyttöjakautuma yhteensä</h3>
             <div id="accountingStats"></div>
@@ -1138,7 +1128,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.54';
+    const APP_VERSION = '2038.55';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1504,8 +1494,6 @@ button.btn {
                         this.renderLocations();
                     } else if (tabId === 'accounting') {
                         this.renderAccountingStats();
-                        this.renderFuelGauge();
-                        this.renderFuelLog();
                     }
                 }
             };
@@ -3691,8 +3679,6 @@ button.btn {
             const log = this.getFuelLog();
             log.push({ liters, type, timestamp: new Date().toISOString() });
             localStorage.setItem('quartet_fuel_log', JSON.stringify(log));
-            this.renderFuelGauge();
-            this.renderFuelLog();
             this.renderFuelMiniBar();
         },
 
@@ -3704,8 +3690,6 @@ button.btn {
             if (!confirm(`Poistetaanko kirjaus?\n${new Date(entry.timestamp).toLocaleString('fi-FI')} — ${entry.liters} L (${typeLabel})`)) return;
             log.splice(index, 1);
             localStorage.setItem('quartet_fuel_log', JSON.stringify(log));
-            this.renderFuelGauge();
-            this.renderFuelLog();
             this.renderFuelMiniBar();
         },
 
