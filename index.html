@@ -619,6 +619,37 @@ button.btn {
 <div class="content">
     <!-- MERKINNÄT TAB -->
     <div id="merkinta" class="tab-content active">
+
+        <!-- ⛽ KOMPAKTI POLTTOAINEPALKKI -->
+        <div id="fuelCompact" style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                <span style="font-size:0.85em;font-weight:700;color:#92400e;white-space:nowrap;">⛽ Polttoaine</span>
+                <!-- Palkki -->
+                <div style="flex:1;min-width:80px;height:14px;background:#e5e7eb;border-radius:7px;overflow:hidden;border:1px solid #d1d5db;">
+                    <div id="fuelBarFill" style="height:100%;border-radius:7px;transition:width 0.5s,background 0.5s;width:0%;"></div>
+                </div>
+                <span id="fuelBarText" style="font-size:0.82em;font-weight:700;color:#92400e;white-space:nowrap;min-width:32px;text-align:right;">—L</span>
+                <span id="fuelBarHours" style="font-size:0.78em;color:#6b7280;white-space:nowrap;">— h jäljellä</span>
+                <button id="fuelQuickToggleBtn" style="background:none;border:1px solid #fcd34d;border-radius:5px;padding:3px 8px;font-size:0.75em;color:#92400e;cursor:pointer;white-space:nowrap;">+ Kirjaa</button>
+            </div>
+            <!-- Piilotettava kirjauslomake -->
+            <div id="fuelQuickForm" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #fde68a;">
+                <div style="display:flex;gap:6px;margin-bottom:8px;">
+                    <button id="fuelQTypeSet" class="btn btn-warning" style="flex:1;font-size:0.8em;padding:7px 4px;">📍 Aseta</button>
+                    <button id="fuelQTypeAdd" class="btn btn-secondary" style="flex:1;font-size:0.8em;padding:7px 4px;">➕ Lisäys</button>
+                    <button id="fuelQFull" class="btn btn-success" style="flex:1;font-size:0.8em;padding:7px 4px;">🔋 Täysi</button>
+                </div>
+                <div id="fuelQHint" style="font-size:0.75em;color:#92400e;background:#fef3c7;border-radius:4px;padding:4px 8px;margin-bottom:8px;">
+                    📍 <strong>Aseta:</strong> Tankissa on nyt tämä määrä
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input type="number" id="fuelQInput" min="0" max="80" step="0.5" placeholder="Litrat (0–80)"
+                        style="flex:1;padding:9px;border:1px solid #fcd34d;border-radius:6px;font-size:16px;background:white;-webkit-user-select:text;user-select:text;">
+                    <button id="fuelQSaveBtn" class="btn btn-warning" style="white-space:nowrap;">⛽ Tallenna</button>
+                </div>
+            </div>
+        </div>
+
         <div style="margin-bottom: 16px;">
             <h2 style="margin-bottom: 12px; font-size: 1.1em;">Uusi Merkintä</h2>
             <div class="action-buttons">
@@ -695,25 +726,9 @@ button.btn {
         <div class="form-section" id="fuelGaugeSection" style="border-left: 4px solid #f59e0b; background: #fffbeb;">
             <h3 style="margin-bottom: 16px; color: #92400e;">⛽ Polttoainemittari — s/y Quartet</h3>
             <div id="fuelGaugeDisplay"></div>
-
-            <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #fde68a;">
-                <div style="font-weight: 600; font-size: 0.9em; color: #92400e; margin-bottom: 10px;">Kirjaa polttoaine</div>
-                <!-- Tyyppi-valinta -->
-                <div style="display: flex; gap: 6px; margin-bottom: 10px;">
-                    <button id="fuelTypeSet" class="btn btn-warning" style="flex:1;font-size:0.82em;padding:8px 4px;">📍 Aseta määrä</button>
-                    <button id="fuelTypeAdd" class="btn btn-secondary" style="flex:1;font-size:0.82em;padding:8px 4px;">➕ Lisäys</button>
-                </div>
-                <div id="fuelTypeHint" style="font-size:0.78em;color:#92400e;margin-bottom:8px;background:#fef3c7;border-radius:4px;padding:5px 8px;">
-                    📍 <strong>Aseta:</strong> Tankissa on nyt tämä määrä (absoluuttinen mittaus)
-                </div>
-                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                    <input type="number" id="fuelInput" min="0" max="80" step="0.5" placeholder="Litrat"
-                        style="flex: 1; min-width: 100px; padding: 10px; border: 1px solid #fcd34d; border-radius: 6px; font-size: 16px; background: white; -webkit-user-select: text; user-select: text;">
-                    <button class="btn btn-warning" id="setFuelBtn" style="flex: 1; min-width: 130px;">⛽ Tallenna</button>
-                    <button class="btn btn-success" id="fillTankBtn" style="flex: 1; min-width: 120px;">🔋 Täysi tankki (80L)</button>
-                </div>
+            <div style="margin-top:12px;font-size:0.8em;color:#92400e;text-align:center;">
+                Kirjaa polttoaine Merkinnät-välilehdellä (⛽-palkki ylhäällä)
             </div>
-
             <div id="fuelLog" style="margin-top: 14px;"></div>
         </div>
 
@@ -1123,7 +1138,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.53';
+    const APP_VERSION = '2038.54';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1482,7 +1497,9 @@ button.btn {
                 const tabContent = document.getElementById(tabId);
                 if (tabContent) {
                     tabContent.classList.add('active');
-                    if (tabId === 'locations') {
+                    if (tabId === 'merkinta') {
+                        this.renderFuelMiniBar();
+                    } else if (tabId === 'locations') {
                         this.renderJourneyStatus();
                         this.renderLocations();
                     } else if (tabId === 'accounting') {
@@ -1621,15 +1638,16 @@ button.btn {
             document.getElementById('icloudLoadInput')?.addEventListener('change', (e) => this.restore(e));
             document.getElementById('yearFilter')?.addEventListener('change', () => this.render());
 
-            // ⛽ Polttoainemittari
-            addTouchListener(document.getElementById('setFuelBtn'), () => this.saveFuelReading());
-            addTouchListener(document.getElementById('fillTankBtn'), () => this.saveFuelReadingDirect(80, 'set'));
+            // ⛽ Polttoaine — kompakti lomake Merkinnät-välilehdellä
+            addTouchListener(document.getElementById('fuelQuickToggleBtn'), () => this.toggleFuelQuickForm());
+            addTouchListener(document.getElementById('fuelQSaveBtn'), () => this.saveFuelQuick());
+            addTouchListener(document.getElementById('fuelQFull'), () => { this.saveFuelReadingDirect(80,'set'); this.hideFuelQuickForm(); });
+            addTouchListener(document.getElementById('fuelQTypeSet'), () => this.setFuelModeQuick('set'));
+            addTouchListener(document.getElementById('fuelQTypeAdd'), () => this.setFuelModeQuick('add'));
             addTouchListener(document.getElementById('fuelMiniBar'), () => {
                 const accTab = document.querySelector('[data-tab="accounting"]');
                 if (accTab) accTab.click();
             });
-            addTouchListener(document.getElementById('fuelTypeSet'), () => this.setFuelMode('set'));
-            addTouchListener(document.getElementById('fuelTypeAdd'), () => this.setFuelMode('add'));
         },
 
         openEntryModal(id = null) {
@@ -3607,22 +3625,55 @@ button.btn {
 
         // ⛽ Polttoaineen tila (set = absoluuttinen, add = lisäys)
         _fuelMode: 'set',
+        _fuelQuickMode: 'set',
 
-        setFuelMode(mode) {
-            this._fuelMode = mode;
-            const setBtn = document.getElementById('fuelTypeSet');
-            const addBtn = document.getElementById('fuelTypeAdd');
-            const hint   = document.getElementById('fuelTypeHint');
+        toggleFuelQuickForm() {
+            const form = document.getElementById('fuelQuickForm');
+            const btn  = document.getElementById('fuelQuickToggleBtn');
+            if (!form) return;
+            const open = form.style.display === 'none' || form.style.display === '';
+            form.style.display = open ? 'block' : 'none';
+            if (btn) btn.textContent = open ? '✕ Sulje' : '+ Kirjaa';
+        },
+
+        hideFuelQuickForm() {
+            const form = document.getElementById('fuelQuickForm');
+            const btn  = document.getElementById('fuelQuickToggleBtn');
+            if (form) form.style.display = 'none';
+            if (btn)  btn.textContent = '+ Kirjaa';
+        },
+
+        setFuelModeQuick(mode) {
+            this._fuelQuickMode = mode;
+            const setBtn  = document.getElementById('fuelQTypeSet');
+            const addBtn  = document.getElementById('fuelQTypeAdd');
+            const hint    = document.getElementById('fuelQHint');
             if (!setBtn || !addBtn || !hint) return;
             if (mode === 'set') {
                 setBtn.className = 'btn btn-warning';
                 addBtn.className = 'btn btn-secondary';
-                hint.innerHTML = '📍 <strong>Aseta:</strong> Tankissa on nyt tämä määrä (absoluuttinen mittaus)';
+                hint.innerHTML = '📍 <strong>Aseta:</strong> Tankissa on nyt tämä määrä';
             } else {
                 setBtn.className = 'btn btn-secondary';
                 addBtn.className = 'btn btn-success';
-                hint.innerHTML = '➕ <strong>Lisäys:</strong> Kaadoin tämän verran lisää — lasketaan nykyiseen päälle';
+                hint.innerHTML = '➕ <strong>Lisäys:</strong> Kaadoin tämän verran lisää';
             }
+        },
+
+        saveFuelQuick() {
+            const input = document.getElementById('fuelQInput');
+            const liters = parseFloat(input?.value);
+            if (isNaN(liters) || liters < 0 || liters > 80) {
+                alert('Syötä kelvollinen litramäärä (0–80)');
+                return;
+            }
+            this.saveFuelReadingDirect(liters, this._fuelQuickMode);
+            if (input) input.value = '';
+            this.hideFuelQuickForm();
+        },
+
+        setFuelMode(mode) {
+            this._fuelMode = mode;
         },
 
         saveFuelReading() {
@@ -3826,15 +3877,28 @@ button.btn {
 
 
         renderFuelMiniBar() {
-            const fill = document.getElementById('fuelMiniBarFill');
-            const txt = document.getElementById('fuelMiniText');
-            if (!fill || !txt) return;
             const data = this.calcCurrentFuel();
-            if (!data) { txt.textContent = '—L'; fill.style.width = '0%'; return; }
-            const pct = Math.max(0, Math.min(100, (data.current / 80) * 100));
-            fill.style.width = pct + '%';
-            fill.style.background = pct > 50 ? 'linear-gradient(90deg,#10b981,#34d399)' : pct > 25 ? 'linear-gradient(90deg,#f59e0b,#fcd34d)' : 'linear-gradient(90deg,#ef4444,#f87171)';
-            txt.textContent = data.current.toFixed(0) + 'L';
+            const TANK = 80;
+            const pct  = data ? Math.max(0, Math.min(100, (data.current / TANK) * 100)) : 0;
+            const litersText = data ? data.current.toFixed(0) + ' L' : '—L';
+            const hoursLeft  = data && data.currentRate > 0 ? (data.current / data.currentRate).toFixed(1) + ' h' : '— h';
+            const barColor   = pct > 50 ? 'linear-gradient(90deg,#10b981,#34d399)'
+                             : pct > 25 ? 'linear-gradient(90deg,#f59e0b,#fcd34d)'
+                             :            'linear-gradient(90deg,#ef4444,#f87171)';
+
+            // Mini-bar ylhäällä (year-selector)
+            const fill = document.getElementById('fuelMiniBarFill');
+            const txt  = document.getElementById('fuelMiniText');
+            if (fill) { fill.style.width = pct + '%'; fill.style.background = barColor; }
+            if (txt)  txt.textContent = litersText;
+
+            // Kompakti palkki Merkinnät-välilehdellä
+            const barFill  = document.getElementById('fuelBarFill');
+            const barText  = document.getElementById('fuelBarText');
+            const barHours = document.getElementById('fuelBarHours');
+            if (barFill)  { barFill.style.width = pct + '%'; barFill.style.background = barColor; }
+            if (barText)  barText.textContent = litersText;
+            if (barHours) barHours.textContent = hoursLeft + ' jäljellä';
         },
 
         renderFuelLog() {
