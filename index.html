@@ -599,10 +599,10 @@ button.btn {
         <option value="all">Kaikki</option>
     </select>
     <!-- ⛽ MINI POLTTOAINE-INDIKAATTORI -->
-    <div id="fuelMiniBar" style="display: flex; align-items: center; gap: 6px; margin-left: auto; cursor: pointer;" onclick="document.querySelector('[data-tab=\'accounting\']').click()" title="Avaa polttoainemittari">
+    <div id="fuelMiniBar" style="display: flex; align-items: center; gap: 6px; margin-left: auto; cursor: pointer;" title="Avaa polttoainemittari">
         <span style="font-size: 0.8em; color: #92400e; white-space: nowrap;">⛽</span>
         <div style="width: 60px; height: 10px; background: #e5e7eb; border-radius: 5px; overflow: hidden; border: 1px solid #d1d5db;">
-            <div id="fuelMiniBarFill" style="height: 100%; background: linear-gradient(90deg,#f59e0b,#10b981); border-radius: 5px; transition: width 0.5s;"></div>
+            <div id="fuelMiniBarFill" style="height: 100%; background: linear-gradient(90deg,#f59e0b,#10b981); border-radius: 5px; transition: width 0.5s; width:0%;"></div>
         </div>
         <span id="fuelMiniText" style="font-size: 0.75em; font-weight: 700; color: #92400e; white-space: nowrap;">—L</span>
     </div>
@@ -697,12 +697,20 @@ button.btn {
             <div id="fuelGaugeDisplay"></div>
 
             <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #fde68a;">
-                <div style="font-weight: 600; font-size: 0.9em; color: #92400e; margin-bottom: 10px;">Aseta polttoainemäärä (litrat)</div>
+                <div style="font-weight: 600; font-size: 0.9em; color: #92400e; margin-bottom: 10px;">Kirjaa polttoaine</div>
+                <!-- Tyyppi-valinta -->
+                <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+                    <button id="fuelTypeSet" class="btn btn-warning" style="flex:1;font-size:0.82em;padding:8px 4px;">📍 Aseta määrä</button>
+                    <button id="fuelTypeAdd" class="btn btn-secondary" style="flex:1;font-size:0.82em;padding:8px 4px;">➕ Lisäys</button>
+                </div>
+                <div id="fuelTypeHint" style="font-size:0.78em;color:#92400e;margin-bottom:8px;background:#fef3c7;border-radius:4px;padding:5px 8px;">
+                    📍 <strong>Aseta:</strong> Tankissa on nyt tämä määrä (absoluuttinen mittaus)
+                </div>
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                    <input type="number" id="fuelInput" min="0" max="80" step="1" placeholder="Litrat (0–80)"
+                    <input type="number" id="fuelInput" min="0" max="80" step="0.5" placeholder="Litrat"
                         style="flex: 1; min-width: 100px; padding: 10px; border: 1px solid #fcd34d; border-radius: 6px; font-size: 16px; background: white; -webkit-user-select: text; user-select: text;">
                     <button class="btn btn-warning" id="setFuelBtn" style="flex: 1; min-width: 130px;">⛽ Tallenna</button>
-                    <button class="btn btn-success" id="fillTankBtn" style="flex: 1; min-width: 120px;">🔋 Täynnä (80L)</button>
+                    <button class="btn btn-success" id="fillTankBtn" style="flex: 1; min-width: 120px;">🔋 Täysi tankki (80L)</button>
                 </div>
             </div>
 
@@ -1101,7 +1109,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.51';
+    const APP_VERSION = '2038.52';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1601,7 +1609,13 @@ button.btn {
 
             // ⛽ Polttoainemittari
             addTouchListener(document.getElementById('setFuelBtn'), () => this.saveFuelReading());
-            addTouchListener(document.getElementById('fillTankBtn'), () => this.saveFuelReadingDirect(80));
+            addTouchListener(document.getElementById('fillTankBtn'), () => this.saveFuelReadingDirect(80, 'set'));
+            addTouchListener(document.getElementById('fuelMiniBar'), () => {
+                const accTab = document.querySelector('[data-tab="accounting"]');
+                if (accTab) accTab.click();
+            });
+            addTouchListener(document.getElementById('fuelTypeSet'), () => this.setFuelMode('set'));
+            addTouchListener(document.getElementById('fuelTypeAdd'), () => this.setFuelMode('add'));
         },
 
         openEntryModal(id = null) {
@@ -3572,6 +3586,26 @@ button.btn {
 
         // ===================== POLTTOAINEMITTARI =====================
 
+        // ⛽ Polttoaineen tila (set = absoluuttinen, add = lisäys)
+        _fuelMode: 'set',
+
+        setFuelMode(mode) {
+            this._fuelMode = mode;
+            const setBtn = document.getElementById('fuelTypeSet');
+            const addBtn = document.getElementById('fuelTypeAdd');
+            const hint   = document.getElementById('fuelTypeHint');
+            if (!setBtn || !addBtn || !hint) return;
+            if (mode === 'set') {
+                setBtn.className = 'btn btn-warning';
+                addBtn.className = 'btn btn-secondary';
+                hint.innerHTML = '📍 <strong>Aseta:</strong> Tankissa on nyt tämä määrä (absoluuttinen mittaus)';
+            } else {
+                setBtn.className = 'btn btn-secondary';
+                addBtn.className = 'btn btn-success';
+                hint.innerHTML = '➕ <strong>Lisäys:</strong> Kaadoin tämän verran lisää — lasketaan nykyiseen päälle';
+            }
+        },
+
         saveFuelReading() {
             const input = document.getElementById('fuelInput');
             const liters = parseFloat(input?.value);
@@ -3579,13 +3613,13 @@ button.btn {
                 alert('Syötä kelvollinen litramäärä (0–80)');
                 return;
             }
-            this.saveFuelReadingDirect(liters);
+            this.saveFuelReadingDirect(liters, this._fuelMode);
             if (input) input.value = '';
         },
 
-        saveFuelReadingDirect(liters) {
+        saveFuelReadingDirect(liters, type = 'set') {
             const log = this.getFuelLog();
-            log.push({ liters, timestamp: new Date().toISOString() });
+            log.push({ liters, type, timestamp: new Date().toISOString() });
             localStorage.setItem('quartet_fuel_log', JSON.stringify(log));
             this.renderFuelGauge();
             this.renderFuelLog();
@@ -3596,7 +3630,8 @@ button.btn {
             const log = this.getFuelLog();
             if (index < 0 || index >= log.length) return;
             const entry = log[index];
-            if (!confirm(`Poistetaanko kirjaus?\n${new Date(entry.timestamp).toLocaleString('fi-FI')} — ${entry.liters} L`)) return;
+            const typeLabel = entry.type === 'add' ? 'lisäys' : 'asetus';
+            if (!confirm(`Poistetaanko kirjaus?\n${new Date(entry.timestamp).toLocaleString('fi-FI')} — ${entry.liters} L (${typeLabel})`)) return;
             log.splice(index, 1);
             localStorage.setItem('quartet_fuel_log', JSON.stringify(log));
             this.renderFuelGauge();
@@ -3614,69 +3649,100 @@ button.btn {
         calcCurrentFuel() {
             const log = this.getFuelLog();
             if (log.length === 0) return null;
-            // Viimeisin kirjaus
-            const last = log[log.length - 1];
-            const lastLiters = last.liters;
-            const lastTime = new Date(last.timestamp);
-            // Laske moottoritunnit viimeisen kirjauksen jälkeen lokimerkinnöistä
+            const TANK = 80, LPERH = 5;
             const entries = DB.getEntries();
-            let engineHoursAfter = 0;
-            entries.forEach(e => {
-                const entryTime = new Date(e.startTime || e.date);
-                if (entryTime >= lastTime) {
-                    const start = parseFloat(e.engineHoursStart) || 0;
-                    const end = parseFloat(e.engineHoursEnd) || 0;
-                    const diff = end - start;
-                    if (diff > 0) engineHoursAfter += diff;
+
+            // Moottoritunnit kahden aikaleiman välillä
+            const engineHoursBetween = (fromISO, toISO) => {
+                const from = fromISO ? new Date(fromISO) : null;
+                const to   = toISO   ? new Date(toISO)   : new Date();
+                let h = 0;
+                entries.forEach(e => {
+                    const t = new Date(e.startTime || (e.date + 'T00:00:00'));
+                    const diff = (parseFloat(e.engineHoursEnd)||0) - (parseFloat(e.engineHoursStart)||0);
+                    if (diff > 0 && (!from || t >= from) && t <= to) h += diff;
+                });
+                return h;
+            };
+
+            // Toista historia järjestyksessä
+            const sorted = [...log].sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp));
+            let current = 0, lastTime = null, totalConsumed = 0, totalAdded = 0;
+
+            for (const entry of sorted) {
+                if (lastTime !== null) {
+                    const h = engineHoursBetween(lastTime, entry.timestamp);
+                    const c = h * LPERH;
+                    current = Math.max(0, current - c);
+                    totalConsumed += c;
                 }
-            });
-            const consumed = engineHoursAfter * 5; // 5L/h
-            const current = Math.max(0, lastLiters - consumed);
-            return { current, consumed, lastLiters, lastTime, engineHoursAfter };
+                if ((entry.type || 'set') === 'add') {
+                    current = Math.min(TANK, current + entry.liters);
+                    totalAdded += entry.liters;
+                } else {
+                    current = entry.liters; // absoluuttinen asetus
+                }
+                lastTime = entry.timestamp;
+            }
+
+            // Kulutus viimeisestä kirjauksesta tähän hetkeen
+            const engineHoursAfter = engineHoursBetween(lastTime, null);
+            const consumedAfterLast = engineHoursAfter * LPERH;
+            current = Math.max(0, current - consumedAfterLast);
+            totalConsumed += consumedAfterLast;
+
+            const lastEntry = sorted[sorted.length - 1];
+            return {
+                current, totalConsumed, totalAdded, engineHoursAfter,
+                lastLiters: lastEntry.liters,
+                lastType: lastEntry.type || 'set',
+                lastTime: new Date(lastEntry.timestamp)
+            };
         },
 
         renderFuelGauge() {
             const el = document.getElementById('fuelGaugeDisplay');
             if (!el) return;
             const data = this.calcCurrentFuel();
-            const TANK = 80;
-            const CONSUMPTION = 5; // L/h
+            const TANK = 80, LPERH = 5;
 
             if (!data) {
-                el.innerHTML = `<div style="text-align:center; color:#92400e; padding: 20px; font-size: 0.9em;">
-                    Ei polttoainelukemaa. Aseta nykyinen litramäärä alla.
-                </div>`;
+                el.innerHTML = '<div style="text-align:center;color:#92400e;padding:20px;font-size:0.9em;">Ei polttoainelukemaa. Aseta nykyinen litramäärä alla.</div>';
                 return;
             }
-            const { current, consumed, lastLiters, lastTime, engineHoursAfter } = data;
+            const { current, totalConsumed, totalAdded, lastLiters, lastType, lastTime, engineHoursAfter } = data;
             const pct = Math.max(0, Math.min(100, (current / TANK) * 100));
-            const hoursLeft = current / CONSUMPTION;
-
-            // Väri
+            const hoursLeft = current / LPERH;
             const gaugeColor = pct > 50 ? '#10b981' : pct > 25 ? '#f59e0b' : '#ef4444';
-            const warningTxt = pct < 25 ? '⚠️ MATALA POLTTOAINE!' : pct < 10 ? '🚨 KRIITTISEN MATALA!' : '';
+            const warningTxt = pct < 10 ? '🚨 KRIITTISEN MATALA!' : pct < 25 ? '⚠️ MATALA POLTTOAINE!' : '';
 
-            // SVG puolipyöreä mittari
+            // SVG puolipyöreä mittari — korjattu: pct=100 -> piirretään koko kaari erikseen
             const R = 70, CX = 90, CY = 88;
-            const rad = (a) => (a * Math.PI) / 180;
-            const angle = -180 + (pct / 100) * 180;
-            const arcX = CX + R * Math.cos(rad(angle));
-            const arcY = CY + R * Math.sin(rad(angle));
-            const largeArc = pct > 50 ? 1 : 0;
+            const rad = a => (a * Math.PI) / 180;
+            let arcPath = '';
+            if (pct >= 99.9) {
+                // Täysi kaari: kaksi puolikaarta (SVG ei tue 360-kaarta suoraan)
+                arcPath = '<path d="M ' + (CX-R) + ',' + CY + ' A ' + R + ',' + R + ' 0 0,1 ' + CX + ',' + (CY-R) + ' A ' + R + ',' + R + ' 0 0,1 ' + (CX+R) + ',' + CY + '" fill="none" stroke="' + gaugeColor + '" stroke-width="14" stroke-linecap="round"/>';
+            } else if (pct > 0) {
+                const angle = -180 + (pct / 100) * 180;
+                const arcX = (CX + R * Math.cos(rad(angle))).toFixed(1);
+                const arcY = (CY + R * Math.sin(rad(angle))).toFixed(1);
+                const la = pct > 50 ? 1 : 0;
+                arcPath = '<path d="M ' + (CX-R) + ',' + CY + ' A ' + R + ',' + R + ' 0 ' + la + ',1 ' + arcX + ',' + arcY + '" fill="none" stroke="' + gaugeColor + '" stroke-width="14" stroke-linecap="round"/>';
+            }
 
-            // Ticks
             let ticks = '';
-            for (let i = 0; i <= 8; i++) {
-                const a = -180 + i * (180 / 8);
-                const x1 = CX + 72 * Math.cos(rad(a)), y1 = CY + 72 * Math.sin(rad(a));
-                const x2 = CX + 80 * Math.cos(rad(a)), y2 = CY + 80 * Math.sin(rad(a));
-                ticks += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#d1d5db" stroke-width="1.5"/>`;
+            for (let i=0;i<=8;i++){
+                const a=-180+i*(180/8);
+                const x1=(CX+72*Math.cos(rad(a))).toFixed(1), y1=(CY+72*Math.sin(rad(a))).toFixed(1);
+                const x2=(CX+80*Math.cos(rad(a))).toFixed(1), y2=(CY+80*Math.sin(rad(a))).toFixed(1);
+                ticks+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#d1d5db" stroke-width="1.5"/>`;
             }
 
             const svgGauge = `
             <svg viewBox="0 0 180 100" style="width:100%;max-width:280px;display:block;margin:0 auto;">
               <path d="M ${CX-R},${CY} A ${R},${R} 0 0,1 ${CX+R},${CY}" fill="none" stroke="#e5e7eb" stroke-width="14" stroke-linecap="round"/>
-              ${pct > 0 ? `<path d="M ${CX-R},${CY} A ${R},${R} 0 ${largeArc},1 ${arcX.toFixed(1)},${arcY.toFixed(1)}" fill="none" stroke="${gaugeColor}" stroke-width="14" stroke-linecap="round"/>` : ''}
+              ${arcPath}
               ${ticks}
               <text x="${CX-R-4}" y="${CY+14}" font-size="9" fill="#6b7280" text-anchor="middle">0</text>
               <text x="${CX}" y="${CY-R-6}" font-size="9" fill="#6b7280" text-anchor="middle">40L</text>
@@ -3685,36 +3751,34 @@ button.btn {
               <text x="${CX}" y="${CY+16}" font-size="9" fill="#6b7280" text-anchor="middle">litraa</text>
             </svg>`;
 
-            // LED-palkki 10 segmenttiä
-            const segs = 10;
-            let ledBar = '<div style="display:flex;gap:3px;justify-content:center;margin:8px 0 12px;">';
-            for (let i = 0; i < segs; i++) {
-                const filled = (i / segs) * 100 < pct;
-                const segColor = i < 2 ? '#ef4444' : i < 4 ? '#f59e0b' : '#10b981';
-                ledBar += `<div style="flex:1;height:16px;border-radius:3px;background:${filled ? segColor : '#e5e7eb'};max-width:28px;"></div>`;
+            const segs=10;
+            let ledBar='<div style="display:flex;gap:3px;justify-content:center;margin:8px 0 12px;">';
+            for(let i=0;i<segs;i++){
+                const filled=(i/segs)*100<pct;
+                const sc=i<2?'#ef4444':i<4?'#f59e0b':'#10b981';
+                ledBar+=`<div style="flex:1;height:16px;border-radius:3px;background:${filled?sc:'#e5e7eb'};max-width:28px;"></div>`;
             }
-            ledBar += '</div>';
+            ledBar+='</div>';
 
-            // Ennuste-teksti
-            const forecastHtml = `<div style="font-size:0.82em;background:#ecfdf5;border-radius:6px;padding:8px 10px;margin-top:8px;border-left:3px solid #10b981;color:#065f46;">
-                ⏱️ Moottoria jäljellä arv.: <strong>${hoursLeft.toFixed(1)} h</strong> (5 L/h kulutuksella)
-            </div>`;
-
+            const lastTypeLabel = lastType==='add' ? '➕ Lisäys' : '📍 Asetus';
             el.innerHTML = `
             <div style="text-align:center;">
               ${svgGauge}
               ${ledBar}
               ${warningTxt ? `<div style="color:#ef4444;font-weight:700;font-size:0.9em;margin-bottom:8px;">${warningTxt}</div>` : ''}
               <div style="font-size:0.82em;color:#92400e;line-height:1.9;background:#fef3c7;border-radius:6px;padding:10px;text-align:left;">
-                <div>📅 Kirjattu: <strong>${lastTime.toLocaleString('fi-FI')}</strong></div>
+                <div>📅 Viim. kirjaus: <strong>${lastTime.toLocaleString('fi-FI')}</strong> (${lastTypeLabel}: ${lastLiters} L)</div>
                 <div>⚙️ Moottoria kirjauksen jälkeen: <strong>${engineHoursAfter.toFixed(2)} h</strong></div>
-                <div>🔥 Kulutettu est. (5 L/h): <strong>${consumed.toFixed(1)} L</strong></div>
-                <div>⛽ Kirjattu lähtömäärä: <strong>${lastLiters} L</strong></div>
+                <div>🔥 Kulutettu yhteensä (5 L/h): <strong>${totalConsumed.toFixed(1)} L</strong></div>
+                ${totalAdded>0 ? `<div>➕ Tankattu välissä: <strong>${totalAdded.toFixed(1)} L</strong></div>` : ''}
                 <div style="font-weight:700;font-size:1.05em;margin-top:4px;color:#92400e;">🔵 Arv. jäljellä: ${current.toFixed(1)} L / ${TANK} L (${pct.toFixed(0)}%)</div>
               </div>
-              ${forecastHtml}
+              <div style="font-size:0.82em;background:#ecfdf5;border-radius:6px;padding:8px 10px;margin-top:8px;border-left:3px solid #10b981;color:#065f46;">
+                ⏱️ Moottoria jäljellä arv.: <strong>${hoursLeft.toFixed(1)} h</strong> (5 L/h kulutuksella)
+              </div>
             </div>`;
         },
+
 
         renderFuelMiniBar() {
             const fill = document.getElementById('fuelMiniBarFill');
@@ -3741,11 +3805,13 @@ button.btn {
             [...log].reverse().forEach((r, revIdx) => {
                 const idx = log.length - 1 - revIdx;
                 const isLatest = revIdx === 0;
+                const typeIcon = (r.type||'set')==='add' ? '➕' : '📍';
+                const typeLbl  = (r.type||'set')==='add' ? 'Lisäys' : 'Asetus';
                 html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 8px;margin-bottom:4px;border-radius:6px;background:${isLatest ? '#fef9c3' : '#fffbeb'};border:1px solid #fde68a;">
                     <div>
                         <span style="font-size:0.82em;color:#78350f;">${new Date(r.timestamp).toLocaleString('fi-FI')}</span>
                         ${isLatest ? '<span style="font-size:0.72em;background:#f59e0b;color:white;border-radius:3px;padding:1px 5px;margin-left:5px;">VIIMEISIN</span>' : ''}
-                        <div style="font-weight:700;font-size:0.95em;color:#92400e;">⛽ ${r.liters} L</div>
+                        <div style="font-weight:700;font-size:0.95em;color:#92400e;">${typeIcon} ${typeLbl}: ${r.liters} L</div>
                     </div>
                     <button data-fuel-idx="${idx}" class="btn btn-danger delete-fuel-btn" style="padding:4px 8px;font-size:0.75em;flex-shrink:0;">🗑</button>
                 </div>`;
