@@ -1105,7 +1105,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.60';
+    const APP_VERSION = '2038.61';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -2176,9 +2176,9 @@ button.btn {
                 endTime: endTime,
                 route: document.getElementById('entryRoute').value,
                 logReadingStart: parseFloat(document.getElementById('entryLogReadingStart').value) || 0,
-                logReadingEnd: parseFloat(document.getElementById('entryLogReadingEnd').value) || 0,
+                logReadingEnd: parseFloat(document.getElementById('entryLogReadingEnd').value) || parseFloat(document.getElementById('entryLogReadingStart').value) || 0,
                 engineHoursStart: document.getElementById('entryEngineHoursStart').value || '0.00',
-                engineHoursEnd: document.getElementById('entryEngineHoursEnd').value || '0.00',
+                engineHoursEnd: document.getElementById('entryEngineHoursEnd').value || document.getElementById('entryEngineHoursStart').value || '0.00',
                 personnel: document.getElementById('entryPersonnel').value,
                 crew: document.getElementById('entryCrew').value,
                 weather: document.getElementById('entryWeather').value,
