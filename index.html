@@ -599,12 +599,12 @@ button.btn {
         <option value="all">Kaikki</option>
     </select>
     <!-- ⛽ MINI POLTTOAINE-INDIKAATTORI -->
-    <div id="fuelMiniBar" style="display: flex; align-items: center; gap: 6px; margin-left: auto; cursor: pointer;" title="Avaa polttoainemittari">
+    <div id="fuelMiniBar" style="display: flex; align-items: center; gap: 6px; margin-left: auto; cursor: pointer;" title="Kirjaa polttoaine">
         <span style="font-size: 0.8em; color: #92400e; white-space: nowrap;">⛽</span>
-        <div style="width: 60px; height: 10px; background: #e5e7eb; border-radius: 5px; overflow: hidden; border: 1px solid #d1d5db;">
-            <div id="fuelMiniBarFill" style="height: 100%; background: linear-gradient(90deg,#f59e0b,#10b981); border-radius: 5px; transition: width 0.5s; width:0%;"></div>
+        <div style="width: 50px; height: 10px; background: #e5e7eb; border-radius: 5px; overflow: hidden; border: 1px solid #d1d5db;">
+            <div id="fuelMiniBarFill" style="height: 100%; border-radius: 5px; transition: width 0.5s; width:0%;"></div>
         </div>
-        <span id="fuelMiniText" style="font-size: 0.75em; font-weight: 700; color: #92400e; white-space: nowrap;">—L</span>
+        <span id="fuelMiniText" style="font-size: 0.75em; font-weight: 700; color: #92400e; white-space: nowrap;">—</span>
     </div>
 </div>
 
@@ -620,20 +620,11 @@ button.btn {
     <!-- MERKINNÄT TAB -->
     <div id="merkinta" class="tab-content active">
 
-        <!-- ⛽ KOMPAKTI POLTTOAINEPALKKI -->
-        <div id="fuelCompact" style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-bottom:14px;">
-            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                <span style="font-size:0.85em;font-weight:700;color:#92400e;white-space:nowrap;">⛽ Polttoaine</span>
-                <!-- Palkki -->
-                <div style="flex:1;min-width:80px;height:14px;background:#e5e7eb;border-radius:7px;overflow:hidden;border:1px solid #d1d5db;">
-                    <div id="fuelBarFill" style="height:100%;border-radius:7px;transition:width 0.5s,background 0.5s;width:0%;"></div>
-                </div>
-                <span id="fuelBarText" style="font-size:0.82em;font-weight:700;color:#92400e;white-space:nowrap;min-width:32px;text-align:right;">—L</span>
-                <span id="fuelBarHours" style="font-size:0.78em;color:#6b7280;white-space:nowrap;">— h jäljellä</span>
-                <button id="fuelQuickToggleBtn" style="background:none;border:1px solid #fcd34d;border-radius:5px;padding:3px 8px;font-size:0.75em;color:#92400e;cursor:pointer;white-space:nowrap;">+ Kirjaa</button>
-            </div>
+        <!-- ⛽ KIRJAA POLTTOAINE -->
+        <div id="fuelCompact" style="margin-bottom:14px;text-align:right;">
+            <button id="fuelQuickToggleBtn" style="background:none;border:1px solid #fcd34d;border-radius:5px;padding:4px 10px;font-size:0.8em;color:#92400e;cursor:pointer;">⛽ + Kirjaa polttoaine</button>
             <!-- Piilotettava kirjauslomake -->
-            <div id="fuelQuickForm" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #fde68a;">
+            <div id="fuelQuickForm" style="display:none;margin-top:8px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;text-align:left;">
                 <div style="display:flex;gap:6px;margin-bottom:8px;">
                     <button id="fuelQTypeSet" class="btn btn-warning" style="flex:1;font-size:0.8em;padding:7px 4px;">📍 Aseta</button>
                     <button id="fuelQTypeAdd" class="btn btn-secondary" style="flex:1;font-size:0.8em;padding:7px 4px;">➕ Lisäys</button>
@@ -1128,7 +1119,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.55';
+    const APP_VERSION = '2038.56';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -3874,15 +3865,7 @@ button.btn {
             const fill = document.getElementById('fuelMiniBarFill');
             const txt  = document.getElementById('fuelMiniText');
             if (fill) { fill.style.width = pct + '%'; fill.style.background = barColor; }
-            if (txt)  txt.textContent = litersText;
-
-            // Kompakti palkki Merkinnät-välilehdellä
-            const barFill  = document.getElementById('fuelBarFill');
-            const barText  = document.getElementById('fuelBarText');
-            const barHours = document.getElementById('fuelBarHours');
-            if (barFill)  { barFill.style.width = pct + '%'; barFill.style.background = barColor; }
-            if (barText)  barText.textContent = litersText;
-            if (barHours) barHours.textContent = hoursLeft + ' jäljellä';
+            if (txt)  txt.textContent = litersText + ' · ' + hoursLeft;
         },
 
         renderFuelLog() {
