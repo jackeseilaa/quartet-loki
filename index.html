@@ -700,11 +700,13 @@ button.btn {
                 <div style="font-weight: 600; font-size: 0.9em; color: #92400e; margin-bottom: 10px;">Aseta polttoainemäärä (litrat)</div>
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                     <input type="number" id="fuelInput" min="0" max="80" step="1" placeholder="Litrat (0–80)"
-                        style="flex: 1; min-width: 120px; padding: 10px; border: 1px solid #fcd34d; border-radius: 6px; font-size: 16px; background: white; -webkit-user-select: text; user-select: text;">
-                    <button class="btn btn-warning" id="setFuelBtn" style="flex: 1; min-width: 140px;">⛽ Tallenna tankkaus</button>
+                        style="flex: 1; min-width: 100px; padding: 10px; border: 1px solid #fcd34d; border-radius: 6px; font-size: 16px; background: white; -webkit-user-select: text; user-select: text;">
+                    <button class="btn btn-warning" id="setFuelBtn" style="flex: 1; min-width: 130px;">⛽ Tallenna</button>
+                    <button class="btn btn-success" id="fillTankBtn" style="flex: 1; min-width: 120px;">🔋 Täynnä (80L)</button>
                 </div>
-                <div id="fuelLog" style="margin-top: 14px; max-height: 140px; overflow-y: auto;"></div>
             </div>
+
+            <div id="fuelLog" style="margin-top: 14px;"></div>
         </div>
 
         <div class="form-section">
@@ -1099,7 +1101,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.50';
+    const APP_VERSION = '2038.51';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1599,6 +1601,7 @@ button.btn {
 
             // ⛽ Polttoainemittari
             addTouchListener(document.getElementById('setFuelBtn'), () => this.saveFuelReading());
+            addTouchListener(document.getElementById('fillTankBtn'), () => this.saveFuelReadingDirect(80));
         },
 
         openEntryModal(id = null) {
@@ -3576,11 +3579,28 @@ button.btn {
                 alert('Syötä kelvollinen litramäärä (0–80)');
                 return;
             }
+            this.saveFuelReadingDirect(liters);
+            if (input) input.value = '';
+        },
+
+        saveFuelReadingDirect(liters) {
             const log = this.getFuelLog();
             log.push({ liters, timestamp: new Date().toISOString() });
             localStorage.setItem('quartet_fuel_log', JSON.stringify(log));
-            if (input) input.value = '';
             this.renderFuelGauge();
+            this.renderFuelLog();
+            this.renderFuelMiniBar();
+        },
+
+        deleteFuelEntry(index) {
+            const log = this.getFuelLog();
+            if (index < 0 || index >= log.length) return;
+            const entry = log[index];
+            if (!confirm(`Poistetaanko kirjaus?\n${new Date(entry.timestamp).toLocaleString('fi-FI')} — ${entry.liters} L`)) return;
+            log.splice(index, 1);
+            localStorage.setItem('quartet_fuel_log', JSON.stringify(log));
+            this.renderFuelGauge();
+            this.renderFuelLog();
             this.renderFuelMiniBar();
         },
 
@@ -3620,6 +3640,7 @@ button.btn {
             if (!el) return;
             const data = this.calcCurrentFuel();
             const TANK = 80;
+            const CONSUMPTION = 5; // L/h
 
             if (!data) {
                 el.innerHTML = `<div style="text-align:center; color:#92400e; padding: 20px; font-size: 0.9em;">
@@ -3629,16 +3650,16 @@ button.btn {
             }
             const { current, consumed, lastLiters, lastTime, engineHoursAfter } = data;
             const pct = Math.max(0, Math.min(100, (current / TANK) * 100));
+            const hoursLeft = current / CONSUMPTION;
 
-            // Väri: vihreä > 40%, keltainen 20-40%, punainen < 20%
+            // Väri
             const gaugeColor = pct > 50 ? '#10b981' : pct > 25 ? '#f59e0b' : '#ef4444';
-            const warningTxt = pct < 25 ? '⚠️ Matala polttoaine!' : '';
+            const warningTxt = pct < 25 ? '⚠️ MATALA POLTTOAINE!' : pct < 10 ? '🚨 KRIITTISEN MATALA!' : '';
 
-            // SVG Puolipyöreä mittari
+            // SVG puolipyöreä mittari
             const R = 70, CX = 90, CY = 88;
-            const startAngle = -180; const endAngle = 0;
-            const angle = startAngle + (pct / 100) * 180;
             const rad = (a) => (a * Math.PI) / 180;
+            const angle = -180 + (pct / 100) * 180;
             const arcX = CX + R * Math.cos(rad(angle));
             const arcY = CY + R * Math.sin(rad(angle));
             const largeArc = pct > 50 ? 1 : 0;
@@ -3647,51 +3668,51 @@ button.btn {
             let ticks = '';
             for (let i = 0; i <= 8; i++) {
                 const a = -180 + i * (180 / 8);
-                const r1 = 72, r2 = 80;
-                const x1 = CX + r1 * Math.cos(rad(a)), y1 = CY + r1 * Math.sin(rad(a));
-                const x2 = CX + r2 * Math.cos(rad(a)), y2 = CY + r2 * Math.sin(rad(a));
+                const x1 = CX + 72 * Math.cos(rad(a)), y1 = CY + 72 * Math.sin(rad(a));
+                const x2 = CX + 80 * Math.cos(rad(a)), y2 = CY + 80 * Math.sin(rad(a));
                 ticks += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#d1d5db" stroke-width="1.5"/>`;
             }
 
             const svgGauge = `
             <svg viewBox="0 0 180 100" style="width:100%;max-width:280px;display:block;margin:0 auto;">
-              <!-- Background arc -->
               <path d="M ${CX-R},${CY} A ${R},${R} 0 0,1 ${CX+R},${CY}" fill="none" stroke="#e5e7eb" stroke-width="14" stroke-linecap="round"/>
-              <!-- Filled arc -->
               ${pct > 0 ? `<path d="M ${CX-R},${CY} A ${R},${R} 0 ${largeArc},1 ${arcX.toFixed(1)},${arcY.toFixed(1)}" fill="none" stroke="${gaugeColor}" stroke-width="14" stroke-linecap="round"/>` : ''}
-              <!-- Ticks -->
               ${ticks}
-              <!-- Labels -->
               <text x="${CX-R-4}" y="${CY+14}" font-size="9" fill="#6b7280" text-anchor="middle">0</text>
-              <text x="${CX}" y="${CY-R-6}" font-size="9" fill="#6b7280" text-anchor="middle">40</text>
-              <text x="${CX+R+4}" y="${CY+14}" font-size="9" fill="#6b7280" text-anchor="middle">80</text>
-              <!-- Arvo keskellä -->
+              <text x="${CX}" y="${CY-R-6}" font-size="9" fill="#6b7280" text-anchor="middle">40L</text>
+              <text x="${CX+R+4}" y="${CY+14}" font-size="9" fill="#6b7280" text-anchor="middle">80L</text>
               <text x="${CX}" y="${CY+4}" font-size="22" font-weight="bold" fill="${gaugeColor}" text-anchor="middle">${current.toFixed(0)}</text>
               <text x="${CX}" y="${CY+16}" font-size="9" fill="#6b7280" text-anchor="middle">litraa</text>
             </svg>`;
 
-            // LED-palkit (10 segmenttiä)
+            // LED-palkki 10 segmenttiä
             const segs = 10;
-            let ledBar = '<div style="display:flex;gap:3px;justify-content:center;margin:10px 0;">';
+            let ledBar = '<div style="display:flex;gap:3px;justify-content:center;margin:8px 0 12px;">';
             for (let i = 0; i < segs; i++) {
                 const filled = (i / segs) * 100 < pct;
                 const segColor = i < 2 ? '#ef4444' : i < 4 ? '#f59e0b' : '#10b981';
-                ledBar += `<div style="flex:1;height:16px;border-radius:3px;background:${filled ? segColor : '#e5e7eb'};transition:background 0.4s;max-width:28px;"></div>`;
+                ledBar += `<div style="flex:1;height:16px;border-radius:3px;background:${filled ? segColor : '#e5e7eb'};max-width:28px;"></div>`;
             }
             ledBar += '</div>';
+
+            // Ennuste-teksti
+            const forecastHtml = `<div style="font-size:0.82em;background:#ecfdf5;border-radius:6px;padding:8px 10px;margin-top:8px;border-left:3px solid #10b981;color:#065f46;">
+                ⏱️ Moottoria jäljellä arv.: <strong>${hoursLeft.toFixed(1)} h</strong> (5 L/h kulutuksella)
+            </div>`;
 
             el.innerHTML = `
             <div style="text-align:center;">
               ${svgGauge}
               ${ledBar}
               ${warningTxt ? `<div style="color:#ef4444;font-weight:700;font-size:0.9em;margin-bottom:8px;">${warningTxt}</div>` : ''}
-              <div style="font-size:0.82em;color:#92400e;line-height:1.8;background:#fef3c7;border-radius:6px;padding:10px;text-align:left;margin-top:8px;">
+              <div style="font-size:0.82em;color:#92400e;line-height:1.9;background:#fef3c7;border-radius:6px;padding:10px;text-align:left;">
                 <div>📅 Kirjattu: <strong>${lastTime.toLocaleString('fi-FI')}</strong></div>
                 <div>⚙️ Moottoria kirjauksen jälkeen: <strong>${engineHoursAfter.toFixed(2)} h</strong></div>
-                <div>🔥 Kulutettu (5 L/h): <strong>${consumed.toFixed(1)} L</strong></div>
-                <div>⛽ Kirjattu määrä: <strong>${lastLiters} L</strong></div>
-                <div style="font-weight:700;font-size:1.05em;margin-top:4px;">🔵 Arv. jäljellä: ${current.toFixed(1)} L / ${TANK} L</div>
+                <div>🔥 Kulutettu est. (5 L/h): <strong>${consumed.toFixed(1)} L</strong></div>
+                <div>⛽ Kirjattu lähtömäärä: <strong>${lastLiters} L</strong></div>
+                <div style="font-weight:700;font-size:1.05em;margin-top:4px;color:#92400e;">🔵 Arv. jäljellä: ${current.toFixed(1)} L / ${TANK} L (${pct.toFixed(0)}%)</div>
               </div>
+              ${forecastHtml}
             </div>`;
         },
 
@@ -3712,11 +3733,38 @@ button.btn {
             if (!el) return;
             const log = this.getFuelLog();
             if (log.length === 0) { el.innerHTML = ''; return; }
-            const recent = [...log].reverse().slice(0, 5);
-            el.innerHTML = '<div style="font-size:0.8em;color:#92400e;font-weight:600;margin-bottom:6px;">Viimeiset kirjaukset:</div>' +
-                recent.map(r => `<div style="font-size:0.8em;color:#78350f;padding:4px 0;border-bottom:1px solid #fde68a;">
-                    ${new Date(r.timestamp).toLocaleString('fi-FI')} → <strong>${r.liters} L</strong>
-                </div>`).join('');
+
+            let html = `<div style="margin-top:14px;border-top:1px solid #fde68a;padding-top:12px;">
+                <div style="font-size:0.82em;font-weight:700;color:#92400e;margin-bottom:8px;">📋 Tankkaushistoria (${log.length} kirjausta)</div>
+                <div style="max-height:160px;overflow-y:auto;">`;
+
+            [...log].reverse().forEach((r, revIdx) => {
+                const idx = log.length - 1 - revIdx;
+                const isLatest = revIdx === 0;
+                html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 8px;margin-bottom:4px;border-radius:6px;background:${isLatest ? '#fef9c3' : '#fffbeb'};border:1px solid #fde68a;">
+                    <div>
+                        <span style="font-size:0.82em;color:#78350f;">${new Date(r.timestamp).toLocaleString('fi-FI')}</span>
+                        ${isLatest ? '<span style="font-size:0.72em;background:#f59e0b;color:white;border-radius:3px;padding:1px 5px;margin-left:5px;">VIIMEISIN</span>' : ''}
+                        <div style="font-weight:700;font-size:0.95em;color:#92400e;">⛽ ${r.liters} L</div>
+                    </div>
+                    <button data-fuel-idx="${idx}" class="btn btn-danger delete-fuel-btn" style="padding:4px 8px;font-size:0.75em;flex-shrink:0;">🗑</button>
+                </div>`;
+            });
+
+            html += '</div></div>';
+            el.innerHTML = html;
+
+            // Event listeners poisto-napeille
+            el.querySelectorAll('.delete-fuel-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.deleteFuelEntry(parseInt(btn.dataset.fuelIdx));
+                });
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.deleteFuelEntry(parseInt(btn.dataset.fuelIdx));
+                }, { passive: false });
+            });
         },
 
         updateVersionInfo() {
