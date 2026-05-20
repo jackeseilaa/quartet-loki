@@ -1105,7 +1105,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.59';
+    const APP_VERSION = '2038.60';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1183,41 +1183,47 @@ button.btn {
     // ==================== MERISÄÄ-HAKU ====================
     async function fetchMarineWeather(latitude, longitude) {
         try {
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=windspeed_10m,winddirection_10m,weathercode,temperature_2m&timezone=Europe/Helsinki&forecast_days=1`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('Sää-haku epäonnistui');
-            const data = await response.json();
-            const hourly = data.hourly;
-            if (!hourly || !hourly.windspeed_10m || hourly.windspeed_10m.length === 0) {
-                throw new Error('Sää-dataa ei saatavilla');
-            }
-            
-            const idx = hourly.windspeed_10m.length - 1;
-            const wind = hourly.windspeed_10m[idx];
-            const windDirection = hourly.winddirection_10m ? hourly.winddirection_10m[idx] : 0;
-            const temp = hourly.temperature_2m[idx];
-            const weatherCode = hourly.weathercode[idx];
-            
+            // Hae sekä nykyinen sää (current) että paikkanimi (reverse geocoding)
+            const [weatherResp, geoResp] = await Promise.all([
+                fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,windspeed_10m,winddirection_10m,weathercode&windspeed_unit=ms&timezone=Europe/Helsinki`),
+                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=fi`)
+            ]);
+
+            if (!weatherResp.ok) throw new Error('Sää-haku epäonnistui');
+            const data = await weatherResp.json();
+            const cur = data.current;
+            if (!cur) throw new Error('Sää-dataa ei saatavilla');
+
             const weatherDescriptions = {
-                0: 'Selkeä', 1: 'Lähes selkeä', 2: 'Pilvinen', 3: 'Pilvinen',
-                45: 'Sumu', 48: 'Sumu', 51: 'Drizzle', 53: 'Drizzle', 55: 'Drizzle',
+                0: 'Selkeä', 1: 'Lähes selkeä', 2: 'Puolipilvinen', 3: 'Pilvinen',
+                45: 'Sumu', 48: 'Sumu', 51: 'Tihkusade', 53: 'Tihkusade', 55: 'Tihkusade',
                 61: 'Sade', 63: 'Sade', 65: 'Kova sade',
-                71: 'Lumi', 73: 'Lumi', 75: 'Kova lumi', 77: 'Lumi',
-                80: 'Sade', 81: 'Kova sade', 82: 'Erittäin kova sade',
-                85: 'Lumi', 86: 'Lumi', 95: 'Ukkonen', 96: 'Ukkonen', 99: 'Ukkonen'
+                71: 'Lumisade', 73: 'Lumisade', 75: 'Kova lumisade', 77: 'Lumijyväset',
+                80: 'Sadekuurot', 81: 'Kova sadekuuro', 82: 'Erittäin kova sadekuuro',
+                85: 'Lumikuurot', 86: 'Kovat lumikuurot',
+                95: 'Ukkonen', 96: 'Ukkonen + rakeet', 99: 'Kova ukkonen + rakeet'
             };
-            
-            // Tuulen suunnan määritys (0° = N, 90° = E, 180° = S, 270° = W)
-            const getWindDirection = (deg) => {
-                const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-                const index = Math.round(deg / 22.5) % 16;
-                return directions[index];
+
+            const getWindDir = (deg) => {
+                const dirs = ['P','PKK','PK','IPK','I','IEK','KE','EKE','E','ELK','LE','WLE','L','PLW','PL','PPL'];
+                return dirs[Math.round(deg / 22.5) % 16];
             };
-            
-            const weather = weatherDescriptions[weatherCode] || 'Tuntematon';
-            const windDirection16 = getWindDirection(windDirection);
-            
-            return `${weather}, ${wind.toFixed(1)} m/s ${windDirection16} (${Math.round(windDirection)}°), ${temp}°C`;
+
+            // Paikannimi
+            let placeName = '';
+            if (geoResp.ok) {
+                const geo = await geoResp.json();
+                const addr = geo.address || {};
+                placeName = addr.village || addr.suburb || addr.town || addr.city || addr.municipality || addr.county || '';
+            }
+
+            const desc   = weatherDescriptions[cur.weathercode] ?? 'Tuntematon';
+            const wind   = parseFloat(cur.windspeed_10m).toFixed(1);
+            const dir    = getWindDir(cur.winddirection_10m);
+            const temp   = parseFloat(cur.temperature_2m).toFixed(1);
+            const place  = placeName ? `(${placeName}) ` : '';
+
+            return `${place}${desc}, ${wind} m/s ${dir}, ${temp}°C`;
         } catch (error) {
             throw new Error('Merisää-haku epäonnistui: ' + error.message);
         }
