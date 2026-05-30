@@ -1009,9 +1009,9 @@ button.btn {
     <div class="form-group">
         <label>⛽ Moottorin polttoainekulutus (L/h)</label>
         <select id="entryFuelConsumption" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;background:white;">
-            <option value="3">3 L/h — Kevyt ajo / ralenti</option>
+            <option value="3" selected>3 L/h — Normaali (oletus)</option>
             <option value="3.5">3.5 L/h</option>
-            <option value="4" selected>4 L/h — Normaali (oletus)</option>
+            <option value="4">4 L/h</option>
             <option value="4.5">4.5 L/h</option>
             <option value="5">5 L/h — Täysi teho</option>
             <option value="5.5">5.5 L/h</option>
@@ -3686,7 +3686,7 @@ button.btn {
             const log = this.getFuelLog();
             if (log.length === 0) return null;
             const TANK = 80;
-            const DEFAULT_LPERH = 4; // oletuskulutus
+            const DEFAULT_LPERH = 3; // oletuskulutus
             const allEntries = DB.getEntries().sort((a,b) =>
                 new Date(a.startTime||a.date) - new Date(b.startTime||b.date));
 
@@ -3781,7 +3781,7 @@ button.btn {
             out.textContent = '⏳ Lasketaan...';
 
             const TANK = 80;
-            const DEFAULT_LPERH = 4;
+            const DEFAULT_LPERH = 3;
             const fuelLog = this.getFuelLog();
             const allEntries = DB.getEntries().sort((a,b) =>
                 new Date(a.startTime||a.date) - new Date(b.startTime||b.date));
