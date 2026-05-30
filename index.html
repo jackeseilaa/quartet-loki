@@ -3691,11 +3691,21 @@ button.btn {
                 new Date(a.startTime||a.date) - new Date(b.startTime||b.date));
 
             // Laske kulutus kahden aikaleiman välillä käyttäen merkintäkohtaista kulutusta
+            // Tarkista onko merkintä validi (ei nolla-alku jossa loppu >> alku)
+            const isValidEngineEntry = (e) => {
+                const start = parseFloat(e.engineHoursStart) || 0;
+                const end   = parseFloat(e.engineHoursEnd)   || 0;
+                if (isNaN(parseFloat(e.engineHoursStart))) return false; // NaN alku (CSV-virhe)
+                if (start < 100 && end > 500) return false;              // 0-alku + suuri loppu
+                return true;
+            };
+
             const consumedBetween = (fromISO, toISO) => {
                 const from = fromISO ? new Date(fromISO) : null;
                 const to   = toISO   ? new Date(toISO)   : new Date();
                 let liters = 0;
                 allEntries.forEach(e => {
+                    if (!isValidEngineEntry(e)) return;
                     const t = new Date(e.startTime || (e.date + 'T00:00:00'));
                     const diff = (parseFloat(e.engineHoursEnd)||0) - (parseFloat(e.engineHoursStart)||0);
                     const rate = parseFloat(e.fuelConsumption) || DEFAULT_LPERH;
@@ -3712,6 +3722,7 @@ button.btn {
                 const to   = toISO   ? new Date(toISO)   : new Date();
                 let h = 0;
                 allEntries.forEach(e => {
+                    if (!isValidEngineEntry(e)) return;
                     const t = new Date(e.startTime || (e.date + 'T00:00:00'));
                     const diff = (parseFloat(e.engineHoursEnd)||0) - (parseFloat(e.engineHoursStart)||0);
                     if (diff > 0 && (!from || t >= from) && t <= to) h += diff;
@@ -3796,6 +3807,13 @@ button.btn {
             lines.push('');
 
             // 2. Moottoritunnit per merkintä
+            const isValidDbgEntry = (e) => {
+                const start = parseFloat(e.engineHoursStart) || 0;
+                const end   = parseFloat(e.engineHoursEnd)   || 0;
+                if (isNaN(parseFloat(e.engineHoursStart))) return false;
+                if (start < 100 && end > 500) return false;
+                return true;
+            };
             lines.push('🔧 LOKIMERKINNÄT JOISSA MOOTTORITUNTEJA:');
             let engineEntries = allEntries.filter(e => {
                 const diff = (parseFloat(e.engineHoursEnd)||0) - (parseFloat(e.engineHoursStart)||0);
@@ -3804,19 +3822,24 @@ button.btn {
             if (engineEntries.length === 0) {
                 lines.push('  (ei yhtään merkintää jossa engineHoursEnd > engineHoursStart)');
             } else {
-                let totalH = 0;
+                let totalH = 0, totalHValid = 0;
                 engineEntries.forEach(e => {
                     const diff = (parseFloat(e.engineHoursEnd)||0) - (parseFloat(e.engineHoursStart)||0);
                     const rate = parseFloat(e.fuelConsumption) || DEFAULT_LPERH;
                     const consumed = diff * rate;
+                    const valid = isValidDbgEntry(e);
                     totalH += diff;
+                    if (valid) totalHValid += diff;
                     const dateStr = (e.startTime || e.date || '?').substring(0,16).replace('T',' ');
-                    lines.push('  ' + dateStr + ' | ' + e.departurePort + '→' + (e.arrivalPort||'?')
-                        + ' | kone: ' + parseFloat(e.engineHoursStart).toFixed(2) + '→' + parseFloat(e.engineHoursEnd).toFixed(2)
-                        + ' (' + diff.toFixed(2) + 'h) × ' + rate + ' L/h = ' + consumed.toFixed(1) + ' L');
+                    const flag = valid ? '  ' : '⚠️';
+                    lines.push(flag + ' ' + dateStr + ' | ' + e.departurePort + '→' + (e.arrivalPort||'?')
+                        + ' | kone: ' + (parseFloat(e.engineHoursStart)||0).toFixed(2) + '→' + (parseFloat(e.engineHoursEnd)||0).toFixed(2)
+                        + ' (' + diff.toFixed(2) + 'h) × ' + rate + ' L/h = ' + consumed.toFixed(1) + ' L'
+                        + (valid ? '' : ' ← OHITETAAN'));
                 });
                 lines.push('  ──────────────────────────');
-                lines.push('  YHTEENSÄ moottoritunteja: ' + totalH.toFixed(2) + ' h');
+                lines.push('  KAIKKI tunnit yhteensä: ' + totalH.toFixed(2) + ' h');
+                lines.push('  KÄYTETÄÄN laskennassa: ' + totalHValid.toFixed(2) + ' h');
             }
             lines.push('');
 
@@ -3825,12 +3848,25 @@ button.btn {
             const sorted = [...fuelLog].sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp));
             let current = 0, lastTime = null;
 
+            const isValidEntry = (e) => {
+                const start = parseFloat(e.engineHoursStart) || 0;
+                const end   = parseFloat(e.engineHoursEnd)   || 0;
+                if (isNaN(parseFloat(e.engineHoursStart))) return false;
+                if (start < 100 && end > 500) return false;
+                return true;
+            };
+
             const consumedBetween = (fromISO, toISO) => {
                 const from = fromISO ? new Date(fromISO) : null;
                 const to   = toISO   ? new Date(toISO)   : new Date();
                 let liters = 0, hours = 0;
                 let detail = [];
                 allEntries.forEach(e => {
+                    if (!isValidEntry(e)) {
+                        const ds = (e.startTime||e.date||'?').substring(0,10);
+                        detail.push('      ⚠️ OHITETTU ' + ds + ': alku=' + e.engineHoursStart + ' loppu=' + e.engineHoursEnd + ' (virheellinen)');
+                        return;
+                    }
                     const t = new Date(e.startTime || (e.date + 'T00:00:00'));
                     const diff = (parseFloat(e.engineHoursEnd)||0) - (parseFloat(e.engineHoursStart)||0);
                     const rate = parseFloat(e.fuelConsumption) || DEFAULT_LPERH;
