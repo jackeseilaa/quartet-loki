@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.70</title>
+    <title>Quartet Loki - v2038.71</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -1134,7 +1134,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.70';
+    const APP_VERSION = '2038.71';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -3955,9 +3955,11 @@ button.btn {
             // Käytä viimeisimmän merkinnän kulutusarvoa ennusteessa
             const lastEntryWithConsumption = [...allEntries].reverse()
                 .find(e => parseFloat(e.engineHoursEnd||0) > parseFloat(e.engineHoursStart||0));
-            const currentRate = lastEntryWithConsumption
+            // Käytä DEFAULT_LPERH jos merkinnän arvo on yli 3 (tallennettu vanhalla oletuksella)
+            const rawRate = lastEntryWithConsumption
                 ? (parseFloat(lastEntryWithConsumption.fuelConsumption) || DEFAULT_LPERH)
                 : DEFAULT_LPERH;
+            const currentRate = rawRate > 3 ? DEFAULT_LPERH : rawRate;
 
             const lastEntry = sorted[sorted.length - 1];
             return {
