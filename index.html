@@ -1010,9 +1010,9 @@ button.btn {
         <label>⛽ Moottorin polttoainekulutus (L/h)</label>
         <select id="entryFuelConsumption" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;background:white;">
             <option value="1.5">1.5 L/h — Ralenti / 1800 rpm</option>
-            <option value="1.8">1.8 L/h — Säästeliäs / ~2000 rpm</option>
+            <option value="1.8" selected>1.8 L/h — Säästeliäs / ~2000 rpm (oletus)</option>
             <option value="2.0">2.0 L/h — Matka-ajo / ~2200 rpm</option>
-            <option value="2.5" selected>2.5 L/h — Normaali matka / ~2400 rpm (oletus)</option>
+            <option value="2.5">2.5 L/h — Normaali matka / ~2400 rpm</option>
             <option value="3.5">3.5 L/h — Suuri kuormitus / ~2800 rpm</option>
             <option value="4.5">4.5 L/h — Lähes täysi teho / ~3000 rpm</option>
             <option value="5.0">5.0 L/h — Maksimi / 3200 rpm</option>
@@ -3698,7 +3698,7 @@ button.btn {
             const log = this.getFuelLog();
             if (log.length === 0) return null;
             const TANK = 80;
-            const DEFAULT_LPERH = 2.5; // oletuskulutus ~2400 rpm matka-ajo
+            const DEFAULT_LPERH = 1.8; // oletuskulutus ~1800 rpm säästeliäs
             const currentYear = new Date().getFullYear();
             const allEntries = DB.getEntries()
                 .filter(e => {
@@ -3798,7 +3798,7 @@ button.btn {
             out.textContent = '⏳ Lasketaan...';
 
             const TANK = 80;
-            const DEFAULT_LPERH = 2.5;
+            const DEFAULT_LPERH = 1.8;
             const fuelLog = this.getFuelLog();
             const currentYear = new Date().getFullYear();
             const allEntries = DB.getEntries()
