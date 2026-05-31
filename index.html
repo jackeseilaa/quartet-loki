@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.69</title>
+    <title>Quartet Loki - v2038.70</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -1134,7 +1134,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.69';
+    const APP_VERSION = '2038.70';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -2089,8 +2089,8 @@ button.btn {
                     const lat = position.coords.latitude;
                     const lon = position.coords.longitude;
 
-                    document.getElementById('locationModalLat').value = lat.toString();
-                    document.getElementById('locationModalLon').value = lon.toString();
+                    document.getElementById('locationModalLat').value = formatCoordinateToDMS(lat, false);
+                    document.getElementById('locationModalLon').value = formatCoordinateToDMS(lon, true);
 
                     const latDMS = formatCoordinateToDMS(lat, false);
                     const lonDMS = formatCoordinateToDMS(lon, true);
@@ -2144,8 +2144,8 @@ button.btn {
 
                 const latDMS = formatCoordinateToDMS(loc.lat, false);
                 const lonDMS = formatCoordinateToDMS(loc.lon, true);
-                document.getElementById('locationModalLat').value = loc.lat.toString();
-                document.getElementById('locationModalLon').value = loc.lon.toString();
+                document.getElementById('locationModalLat').value = formatCoordinateToDMS(loc.lat, false);
+                document.getElementById('locationModalLon').value = formatCoordinateToDMS(loc.lon, true);
                 document.getElementById('locationModalName').value = loc.name || '';
                 document.getElementById('locationModalNotes').value = loc.notes || '';
                 document.getElementById('gpsCoordDisplayModal').textContent = `${latDMS} ${lonDMS}`;
@@ -2502,8 +2502,8 @@ button.btn {
                     const lonDMS = formatCoordinateToDMS(lonDecimal, true);
 
                     // Tallenna DESIMAALKOORDINAATIT laskemista varten
-                    document.getElementById('locationLat').value = latDecimal.toFixed(6);
-                    document.getElementById('locationLon').value = lonDecimal.toFixed(6);
+                    document.getElementById('locationLat').value = formatCoordinateToDMS(latDecimal, false);
+                    document.getElementById('locationLon').value = formatCoordinateToDMS(lonDecimal, true);
 
                     // Näytä DMS-muoto näyttöä varten
                     const coordsDisplay = document.getElementById('gpsCoordDisplay');
