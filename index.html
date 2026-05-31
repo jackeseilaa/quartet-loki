@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.72</title>
+    <title>Quartet Loki - v2038.73</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -859,6 +859,13 @@ button.btn {
             <div id="windyApiKeyStatus" style="font-size:0.82em;margin-top:6px;color:#666;"></div>
         </div>
 
+        <div class="form-section">
+            <h3 style="margin-bottom: 12px;">🔧 Korjaa kulutusarvot</h3>
+            <p style="color: #666; font-size: 0.9em; margin-bottom: 10px;">Päivittää kaikki lokimerkinnät joissa kulutus on yli 3 L/h → 1.8 L/h.</p>
+            <button class="btn btn-warning" id="fixFuelRatesBtn" style="width:100%;">🔧 Päivitä kaikki → 1.8 L/h</button>
+            <div id="fixFuelRatesStatus" style="font-size:0.82em;margin-top:6px;color:#666;"></div>
+        </div>
+
         <div class="form-section" id="fuelDebugSection">
             <h3 style="margin-bottom: 12px;">🔬 Polttoaine debug</h3>
             <p style="color: #666; font-size: 0.9em; margin-bottom: 12px;">Näyttää kaikki laskennan vaiheet auki — helpottaa virheen paikantamista.</p>
@@ -1134,7 +1141,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.72';
+    const APP_VERSION = '2038.73';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1704,6 +1711,29 @@ button.btn {
                 const accTab = document.querySelector('[data-tab="accounting"]');
                 if (accTab) accTab.click();
             });
+
+            // 🔧 KORJAA KULUTUSARVOT
+            const fixFuelRatesBtn = document.getElementById('fixFuelRatesBtn');
+            if (fixFuelRatesBtn) {
+                addTouchListener(fixFuelRatesBtn, () => {
+                    const entries = DB.getEntries();
+                    let count = 0;
+                    entries.forEach(e => {
+                        const rate = parseFloat(e.fuelConsumption);
+                        if (rate > 3) {
+                            e.fuelConsumption = 1.8;
+                            count++;
+                        }
+                    });
+                    localStorage.setItem(DB.entries, JSON.stringify(entries));
+                    const status = document.getElementById('fixFuelRatesStatus');
+                    if (status) {
+                        status.textContent = `✅ Päivitetty ${count} merkintää → 1.8 L/h`;
+                        status.style.color = '#16a34a';
+                    }
+                    this.renderFuelMiniBar();
+                });
+            }
 
             // 🌬️ WINDY API KEY
             const windyInput = document.getElementById('windyApiKeyInput');
@@ -3904,7 +3934,7 @@ button.btn {
                     if (!isValidEngineEntry(e)) return;
                     const t = new Date(e.startTime || (e.date + 'T00:00:00'));
                     const diff = (parseFloat(e.engineHoursEnd)||0) - (parseFloat(e.engineHoursStart)||0);
-                    const rate = (parseFloat(e.fuelConsumption) > 0 && parseFloat(e.fuelConsumption) <= 3 ? parseFloat(e.fuelConsumption) : DEFAULT_LPERH);
+                    const rate = parseFloat(e.fuelConsumption) || DEFAULT_LPERH;
                     if (diff > 0 && (!from || t >= from) && t <= to) {
                         liters += diff * rate;
                     }
@@ -4028,7 +4058,7 @@ button.btn {
                 let totalH = 0, totalHValid = 0;
                 engineEntries.forEach(e => {
                     const diff = (parseFloat(e.engineHoursEnd)||0) - (parseFloat(e.engineHoursStart)||0);
-                    const rate = (parseFloat(e.fuelConsumption) > 0 && parseFloat(e.fuelConsumption) <= 3 ? parseFloat(e.fuelConsumption) : DEFAULT_LPERH);
+                    const rate = parseFloat(e.fuelConsumption) || DEFAULT_LPERH;
                     const consumed = diff * rate;
                     const valid = isValidDbgEntry(e);
                     totalH += diff;
@@ -4086,7 +4116,7 @@ button.btn {
                     }
                     const t = new Date(e.startTime || (e.date + 'T00:00:00'));
                     const diff = (parseFloat(e.engineHoursEnd)||0) - (parseFloat(e.engineHoursStart)||0);
-                    const rate = (parseFloat(e.fuelConsumption) > 0 && parseFloat(e.fuelConsumption) <= 3 ? parseFloat(e.fuelConsumption) : DEFAULT_LPERH);
+                    const rate = parseFloat(e.fuelConsumption) || DEFAULT_LPERH;
                     if (diff > 0 && (!from || t >= from) && t <= to) {
                         liters += diff * rate;
                         hours  += diff;
