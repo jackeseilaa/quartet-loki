@@ -3687,8 +3687,13 @@ button.btn {
             if (log.length === 0) return null;
             const TANK = 80;
             const DEFAULT_LPERH = 3; // oletuskulutus
-            const allEntries = DB.getEntries().sort((a,b) =>
-                new Date(a.startTime||a.date) - new Date(b.startTime||b.date));
+            const currentYear = new Date().getFullYear();
+            const allEntries = DB.getEntries()
+                .filter(e => {
+                    const d = new Date(e.startTime || e.date);
+                    return d.getFullYear() === currentYear;
+                })
+                .sort((a,b) => new Date(a.startTime||a.date) - new Date(b.startTime||b.date));
 
             // Laske kulutus kahden aikaleiman välillä käyttäen merkintäkohtaista kulutusta
             // Tarkista onko merkintä validi (ei nolla-alku jossa loppu >> alku)
@@ -3783,8 +3788,13 @@ button.btn {
             const TANK = 80;
             const DEFAULT_LPERH = 3;
             const fuelLog = this.getFuelLog();
-            const allEntries = DB.getEntries().sort((a,b) =>
-                new Date(a.startTime||a.date) - new Date(b.startTime||b.date));
+            const currentYear = new Date().getFullYear();
+            const allEntries = DB.getEntries()
+                .filter(e => {
+                    const d = new Date(e.startTime || e.date);
+                    return d.getFullYear() === currentYear;
+                })
+                .sort((a,b) => new Date(a.startTime||a.date) - new Date(b.startTime||b.date));
 
             let lines = [];
             lines.push('═══════════════════════════════════');
