@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.65</title>
+    <title>Quartet Loki - v2038.66</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -646,7 +646,12 @@ button.btn {
             <div class="action-buttons">
                 <button class="btn btn-primary" id="newEntryBtn">+ Merkintä</button>
                 <label for="csvImportInput" class="btn btn-secondary" style="cursor: pointer; margin: 0; display: inline-block; flex: 1; min-width: 120px; text-align: center;">📥 Tuo</label>
-                <button class="btn btn-secondary" id="exportDataBtn">📤 Vie</button>
+                <div style="display:flex;gap:6px;flex:1;">
+                    <select id="exportYearSelect" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:15px;background:white;">
+                        <option value="all">Kaikki vuodet</option>
+                    </select>
+                    <button class="btn btn-secondary" id="exportDataBtn" style="white-space:nowrap;">📤 Vie</button>
+                </div>
             </div>
         </div>
         <div id="entriesList" class="data-table-container"></div>
@@ -1115,7 +1120,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.65';
+    const APP_VERSION = '2038.66';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1523,6 +1528,23 @@ button.btn {
                 this.openLocationModal(currentEditingEntryId);
             });
             addTouchListener(document.getElementById('saveEntryBtn'), () => this.saveEntry());
+            // Täytä vuosivalikko dynaamisesti
+            const exportYearSelect = document.getElementById('exportYearSelect');
+            if (exportYearSelect) {
+                const years = [...new Set(DB.getEntries().map(e => {
+                    if (e.date && e.date.match(/^\d{4}/)) return e.date.substring(0,4);
+                    if (e.startTime) return e.startTime.substring(0,4);
+                    return null;
+                }).filter(Boolean))].sort().reverse();
+                years.forEach(y => {
+                    const opt = document.createElement('option');
+                    opt.value = y; opt.textContent = y;
+                    exportYearSelect.appendChild(opt);
+                });
+                // Aseta kuluva vuosi oletukseksi
+                const curYear = new Date().getFullYear().toString();
+                if (years.includes(curYear)) exportYearSelect.value = curYear;
+            }
             addTouchListener(document.getElementById('exportDataBtn'), () => this.exportData());
             addTouchListener(document.getElementById('backupBtn'), () => this.backup());
             addTouchListener(document.getElementById('restoreAutoBackupBtn'), () => this.restoreLatestAutoBackup());
@@ -3418,16 +3440,30 @@ button.btn {
                 byYear[y].push(d);
             });
 
-            // Lataa yksi tiedosto per vuosi
-            Object.keys(byYear).sort().forEach((year, i) => {
-                const csvYear = '\uFEFF' + header + buildRows(byYear[year]);
+            // Lue valittu vuosi
+            const selectedYear = document.getElementById('exportYearSelect')?.value || 'all';
+
+            if (selectedYear === 'all') {
+                // Lataa kaikki vuodet erillisinä tiedostoina
+                Object.keys(byYear).sort().forEach((year, i) => {
+                    const csvYear = '\uFEFF' + header + buildRows(byYear[year]);
+                    const blob = new Blob([csvYear], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `quartet_loki_${year}.csv`;
+                    setTimeout(() => link.click(), i * 400);
+                });
+            } else {
+                // Lataa vain valittu vuosi
+                const dates = byYear[selectedYear] || [];
+                if (dates.length === 0) { alert('Ei merkintöjä vuodelle ' + selectedYear); return; }
+                const csvYear = '\uFEFF' + header + buildRows(dates);
                 const blob = new Blob([csvYear], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = `quartet_loki_${year}.csv`;
-                // Pieni viive jotta selain ehtii ladata molemmat
-                setTimeout(() => link.click(), i * 400);
-            });
+                link.download = `quartet_loki_${selectedYear}.csv`;
+                link.click();
+            }
         },
 
         importData(e) {
