@@ -3229,7 +3229,7 @@ button.btn {
             if (reportType === 'daily') {
                 // Vuorokausikohtainen raportti
                 filename = `lokikirja_paivittain_${new Date().toISOString().split('T')[0]}.csv`;
-                csv = 'Päivämäärä,Entiteetti,Käyttötarkoitus,Kapteeni,Lähtö,Tulo,Mailit (nm),Tunnit (h),Lokilukema alku,Lokilukema loppu,Konetunnit alku,Konetunnit loppu,Sää,Miehistö,Merkinnät,Matkan Aikana Tapahtumat\n';
+                csv = 'Päivämäärä,Lähtöaika,Saapumisaika,Entiteetti,Käyttötarkoitus,Kapteeni,Reitti,Lähtö,Tulo,Mailit (nm),Tunnit (h),Lokilukema alku,Lokilukema loppu,Konetunnit alku,Konetunnit loppu,Sää,Miehistö,Crew,Merkinnät,Matkan Aikana Tapahtumat\n';
 
                 // Normalisoi päivämäärä: käytä startTime:ta jos date puuttuu
                 const getEntryDate = (e) => {
@@ -3269,7 +3269,7 @@ button.btn {
                             }).join(' | ');
                         }
 
-                        csv += `"${date}","${entry.vuokralainen}","${entry.kayttotarkoitus}","${entry.captain}","${entry.departurePort || ''}","${entry.arrivalPort || ''}","${miles.toFixed(1)}","${hours.toFixed(2)}","${entry.logReadingStart || 0}","${entry.logReadingEnd || 0}","${entry.engineHoursStart || 0}","${entry.engineHoursEnd || 0}","${entry.weather || ''}","${entry.personnel || ''}","${entry.notes || ''}","${eventsStr}"\n`;
+                        csv += `"${date}","${entry.startTime ? entry.startTime.substring(11,16) : ''}","${entry.endTime ? entry.endTime.substring(11,16) : ''}","${entry.vuokralainen}","${entry.kayttotarkoitus}","${entry.captain}","${(entry.route||''). replace(/"/g,'\'')}","${entry.departurePort || ''}","${entry.arrivalPort || ''}","${miles.toFixed(1)}","${hours.toFixed(2)}","${entry.logReadingStart || 0}","${entry.logReadingEnd || 0}","${entry.engineHoursStart || 0}","${entry.engineHoursEnd || 0}","${entry.weather || ''}","${entry.personnel || ''}","${(entry.crew||''). replace(/"/g,'\'')}","${(entry.notes||''). replace(/"/g,'\'')}","${eventsStr}"\n`;
                     });
                 });
             } else if (reportType === 'journey') {
