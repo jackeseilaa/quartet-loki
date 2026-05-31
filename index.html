@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.66</title>
+    <title>Quartet Loki - v2038.67</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -633,6 +633,11 @@ button.btn {
                 <div id="fuelQHint" style="font-size:0.75em;color:#92400e;background:#fef3c7;border-radius:4px;padding:4px 8px;margin-bottom:8px;">
                     📍 <strong>Aseta:</strong> Tankissa on nyt tämä määrä
                 </div>
+                <div style="margin-bottom:8px;">
+                    <label style="font-size:0.78em;color:#92400e;display:block;margin-bottom:3px;">📅 Päivämäärä (takautuva kirjaus)</label>
+                    <input type="date" id="fuelQDate"
+                        style="width:100%;padding:8px;border:1px solid #fcd34d;border-radius:6px;font-size:15px;background:white;box-sizing:border-box;">
+                </div>
                 <div style="display:flex;gap:8px;align-items:center;">
                     <input type="number" id="fuelQInput" min="0" max="80" step="0.5" placeholder="Litrat (0–80)"
                         style="flex:1;padding:9px;border:1px solid #fcd34d;border-radius:6px;font-size:16px;background:white;-webkit-user-select:text;user-select:text;">
@@ -1120,7 +1125,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.66';
+    const APP_VERSION = '2038.67';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -2092,7 +2097,7 @@ button.btn {
                 let lat = this.parseCoordinate(latInput);
                 let lon = this.parseCoordinate(lonInput);
 
-                const name = document.getElementById('locationModalName').value || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+                const name = document.getElementById('locationModalName').value || `${formatCoordinateToDMS(lat, false)} ${formatCoordinateToDMS(lon, true)}`;
                 const notes = document.getElementById('locationModalNotes').value || '';
 
                 if (isNaN(lat) || isNaN(lon)) {
@@ -2457,7 +2462,7 @@ button.btn {
         addLocation() {
             const lat = parseFloat(document.getElementById('locationLat').value);
             const lon = parseFloat(document.getElementById('locationLon').value);
-            const name = document.getElementById('locationName').value || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+            const name = document.getElementById('locationName').value || `${formatCoordinateToDMS(lat, false)} ${formatCoordinateToDMS(lon, true)}`;
             const notes = document.getElementById('locationNotes').value || '';
 
             if (isNaN(lat) || isNaN(lon)) {
@@ -3703,6 +3708,13 @@ button.btn {
             const open = form.style.display === 'none' || form.style.display === '';
             form.style.display = open ? 'block' : 'none';
             if (btn) btn.textContent = open ? '✕ Sulje' : '+ Kirjaa';
+            // Aseta tämän päivän päivämäärä oletukseksi kun avataan
+            if (open) {
+                const dateField = document.getElementById('fuelQDate');
+                if (dateField && !dateField.value) {
+                    dateField.value = new Date().toISOString().split('T')[0];
+                }
+            }
         },
 
         hideFuelQuickForm() {
@@ -3758,7 +3770,16 @@ button.btn {
 
         saveFuelReadingDirect(liters, type = 'set') {
             const log = this.getFuelLog();
-            log.push({ liters, type, timestamp: new Date().toISOString() });
+            // Käytä lomakkeen päivämäärää jos saatavilla (takautuva kirjaus)
+            const dateField = document.getElementById('fuelQDate');
+            let timestamp = new Date().toISOString();
+            if (dateField && dateField.value) {
+                // Aseta kellonajaksi 12:00 jotta päivämäärä on yksiselitteinen
+                timestamp = dateField.value + 'T12:00:00.000Z';
+            }
+            log.push({ liters, type, timestamp });
+            // Järjestä aikajärjestykseen
+            log.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
             localStorage.setItem('quartet_fuel_log', JSON.stringify(log));
             this.renderFuelMiniBar();
         },
@@ -4254,6 +4275,15 @@ button.btn {
     }
 </script>
 
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/quartet-loki/sw.js')
+                    .then(reg => console.log('✅ SW rekisteröity:', reg.scope))
+                    .catch(err => console.log('SW virhe:', err));
+            });
+        }
+    </script>
 </body>
 </html>
 
