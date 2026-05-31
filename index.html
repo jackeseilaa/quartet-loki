@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.63</title>
+    <title>Quartet Loki - v2038.64</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -1115,7 +1115,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.63';
+    const APP_VERSION = '2038.64';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -3364,18 +3364,50 @@ button.btn {
         },
 
         exportData() {
+            // Ohjaa täydelliseen CSV-vientiin (päivittäinen raportti kaikilla kentillä)
             const entries = DB.getEntries();
-            let csv = 'Päivämäärä,Vuokralainen,Reitti,Mailit,Tunnit\n';
+            if (entries.length === 0) { alert('Ei merkintöjä.'); return; }
 
-            entries.forEach(entry => {
-                const hours = (parseFloat(entry.engineHoursEnd) || 0) - (parseFloat(entry.engineHoursStart) || 0);
-                csv += `"${entry.date}","${entry.vuokralainen}","${entry.route || ''}","${entry.nauticalMiles || ''}","${hours.toFixed(1)}"\n`;
+            const getEntryDate = (e) => {
+                if (e.date && e.date.match(/^\d{4}-\d{2}-\d{2}$/)) return e.date;
+                if (e.startTime) return e.startTime.substring(0, 10);
+                return null;
+            };
+
+            const locations = DB.getLocations();
+            let csv = '\uFEFF'; // BOM - Excel tunnistaa UTF-8
+            csv += 'Päivämäärä,Lähtöaika,Saapumisaika,Entiteetti,Käyttötarkoitus,Kapteeni,Reitti,Lähtösatama,Tulosatama,Mailit (nm),Tunnit (h),Lokilukema alku,Lokilukema loppu,Konetunnit alku,Konetunnit loppu,Sää,Miehistö,Crew,Merkinnät,Tapahtumat\n';
+
+            const entriesByDate = {};
+            entries.forEach(e => {
+                const d = getEntryDate(e);
+                if (!d) return;
+                if (!entriesByDate[d]) entriesByDate[d] = [];
+                entriesByDate[d].push(e);
+            });
+
+            Object.keys(entriesByDate).sort().forEach(date => {
+                entriesByDate[date].forEach(entry => {
+                    const hours = (parseFloat(entry.engineHoursEnd)||0) - (parseFloat(entry.engineHoursStart)||0);
+                    const miles = (parseFloat(entry.logReadingEnd)||0) - (parseFloat(entry.logReadingStart)||0);
+                    const entryEvents = locations.filter(loc => loc.entryId === entry.id);
+                    const eventsStr = entryEvents.map(loc => {
+                        const time = new Date(loc.timestamp).toLocaleTimeString('fi-FI', {hour:'2-digit',minute:'2-digit'});
+                        if (loc.type === 'captain-change') return time + ' Kpt:' + loc.captain;
+                        if (loc.type === 'gps-location') return time + ' GPS:' + loc.name;
+                        return time + ' ' + loc.name;
+                    }).join(' | ');
+                    const notes = (entry.notes||'').replace(/"/g,"'").replace(/\n/g,' | ').replace(/\r/g,'');
+                    const route = (entry.route||'').replace(/"/g,"'");
+                    const crew  = (entry.crew||'').replace(/"/g,"'");
+                    csv += `"${date}","${entry.startTime ? entry.startTime.substring(11,16) : ''}","${entry.endTime ? entry.endTime.substring(11,16) : ''}","${entry.vuokralainen||''}","${entry.kayttotarkoitus||''}","${entry.captain||''}","${route}","${entry.departurePort||''}","${entry.arrivalPort||''}","${miles.toFixed(1)}","${hours.toFixed(2)}","${entry.logReadingStart||0}","${entry.logReadingEnd||0}","${entry.engineHoursStart||0}","${entry.engineHoursEnd||0}","${entry.weather||''}","${entry.personnel||''}","${crew}","${notes}","${eventsStr}"\n`;
+                });
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `quartet_export_${new Date().toISOString().split('T')[0]}.csv`;
+            link.download = `quartet_loki_${new Date().toISOString().split('T')[0]}.csv`;
             link.click();
         },
 
