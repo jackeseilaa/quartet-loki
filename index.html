@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.67</title>
+    <title>Quartet Loki - v2038.68</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -1125,7 +1125,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.67';
+    const APP_VERSION = '2038.68';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1225,8 +1225,9 @@ button.btn {
             };
 
             const getWindDir = (deg) => {
-                const dirs = ['P','PKK','PK','IPK','I','IEK','KE','EKE','E','ELK','LE','WLE','L','PLW','PL','PPL'];
-                return dirs[Math.round(deg / 22.5) % 16];
+                const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+                const cardinal = dirs[Math.round(deg / 22.5) % 16];
+                return `${Math.round(deg)}° ${cardinal}`;
             };
 
             // Paikannimi
