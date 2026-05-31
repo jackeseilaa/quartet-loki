@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.68</title>
+    <title>Quartet Loki - v2038.69</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -850,6 +850,15 @@ button.btn {
             </p>
         </div>
 
+        <div class="form-section">
+            <h3 style="margin-bottom: 12px;">🌬️ Windy API</h3>
+            <p style="color: #666; font-size: 0.9em; margin-bottom: 10px;">Säädata haetaan Windy Point Forecast API:sta. Avain: <a href="https://api.windy.com" target="_blank">api.windy.com</a> → Keys → Point Forecast</p>
+            <input type="text" id="windyApiKeyInput" placeholder="Windy API-avain"
+                style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;font-family:monospace;box-sizing:border-box;margin-bottom:8px;">
+            <button class="btn btn-success" id="windyApiKeySaveBtn" style="width:100%;">💾 Tallenna avain</button>
+            <div id="windyApiKeyStatus" style="font-size:0.82em;margin-top:6px;color:#666;"></div>
+        </div>
+
         <div class="form-section" id="fuelDebugSection">
             <h3 style="margin-bottom: 12px;">🔬 Polttoaine debug</h3>
             <p style="color: #666; font-size: 0.9em; margin-bottom: 12px;">Näyttää kaikki laskennan vaiheet auki — helpottaa virheen paikantamista.</p>
@@ -1125,7 +1134,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.68';
+    const APP_VERSION = '2038.69';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1201,36 +1210,18 @@ button.btn {
     }
 
     // ==================== MERISÄÄ-HAKU ====================
+    const WINDY_API_KEY = localStorage.getItem('quartet_windy_key') || 'de8249e95a52e4bcfda84846fbaac9d4788c6bf7c0e7d30c249a0086be4268c6';
+
+    const getWindDir = (deg) => {
+        const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+        const cardinal = dirs[Math.round(deg / 22.5) % 16];
+        return `${Math.round(deg)}° ${cardinal}`;
+    };
+
     async function fetchMarineWeather(latitude, longitude) {
         try {
-            // Hae sekä nykyinen sää (current) että paikkanimi (reverse geocoding)
-            const [weatherResp, geoResp] = await Promise.all([
-                fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,windspeed_10m,winddirection_10m,weathercode&windspeed_unit=ms&timezone=Europe/Helsinki`),
-                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=fi`)
-            ]);
-
-            if (!weatherResp.ok) throw new Error('Sää-haku epäonnistui');
-            const data = await weatherResp.json();
-            const cur = data.current;
-            if (!cur) throw new Error('Sää-dataa ei saatavilla');
-
-            const weatherDescriptions = {
-                0: 'Selkeä', 1: 'Lähes selkeä', 2: 'Puolipilvinen', 3: 'Pilvinen',
-                45: 'Sumu', 48: 'Sumu', 51: 'Tihkusade', 53: 'Tihkusade', 55: 'Tihkusade',
-                61: 'Sade', 63: 'Sade', 65: 'Kova sade',
-                71: 'Lumisade', 73: 'Lumisade', 75: 'Kova lumisade', 77: 'Lumijyväset',
-                80: 'Sadekuurot', 81: 'Kova sadekuuro', 82: 'Erittäin kova sadekuuro',
-                85: 'Lumikuurot', 86: 'Kovat lumikuurot',
-                95: 'Ukkonen', 96: 'Ukkonen + rakeet', 99: 'Kova ukkonen + rakeet'
-            };
-
-            const getWindDir = (deg) => {
-                const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
-                const cardinal = dirs[Math.round(deg / 22.5) % 16];
-                return `${Math.round(deg)}° ${cardinal}`;
-            };
-
-            // Paikannimi
+            // Paikannimi (Nominatim)
+            const geoResp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=fi`);
             let placeName = '';
             if (geoResp.ok) {
                 const geo = await geoResp.json();
@@ -1238,15 +1229,71 @@ button.btn {
                 placeName = addr.village || addr.suburb || addr.town || addr.city || addr.municipality || addr.county || '';
             }
 
-            const desc   = weatherDescriptions[cur.weathercode] ?? 'Tuntematon';
-            const wind   = parseFloat(cur.windspeed_10m).toFixed(1);
-            const dir    = getWindDir(cur.winddirection_10m);
-            const temp   = parseFloat(cur.temperature_2m).toFixed(1);
+            // Windy Point Forecast API
+            const windyKey = localStorage.getItem('quartet_windy_key') || WINDY_API_KEY;
+            const windyResp = await fetch('https://api.windy.com/api/point-forecast/v2', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lat: latitude,
+                    lon: longitude,
+                    model: 'gfs',
+                    parameters: ['wind', 'windGust', 'temp', 'precip'],
+                    levels: ['surface'],
+                    key: windyKey
+                })
+            });
+
+            if (!windyResp.ok) throw new Error('Windy API ' + windyResp.status);
+            const wdata = await windyResp.json();
+
+            // Windy palauttaa arrayt - otetaan ensimmäinen (nykyinen) arvo
+            const uWind  = (wdata['wind_u-surface'] || [])[0] || 0;
+            const vWind  = (wdata['wind_v-surface'] || [])[0] || 0;
+            const gust   = (wdata['windGust-surface'] || [])[0] || 0;
+            const tempK  = (wdata['temp-surface'] || [])[0] || 273.15;
+
+            // u/v-komponenteista → nopeus ja suunta
+            const speed  = Math.sqrt(uWind * uWind + vWind * vWind).toFixed(1);
+            const dirDeg = (270 - Math.atan2(vWind, uWind) * 180 / Math.PI) % 360;
+            const dir    = getWindDir(dirDeg);
+            const temp   = (tempK - 273.15).toFixed(1);
+            const gustStr = gust > 0 ? `, puuska ${Math.sqrt(gust*gust).toFixed(1)} m/s` : '';
             const place  = placeName ? `(${placeName}) ` : '';
 
-            return `${place}${desc}, ${wind} m/s ${dir}, ${temp}°C`;
-        } catch (error) {
-            throw new Error('Merisää-haku epäonnistui: ' + error.message);
+            return `${place}${speed} m/s ${dir}${gustStr}, ${temp}°C`;
+
+        } catch (windyErr) {
+            console.warn('Windy epäonnistui, käytetään Open-Meteo:', windyErr.message);
+            // Fallback: Open-Meteo
+            try {
+                const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,windspeed_10m,winddirection_10m,weathercode&windspeed_unit=ms&timezone=Europe/Helsinki`);
+                if (!r.ok) throw new Error('Open-Meteo epäonnistui');
+                const d = await r.json();
+                const cur = d.current;
+                const weatherDesc = {
+                    0:'Selkeä',1:'Lähes selkeä',2:'Puolipilvinen',3:'Pilvinen',
+                    45:'Sumu',48:'Sumu',51:'Tihkusade',53:'Tihkusade',55:'Tihkusade',
+                    61:'Sade',63:'Sade',65:'Kova sade',71:'Lumisade',73:'Lumisade',
+                    75:'Kova lumisade',80:'Sadekuurot',81:'Kova sadekuuro',
+                    95:'Ukkonen',96:'Ukkonen + rakeet',99:'Kova ukkonen + rakeet'
+                };
+                const desc  = weatherDesc[cur.weathercode] ?? '';
+                const wind  = parseFloat(cur.windspeed_10m).toFixed(1);
+                const dir   = getWindDir(cur.winddirection_10m);
+                const temp  = parseFloat(cur.temperature_2m).toFixed(1);
+                const geoR2 = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=fi`).catch(()=>null);
+                let place2 = '';
+                if (geoR2 && geoR2.ok) {
+                    const g2 = await geoR2.json();
+                    const a = g2.address||{};
+                    place2 = a.village||a.suburb||a.town||a.city||a.municipality||a.county||'';
+                }
+                const placeStr = place2 ? `(${place2}) ` : '';
+                return `${placeStr}${desc ? desc+', ' : ''}${wind} m/s ${dir}, ${temp}°C`;
+            } catch(e) {
+                throw new Error('Sää-haku epäonnistui: ' + e.message);
+            }
         }
     }
 
@@ -1657,6 +1704,29 @@ button.btn {
                 const accTab = document.querySelector('[data-tab="accounting"]');
                 if (accTab) accTab.click();
             });
+
+            // 🌬️ WINDY API KEY
+            const windyInput = document.getElementById('windyApiKeyInput');
+            const windySaveBtn = document.getElementById('windyApiKeySaveBtn');
+            const windyStatus = document.getElementById('windyApiKeyStatus');
+            if (windyInput) {
+                // Lataa tallennettu avain
+                const savedKey = localStorage.getItem('quartet_windy_key');
+                if (savedKey) {
+                    windyInput.value = savedKey;
+                    windyStatus.textContent = '✅ Avain tallennettu';
+                    windyStatus.style.color = '#16a34a';
+                }
+            }
+            if (windySaveBtn) {
+                addTouchListener(windySaveBtn, () => {
+                    const key = document.getElementById('windyApiKeyInput').value.trim();
+                    if (!key) { windyStatus.textContent = '⚠️ Syötä avain'; windyStatus.style.color='#dc2626'; return; }
+                    localStorage.setItem('quartet_windy_key', key);
+                    windyStatus.textContent = '✅ Avain tallennettu';
+                    windyStatus.style.color = '#16a34a';
+                });
+            }
 
             // 🔬 FUEL DEBUG
             const fuelDebugBtn = document.getElementById('fuelDebugBtn');
