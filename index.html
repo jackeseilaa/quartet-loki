@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.71</title>
+    <title>Quartet Loki - v2038.72</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -1134,7 +1134,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.71';
+    const APP_VERSION = '2038.72';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -3904,7 +3904,7 @@ button.btn {
                     if (!isValidEngineEntry(e)) return;
                     const t = new Date(e.startTime || (e.date + 'T00:00:00'));
                     const diff = (parseFloat(e.engineHoursEnd)||0) - (parseFloat(e.engineHoursStart)||0);
-                    const rate = parseFloat(e.fuelConsumption) || DEFAULT_LPERH;
+                    const rate = (parseFloat(e.fuelConsumption) > 0 && parseFloat(e.fuelConsumption) <= 3 ? parseFloat(e.fuelConsumption) : DEFAULT_LPERH);
                     if (diff > 0 && (!from || t >= from) && t <= to) {
                         liters += diff * rate;
                     }
@@ -4028,7 +4028,7 @@ button.btn {
                 let totalH = 0, totalHValid = 0;
                 engineEntries.forEach(e => {
                     const diff = (parseFloat(e.engineHoursEnd)||0) - (parseFloat(e.engineHoursStart)||0);
-                    const rate = parseFloat(e.fuelConsumption) || DEFAULT_LPERH;
+                    const rate = (parseFloat(e.fuelConsumption) > 0 && parseFloat(e.fuelConsumption) <= 3 ? parseFloat(e.fuelConsumption) : DEFAULT_LPERH);
                     const consumed = diff * rate;
                     const valid = isValidDbgEntry(e);
                     totalH += diff;
@@ -4086,7 +4086,7 @@ button.btn {
                     }
                     const t = new Date(e.startTime || (e.date + 'T00:00:00'));
                     const diff = (parseFloat(e.engineHoursEnd)||0) - (parseFloat(e.engineHoursStart)||0);
-                    const rate = parseFloat(e.fuelConsumption) || DEFAULT_LPERH;
+                    const rate = (parseFloat(e.fuelConsumption) > 0 && parseFloat(e.fuelConsumption) <= 3 ? parseFloat(e.fuelConsumption) : DEFAULT_LPERH);
                     if (diff > 0 && (!from || t >= from) && t <= to) {
                         liters += diff * rate;
                         hours  += diff;
