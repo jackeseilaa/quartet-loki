@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.62</title>
+    <title>Quartet Loki - v2038.63</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -1115,7 +1115,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.62';
+    const APP_VERSION = '2038.63';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -3269,7 +3269,7 @@ button.btn {
                             }).join(' | ');
                         }
 
-                        csv += `"${date}","${entry.startTime ? entry.startTime.substring(11,16) : ''}","${entry.endTime ? entry.endTime.substring(11,16) : ''}","${entry.vuokralainen}","${entry.kayttotarkoitus}","${entry.captain}","${(entry.route||''). replace(/"/g,'\'')}","${entry.departurePort || ''}","${entry.arrivalPort || ''}","${miles.toFixed(1)}","${hours.toFixed(2)}","${entry.logReadingStart || 0}","${entry.logReadingEnd || 0}","${entry.engineHoursStart || 0}","${entry.engineHoursEnd || 0}","${entry.weather || ''}","${entry.personnel || ''}","${(entry.crew||''). replace(/"/g,'\'')}","${(entry.notes||''). replace(/"/g,'\'')}","${eventsStr}"\n`;
+                        csv += `"${date}","${entry.startTime ? entry.startTime.substring(11,16) : ''}","${entry.endTime ? entry.endTime.substring(11,16) : ''}","${entry.vuokralainen}","${entry.kayttotarkoitus}","${entry.captain}","${(entry.route||''). replace(/"/g,'\'')}","${entry.departurePort || ''}","${entry.arrivalPort || ''}","${miles.toFixed(1)}","${hours.toFixed(2)}","${entry.logReadingStart || 0}","${entry.logReadingEnd || 0}","${entry.engineHoursStart || 0}","${entry.engineHoursEnd || 0}","${entry.weather || ''}","${entry.personnel || ''}","${(entry.crew||''). replace(/"/g,'\'')}","${(entry.notes||''). replace(/"/g,'\'').replace(/\n/g,' | ').replace(/\r/g,'')}","${eventsStr}"\n`;
                     });
                 });
             } else if (reportType === 'journey') {
@@ -3863,6 +3863,20 @@ button.btn {
                 lines.push('  KAIKKI tunnit yhteensä: ' + totalH.toFixed(2) + ' h');
                 lines.push('  KÄYTETÄÄN laskennassa: ' + totalHValid.toFixed(2) + ' h');
             }
+            lines.push('');
+
+            // 2b. Notes-kenttien sisältö 2026 merkinnöistä
+            lines.push('📝 MERKINNÄT-KENTTÄ (notes) 2026:');
+            let notesCount = 0;
+            allEntries.forEach(e => {
+                if (e.notes && e.notes.trim()) {
+                    const ds = (e.startTime||e.date||'?').substring(0,10);
+                    lines.push('  ' + ds + ' | ' + (e.departurePort||'?') + '→' + (e.arrivalPort||'?'));
+                    lines.push('    📄 ' + e.notes.trim().replace(/\n/g, ' | '));
+                    notesCount++;
+                }
+            });
+            if (notesCount === 0) lines.push('  (ei notes-tekstejä 2026 merkinnöissä)');
             lines.push('');
 
             // 3. Askel-askel laskenta
