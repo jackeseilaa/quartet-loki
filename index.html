@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.73</title>
+    <title>Quartet Loki - v2038.74</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -919,7 +919,10 @@ button.btn {
 
     <div class="form-group">
         <label>Loki aloitus (aika) <span style="font-size: 0.85em; color: #666;">(oletuksena nyt)</span> <span class="required">*</span></label>
-        <input type="datetime-local" id="entryStartTime" required>
+        <div style="display:flex;gap:6px;align-items:center;">
+            <input type="datetime-local" id="entryStartTime" required style="flex:1;">
+            <button type="button" id="setStartTimeNowBtn" class="btn btn-secondary" style="white-space:nowrap;padding:8px 10px;font-size:0.82em;">🕐 Nyt</button>
+        </div>
     </div>
 
     <div class="form-group">
@@ -972,7 +975,10 @@ button.btn {
 
     <div class="form-group">
         <label>Logi lopetus (aika) <span style="font-size: 0.85em; color: #666;">(oletuksena nyt)</span> <span class="required">*</span></label>
-        <input type="datetime-local" id="entryEndTime" required>
+        <div style="display:flex;gap:6px;align-items:center;">
+            <input type="datetime-local" id="entryEndTime" required style="flex:1;">
+            <button type="button" id="setEndTimeNowBtn" class="btn btn-success" style="white-space:nowrap;padding:8px 10px;font-size:0.82em;">🕐 Nyt</button>
+        </div>
     </div>
 
     <div class="form-group">
@@ -1141,7 +1147,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.73';
+    const APP_VERSION = '2038.74';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1576,6 +1582,20 @@ button.btn {
 
             // Entry buttons
             addTouchListener(document.getElementById('newEntryBtn'), () => this.openEntryModal());
+
+            // 🕐 Nyt-napit aika-kentille
+            const getNowLocal = () => {
+                const n = new Date();
+                return new Date(n.getTime() - n.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            };
+            const setStartNow = document.getElementById('setStartTimeNowBtn');
+            if (setStartNow) addTouchListener(setStartNow, () => {
+                document.getElementById('entryStartTime').value = getNowLocal();
+            });
+            const setEndNow = document.getElementById('setEndTimeNowBtn');
+            if (setEndNow) addTouchListener(setEndNow, () => {
+                document.getElementById('entryEndTime').value = getNowLocal();
+            });
             addTouchListener(document.getElementById('closeModalBtn'), () => this.closeEntryModal());
             addTouchListener(document.getElementById('viewEventsBtn'), () => {
                 this.closeEntryModal();
@@ -1932,12 +1952,14 @@ button.btn {
                 currentEditingEntryDate = null;
 
                 const now = new Date();
+                // Paikallinen aika datetime-local kenttään (ei UTC)
+                const localNow = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
                 document.getElementById('entryCaptain').value = DEFAULT_CAPTAIN;
                 document.getElementById('entryDeparturePort').value = DEFAULT_DEPARTURE_PORT;
 
-                // Aseta aloitus- ja lopetusajat "nyt" (date derived from startTime)
-                document.getElementById('entryStartTime').value = now.toISOString().slice(0, 16);
-                document.getElementById('entryEndTime').value = now.toISOString().slice(0, 16);
+                // Aseta aloitus- ja lopetusajat "nyt" paikallisena aikana
+                document.getElementById('entryStartTime').value = localNow;
+                document.getElementById('entryEndTime').value = localNow;
                 // entryDate hidden field will be auto-populated from startTime on save
 
                 // Auto-link: Edellisen merkinnän lopetuslukema → tämän aloituslukema
