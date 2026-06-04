@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.74</title>
+    <title>Quartet Loki - v2038.75</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -1147,7 +1147,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.74';
+    const APP_VERSION = '2038.75';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1231,25 +1231,56 @@ button.btn {
         return `${Math.round(deg)}° ${cardinal}`;
     };
 
-    async function fetchMarineWeather(latitude, longitude) {
-        try {
-            // Paikannimi (Nominatim)
-            const geoResp = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=fi`);
-            let placeName = '';
-            if (geoResp.ok) {
-                const geo = await geoResp.json();
-                const addr = geo.address || {};
-                placeName = addr.village || addr.suburb || addr.town || addr.city || addr.municipality || addr.county || '';
-            }
+    // Suomen merialueen sääasemat – käytetään lähimmän aseman koordinaateilla
+    const MARINE_STATIONS = [
+        { name: 'Harmaja', lat: 60.1057, lon: 25.0000 },
+        { name: 'Itätoukki', lat: 60.1433, lon: 25.0622 },
+        { name: 'Kalbådagrund', lat: 59.9833, lon: 25.6000 },
+        { name: 'Russarö', lat: 59.7717, lon: 22.9500 },
+        { name: 'Utö', lat: 59.7790, lon: 21.3720 },
+        { name: 'Bogskär', lat: 59.4973, lon: 20.3593 },
+        { name: 'Tankar', lat: 63.9500, lon: 22.8500 },
+        { name: 'Valassaaret', lat: 63.4383, lon: 21.0717 },
+        { name: 'Nahkiainen', lat: 64.6167, lon: 24.5667 },
+        { name: 'Oulun edustа', lat: 65.0500, lon: 25.3833 },
+        { name: 'Helsinki (Kaisaniemi)', lat: 60.1756, lon: 24.9414 },
+        { name: 'Porvoo (Emäsalo)', lat: 60.2049, lon: 25.6236 },
+        { name: 'Hanko (Tulliniemi)', lat: 59.8176, lon: 22.9088 },
+        { name: 'Turku (Rajakari)', lat: 60.3761, lon: 22.0986 },
+        { name: 'Inkoo (Bågaskär)', lat: 59.9767, lon: 24.0017 },
+        { name: 'Jussarö', lat: 59.8200, lon: 23.5667 },
+        { name: 'Loviisa (Orrengrund)', lat: 60.2767, lon: 26.4483 },
+        { name: 'Kotka (Rankki)', lat: 60.3833, lon: 26.9667 },
+    ];
 
-            // Windy Point Forecast API
+    function getNearestMarineStation(lat, lon) {
+        let nearest = MARINE_STATIONS[0];
+        let minDist = Infinity;
+        for (const s of MARINE_STATIONS) {
+            const dlat = s.lat - lat;
+            const dlon = s.lon - lon;
+            const dist = Math.sqrt(dlat*dlat + dlon*dlon);
+            if (dist < minDist) { minDist = dist; nearest = s; }
+        }
+        return nearest;
+    }
+
+    async function fetchMarineWeather(latitude, longitude) {
+        // Valitaan lähin merisääasema
+        const station = getNearestMarineStation(latitude, longitude);
+        const stLat = station.lat;
+        const stLon = station.lon;
+        const stName = station.name;
+
+        // Windy Point Forecast API – aseman koordinaateilla
+        try {
             const windyKey = localStorage.getItem('quartet_windy_key') || WINDY_API_KEY;
             const windyResp = await fetch('https://api.windy.com/api/point-forecast/v2', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    lat: latitude,
-                    lon: longitude,
+                    lat: stLat,
+                    lon: stLon,
                     model: 'gfs',
                     parameters: ['wind', 'windGust', 'temp', 'precip'],
                     levels: ['surface'],
@@ -1272,16 +1303,15 @@ button.btn {
             const dir    = getWindDir(dirDeg);
             const temp   = (tempK - 273.15).toFixed(1);
             const gustStr = gust > 0 ? `, puuska ${Math.sqrt(gust*gust).toFixed(1)} m/s` : '';
-            const place  = placeName ? `(${placeName}) ` : '';
 
-            return `${place}${speed} m/s ${dir}${gustStr}, ${temp}°C`;
+            return `${speed} m/s ${dir}${gustStr}, ${temp}°C (${stName})`;
 
         } catch (windyErr) {
             console.warn('Windy epäonnistui, käytetään Open-Meteo:', windyErr.message);
-            // Fallback: Open-Meteo
+            // Fallback: Open-Meteo – aseman koordinaateilla
             try {
-                const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,windspeed_10m,winddirection_10m,weathercode&windspeed_unit=ms&timezone=Europe/Helsinki`);
-                if (!r.ok) throw new Error('Open-Meteo epäonnistui');
+                const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${stLat}&longitude=${stLon}&current=temperature_2m,windspeed_10m,winddirection_10m,weathercode&windspeed_unit=ms&timezone=Europe/Helsinki`);
+                if (!r.ok) throw new Error('Open-Meteo HTTP ' + r.status);
                 const d = await r.json();
                 const cur = d.current;
                 const weatherDesc = {
@@ -1295,15 +1325,7 @@ button.btn {
                 const wind  = parseFloat(cur.windspeed_10m).toFixed(1);
                 const dir   = getWindDir(cur.winddirection_10m);
                 const temp  = parseFloat(cur.temperature_2m).toFixed(1);
-                const geoR2 = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=fi`).catch(()=>null);
-                let place2 = '';
-                if (geoR2 && geoR2.ok) {
-                    const g2 = await geoR2.json();
-                    const a = g2.address||{};
-                    place2 = a.village||a.suburb||a.town||a.city||a.municipality||a.county||'';
-                }
-                const placeStr = place2 ? `(${place2}) ` : '';
-                return `${placeStr}${desc ? desc+', ' : ''}${wind} m/s ${dir}, ${temp}°C`;
+                return `${desc ? desc+', ' : ''}${wind} m/s ${dir}, ${temp}°C (${stName})`;
             } catch(e) {
                 throw new Error('Sää-haku epäonnistui: ' + e.message);
             }
