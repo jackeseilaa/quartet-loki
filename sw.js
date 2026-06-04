@@ -1,8 +1,8 @@
 // Quartet Loki Service Worker - Offline support
-const CACHE_NAME = 'quartet-loki-v2038.67';
+const CACHE_NAME = 'quartet-loki-v2038.77';
 const ASSETS = [
-  '/',
-  '/index.html'
+  '/quartet-loki/',
+  '/quartet-loki/index.html'
 ];
 
 // Asenna: välimuistita app
@@ -23,14 +23,18 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch: palvele välimuistista, päivitä taustalla
+// Fetch: ohita kaikki API-kutsut – ne menevät aina verkon kautta
 self.addEventListener('fetch', event => {
-  // Ohita Firebase ja muut API-kutsut
-  if (event.request.url.includes('firebase') ||
-      event.request.url.includes('googleapis') ||
-      event.request.url.includes('open-meteo') ||
-      event.request.url.includes('nominatim')) {
-    return;
+  const url = event.request.url;
+
+  // Ohita kaikki ulkoiset API-kutsut suoraan verkolle
+  if (url.includes('firebase') ||
+      url.includes('googleapis') ||
+      url.includes('open-meteo') ||
+      url.includes('windy.com') ||
+      url.includes('nominatim') ||
+      url.includes('api.')) {
+    return; // ei respondWith = selain hoitaa normaalisti
   }
 
   event.respondWith(
