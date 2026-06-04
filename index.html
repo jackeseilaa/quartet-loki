@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.75</title>
+    <title>Quartet Loki - v2038.76</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -1147,7 +1147,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.75';
+    const APP_VERSION = '2038.76';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1265,6 +1265,21 @@ button.btn {
         return nearest;
     }
 
+    // Fetch with timeout to avoid "Load failed" hanging forever
+    async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const resp = await fetch(url, { ...options, signal: controller.signal });
+            clearTimeout(id);
+            return resp;
+        } catch(e) {
+            clearTimeout(id);
+            if (e.name === 'AbortError') throw new Error('Aikakatkaisu (' + timeoutMs/1000 + 's)');
+            throw e;
+        }
+    }
+
     async function fetchMarineWeather(latitude, longitude) {
         // Valitaan lähin merisääasema
         const station = getNearestMarineStation(latitude, longitude);
@@ -1275,7 +1290,7 @@ button.btn {
         // Windy Point Forecast API – aseman koordinaateilla
         try {
             const windyKey = localStorage.getItem('quartet_windy_key') || WINDY_API_KEY;
-            const windyResp = await fetch('https://api.windy.com/api/point-forecast/v2', {
+            const windyResp = await fetchWithTimeout('https://api.windy.com/api/point-forecast/v2', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1310,7 +1325,7 @@ button.btn {
             console.warn('Windy epäonnistui, käytetään Open-Meteo:', windyErr.message);
             // Fallback: Open-Meteo – aseman koordinaateilla
             try {
-                const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${stLat}&longitude=${stLon}&current=temperature_2m,windspeed_10m,winddirection_10m,weathercode&windspeed_unit=ms&timezone=Europe/Helsinki`);
+                const r = await fetchWithTimeout(`https://api.open-meteo.com/v1/forecast?latitude=${stLat}&longitude=${stLon}&current=temperature_2m,windspeed_10m,winddirection_10m,weathercode&windspeed_unit=ms&timezone=Europe/Helsinki`);
                 if (!r.ok) throw new Error('Open-Meteo HTTP ' + r.status);
                 const d = await r.json();
                 const cur = d.current;
@@ -2999,43 +3014,75 @@ button.btn {
         async fetchWeatherForEntry() {
             const btn = document.getElementById('fetchWeatherBtn');
             const status = document.getElementById('weatherStatus');
-            
+
+            const showStatus = (bg, color, text) => {
+                status.style.display = 'block';
+                status.style.background = bg;
+                status.style.color = color;
+                status.textContent = text;
+            };
+            const done = (weather) => {
+                document.getElementById('entryWeather').value = weather;
+                showStatus('#d1fae5', '#065f46', '✅ ' + weather);
+                btn.textContent = '☁️ Hae merisää GPS:llä';
+                btn.disabled = false;
+                setTimeout(() => { status.style.display = 'none'; }, 4000);
+            };
+            const fail = (msg) => {
+                showStatus('#fee2e2', '#991b1b', '❌ ' + msg);
+                btn.textContent = '☁️ Hae merisää GPS:llä';
+                btn.disabled = false;
+            };
+
             btn.textContent = '⏳ Haetaan...';
             btn.disabled = true;
-            status.style.display = 'block';
-            status.style.background = '#fef3c7';
-            status.style.color = '#92400e';
-            status.textContent = '⏳ Haetaan GPS-koordinaatteja...';
-            
-            navigator.geolocation.getCurrentPosition(
-                async (pos) => {
+            showStatus('#fef3c7', '#92400e', '⏳ Haetaan sijaintia...');
+
+            // Fallback lähtösataman nimen perusteella
+            const fetchFromPort = async () => {
+                const portVal = (document.getElementById('entryDeparturePort') || {}).value || '';
+                const portLower = portVal.toLowerCase();
+                let station = MARINE_STATIONS.find(s => s.name === 'Harmaja'); // oletus
+                if (portLower.includes('roihu') || portLower.includes('rvk')) {
+                    station = MARINE_STATIONS.find(s => s.name === 'Harmaja');
+                } else if (portLower.includes('porvoo') || portLower.includes('borg')) {
+                    station = MARINE_STATIONS.find(s => s.name === 'Porvoo (Emäsalo)');
+                } else if (portLower.includes('hanko') || portLower.includes('hang')) {
+                    station = MARINE_STATIONS.find(s => s.name === 'Hanko (Tulliniemi)');
+                } else if (portLower.includes('turku') || portLower.includes('åbo')) {
+                    station = MARINE_STATIONS.find(s => s.name === 'Turku (Rajakari)');
+                } else if (portLower.includes('kotka')) {
+                    station = MARINE_STATIONS.find(s => s.name === 'Kotka (Rankki)');
+                } else if (portLower.includes('loviisa')) {
+                    station = MARINE_STATIONS.find(s => s.name === 'Loviisa (Orrengrund)');
+                } else if (portLower.includes('inkoo') || portLower.includes('ingå')) {
+                    station = MARINE_STATIONS.find(s => s.name === 'Inkoo (Bågaskär)');
+                }
+                showStatus('#fef3c7', '#92400e', '⏳ GPS ei käytettävissä – haetaan ' + station.name + '...');
+                const weather = await fetchMarineWeather(station.lat, station.lon);
+                done(weather);
+            };
+
+            // Yritä GPS (6 s timeout), sitten fallback
+            if (navigator.geolocation) {
+                try {
+                    const pos = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 6000, maximumAge: 60000 });
+                    });
+                    showStatus('#fef3c7', '#92400e', '⏳ Sijainti saatu, haetaan sää...');
                     try {
                         const weather = await fetchMarineWeather(pos.coords.latitude, pos.coords.longitude);
-                        document.getElementById('entryWeather').value = weather;
-                        status.style.background = '#d1fae5';
-                        status.style.color = '#065f46';
-                        status.textContent = '✅ ' + weather;
-                        btn.textContent = '☁️ Hae merisää GPS:llä';
-                        btn.disabled = false;
-                        setTimeout(() => {
-                            status.style.display = 'none';
-                        }, 3000);
-                    } catch (error) {
-                        status.style.background = '#fee2e2';
-                        status.style.color = '#991b1b';
-                        status.textContent = '❌ ' + error.message;
-                        btn.textContent = '☁️ Hae merisää GPS:llä';
-                        btn.disabled = false;
+                        done(weather);
+                    } catch(e) {
+                        fail(e.message);
                     }
-                },
-                (err) => {
-                    status.style.background = '#fee2e2';
-                    status.style.color = '#991b1b';
-                    status.textContent = '❌ GPS-virhe: ' + err.message;
-                    btn.textContent = '☁️ Hae merisää GPS:llä';
-                    btn.disabled = false;
+                } catch (gpsErr) {
+                    console.warn('GPS ei saatavilla:', gpsErr.message);
+                    try { await fetchFromPort(); } catch(e) { fail(e.message); }
                 }
-            );
+            } else {
+                try { await fetchFromPort(); } catch(e) { fail(e.message); }
+            }
         },
 
         getGpsForPort(portFieldId, coordsDisplayId) {
