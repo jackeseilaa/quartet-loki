@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.76</title>
+    <title>Quartet Loki - v2038.77</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -1147,7 +1147,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.76';
+    const APP_VERSION = '2038.77';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1281,68 +1281,62 @@ button.btn {
     }
 
     async function fetchMarineWeather(latitude, longitude) {
-        // Valitaan lähin merisääasema
+        // Valitaan lähin merisää asema
         const station = getNearestMarineStation(latitude, longitude);
         const stLat = station.lat;
         const stLon = station.lon;
         const stName = station.name;
 
-        // Windy Point Forecast API – aseman koordinaateilla
+        // 1. Yritä Open-Meteo (ei vaadi API-avainta, luotettava)
         try {
-            const windyKey = localStorage.getItem('quartet_windy_key') || WINDY_API_KEY;
-            const windyResp = await fetchWithTimeout('https://api.windy.com/api/point-forecast/v2', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    lat: stLat,
-                    lon: stLon,
-                    model: 'gfs',
-                    parameters: ['wind', 'windGust', 'temp', 'precip'],
-                    levels: ['surface'],
-                    key: windyKey
-                })
-            });
-
-            if (!windyResp.ok) throw new Error('Windy API ' + windyResp.status);
-            const wdata = await windyResp.json();
-
-            // Windy palauttaa arrayt - otetaan ensimmäinen (nykyinen) arvo
-            const uWind  = (wdata['wind_u-surface'] || [])[0] || 0;
-            const vWind  = (wdata['wind_v-surface'] || [])[0] || 0;
-            const gust   = (wdata['windGust-surface'] || [])[0] || 0;
-            const tempK  = (wdata['temp-surface'] || [])[0] || 273.15;
-
-            // u/v-komponenteista → nopeus ja suunta
-            const speed  = Math.sqrt(uWind * uWind + vWind * vWind).toFixed(1);
-            const dirDeg = (270 - Math.atan2(vWind, uWind) * 180 / Math.PI) % 360;
-            const dir    = getWindDir(dirDeg);
-            const temp   = (tempK - 273.15).toFixed(1);
-            const gustStr = gust > 0 ? `, puuska ${Math.sqrt(gust*gust).toFixed(1)} m/s` : '';
-
-            return `${speed} m/s ${dir}${gustStr}, ${temp}°C (${stName})`;
-
-        } catch (windyErr) {
-            console.warn('Windy epäonnistui, käytetään Open-Meteo:', windyErr.message);
-            // Fallback: Open-Meteo – aseman koordinaateilla
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${stLat}&longitude=${stLon}&current=temperature_2m,windspeed_10m,winddirection_10m,windgusts_10m,weathercode&windspeed_unit=ms&timezone=Europe%2FHelsinki`;
+            console.log('[Sää] Open-Meteo:', url);
+            const r = await fetchWithTimeout(url, {}, 10000);
+            if (!r.ok) throw new Error('Open-Meteo HTTP ' + r.status);
+            const d = await r.json();
+            if (!d.current) throw new Error('Open-Meteo: ei current-dataa');
+            const cur = d.current;
+            const weatherDesc = {
+                0:'Selkeä',1:'Lähes selkeä',2:'Puolipilvinen',3:'Pilvinen',
+                45:'Sumu',48:'Sumu',51:'Tihkusade',53:'Tihkusade',55:'Tihkusade',
+                61:'Sade',63:'Sade',65:'Kova sade',71:'Lumisade',73:'Lumisade',
+                75:'Kova lumisade',80:'Sadekuurot',81:'Kova sadekuuro',
+                95:'Ukkonen',96:'Ukkonen + rakeet',99:'Kova ukkonen + rakeet'
+            };
+            const desc  = weatherDesc[cur.weathercode] ?? '';
+            const wind  = parseFloat(cur.windspeed_10m || 0).toFixed(1);
+            const gust  = parseFloat(cur.windgusts_10m || 0).toFixed(1);
+            const dir   = getWindDir(cur.winddirection_10m || 0);
+            const temp  = parseFloat(cur.temperature_2m || 0).toFixed(1);
+            const gustStr = parseFloat(gust) > 0 ? `, puuska ${gust} m/s` : '';
+            const descStr = desc ? desc + ', ' : '';
+            return `${descStr}${wind} m/s ${dir}${gustStr}, ${temp}°C (${stName})`;
+        } catch (e1) {
+            console.warn('[Sää] Open-Meteo epäonnistui:', e1.message);
+            // 2. Fallback: Windy (vaatii API-avaimen)
             try {
-                const r = await fetchWithTimeout(`https://api.open-meteo.com/v1/forecast?latitude=${stLat}&longitude=${stLon}&current=temperature_2m,windspeed_10m,winddirection_10m,weathercode&windspeed_unit=ms&timezone=Europe/Helsinki`);
-                if (!r.ok) throw new Error('Open-Meteo HTTP ' + r.status);
-                const d = await r.json();
-                const cur = d.current;
-                const weatherDesc = {
-                    0:'Selkeä',1:'Lähes selkeä',2:'Puolipilvinen',3:'Pilvinen',
-                    45:'Sumu',48:'Sumu',51:'Tihkusade',53:'Tihkusade',55:'Tihkusade',
-                    61:'Sade',63:'Sade',65:'Kova sade',71:'Lumisade',73:'Lumisade',
-                    75:'Kova lumisade',80:'Sadekuurot',81:'Kova sadekuuro',
-                    95:'Ukkonen',96:'Ukkonen + rakeet',99:'Kova ukkonen + rakeet'
-                };
-                const desc  = weatherDesc[cur.weathercode] ?? '';
-                const wind  = parseFloat(cur.windspeed_10m).toFixed(1);
-                const dir   = getWindDir(cur.winddirection_10m);
-                const temp  = parseFloat(cur.temperature_2m).toFixed(1);
-                return `${desc ? desc+', ' : ''}${wind} m/s ${dir}, ${temp}°C (${stName})`;
-            } catch(e) {
-                throw new Error('Sää-haku epäonnistui: ' + e.message);
+                const windyKey = localStorage.getItem('quartet_windy_key') || WINDY_API_KEY;
+                console.log('[Sää] Yritään Windy...');
+                const windyResp = await fetchWithTimeout('https://api.windy.com/api/point-forecast/v2', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lat: stLat, lon: stLon, model: 'gfs',
+                        parameters: ['wind', 'windGust', 'temp'], levels: ['surface'], key: windyKey })
+                }, 10000);
+                if (!windyResp.ok) throw new Error('Windy HTTP ' + windyResp.status);
+                const wdata = await windyResp.json();
+                const uWind = (wdata['wind_u-surface'] || [])[0] || 0;
+                const vWind = (wdata['wind_v-surface'] || [])[0] || 0;
+                const gust  = (wdata['windGust-surface'] || [])[0] || 0;
+                const tempK = (wdata['temp-surface'] || [])[0] || 273.15;
+                const speed = Math.sqrt(uWind*uWind + vWind*vWind).toFixed(1);
+                const dirDeg = (270 - Math.atan2(vWind, uWind) * 180 / Math.PI) % 360;
+                const dir   = getWindDir(dirDeg);
+                const temp  = (tempK - 273.15).toFixed(1);
+                const gustStr = gust > 0 ? `, puuska ${Math.sqrt(gust*gust).toFixed(1)} m/s` : '';
+                return `${speed} m/s ${dir}${gustStr}, ${temp}°C (${stName})`;
+            } catch (e2) {
+                throw new Error(`Sää-haku epäonnistui. Open-Meteo: ${e1.message}. Windy: ${e2.message}`);
             }
         }
     }
