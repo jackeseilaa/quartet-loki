@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.79</title>
+    <title>Quartet Loki - v2038.80</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -1147,7 +1147,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.79';
+    const APP_VERSION = '2038.80';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1233,24 +1233,26 @@ button.btn {
 
     // Suomen merialueen sääasemat – käytetään lähimmän aseman koordinaateilla
     const MARINE_STATIONS = [
+        // Suomenlahti
         { name: 'Harmaja', lat: 60.1057, lon: 25.0000 },
-        { name: 'Itätoukki', lat: 60.1433, lon: 25.0622 },
         { name: 'Kalbådagrund', lat: 59.9833, lon: 25.6000 },
-        { name: 'Russarö', lat: 59.7717, lon: 22.9500 },
+        { name: 'Orrengrund', lat: 60.2767, lon: 26.4483 },
+        { name: 'Rankki', lat: 60.3833, lon: 26.9667 },
+        { name: 'Emäsalo', lat: 60.1900, lon: 25.6200 },
+        // Saaristomeri ja länsimeri
         { name: 'Utö', lat: 59.7790, lon: 21.3720 },
         { name: 'Bogskär', lat: 59.4973, lon: 20.3593 },
-        { name: 'Tankar', lat: 63.9500, lon: 22.8500 },
-        { name: 'Valassaaret', lat: 63.4383, lon: 21.0717 },
-        { name: 'Nahkiainen', lat: 64.6167, lon: 24.5667 },
-        { name: 'Oulun edustа', lat: 65.0500, lon: 25.3833 },
-        { name: 'Helsinki (Kaisaniemi)', lat: 60.1756, lon: 24.9414 },
-        { name: 'Porvoo (Emäsalo)', lat: 60.2049, lon: 25.6236 },
-        { name: 'Hanko (Tulliniemi)', lat: 59.8176, lon: 22.9088 },
-        { name: 'Turku (Rajakari)', lat: 60.3761, lon: 22.0986 },
-        { name: 'Inkoo (Bågaskär)', lat: 59.9767, lon: 24.0017 },
+        { name: 'Russarö', lat: 59.7717, lon: 22.9500 },
         { name: 'Jussarö', lat: 59.8200, lon: 23.5667 },
-        { name: 'Loviisa (Orrengrund)', lat: 60.2767, lon: 26.4483 },
-        { name: 'Kotka (Rankki)', lat: 60.3833, lon: 26.9667 },
+        { name: 'Bågaskär', lat: 59.9767, lon: 24.0017 },
+        { name: 'Tulliniemi', lat: 59.8176, lon: 22.9088 },
+        // Selkämeri
+        { name: 'Rauma (ulkomatala)', lat: 61.1333, lon: 21.0333 },
+        { name: 'Valassaaret', lat: 63.4383, lon: 21.0717 },
+        { name: 'Tankar', lat: 63.9500, lon: 22.8500 },
+        // Perämeri
+        { name: 'Nahkiainen', lat: 64.6167, lon: 24.5667 },
+        { name: 'Ulkokrunni', lat: 65.2333, lon: 25.2167 },
     ];
 
     function getNearestMarineStation(lat, lon) {
@@ -3038,20 +3040,18 @@ button.btn {
                 const portVal = (document.getElementById('entryDeparturePort') || {}).value || '';
                 const portLower = portVal.toLowerCase();
                 let station = MARINE_STATIONS.find(s => s.name === 'Harmaja'); // oletus
-                if (portLower.includes('roihu') || portLower.includes('rvk')) {
+                if (portLower.includes('roihu') || portLower.includes('rvk') || portLower.includes('helsinki')) {
                     station = MARINE_STATIONS.find(s => s.name === 'Harmaja');
-                } else if (portLower.includes('porvoo') || portLower.includes('borg')) {
-                    station = MARINE_STATIONS.find(s => s.name === 'Porvoo (Emäsalo)');
+                } else if (portLower.includes('porvoo') || portLower.includes('borg') || portLower.includes('emäsalo')) {
+                    station = MARINE_STATIONS.find(s => s.name === 'Emäsalo');
                 } else if (portLower.includes('hanko') || portLower.includes('hang')) {
-                    station = MARINE_STATIONS.find(s => s.name === 'Hanko (Tulliniemi)');
-                } else if (portLower.includes('turku') || portLower.includes('åbo')) {
-                    station = MARINE_STATIONS.find(s => s.name === 'Turku (Rajakari)');
-                } else if (portLower.includes('kotka')) {
-                    station = MARINE_STATIONS.find(s => s.name === 'Kotka (Rankki)');
-                } else if (portLower.includes('loviisa')) {
-                    station = MARINE_STATIONS.find(s => s.name === 'Loviisa (Orrengrund)');
-                } else if (portLower.includes('inkoo') || portLower.includes('ingå')) {
-                    station = MARINE_STATIONS.find(s => s.name === 'Inkoo (Bågaskär)');
+                    station = MARINE_STATIONS.find(s => s.name === 'Tulliniemi');
+                } else if (portLower.includes('kotka') || portLower.includes('rankki')) {
+                    station = MARINE_STATIONS.find(s => s.name === 'Rankki');
+                } else if (portLower.includes('loviisa') || portLower.includes('orren')) {
+                    station = MARINE_STATIONS.find(s => s.name === 'Orrengrund');
+                } else if (portLower.includes('inkoo') || portLower.includes('ingå') || portLower.includes('båga')) {
+                    station = MARINE_STATIONS.find(s => s.name === 'Bågaskär');
                 }
                 showStatus('#fef3c7', '#92400e', '⏳ GPS ei käytettävissä – haetaan ' + station.name + '...');
                 const weather = await fetchMarineWeather(station.lat, station.lon);
