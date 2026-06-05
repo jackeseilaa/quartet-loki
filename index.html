@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.83</title>
+    <title>Quartet Loki - v2038.84</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -1147,7 +1147,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.83';
+    const APP_VERSION = '2038.84';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1334,7 +1334,7 @@ button.btn {
             const feelsStr = Math.abs(parseFloat(feels) - parseFloat(temp)) >= 2 ? `, tuntuu ${feels}°C` : '';
             const descStr  = desc ? desc + ', ' : '';
             console.log('[Sää] ICON/ECMWF –', wind, 'm/s puuska:', gust, 'suunta:', cur.winddirection_10m, 'temp:', temp);
-            return `${descStr}${wind} m/s ${dir}${gustStr}, ${temp}°C${feelsStr} (${stName})`;
+            return `ICON/ECMWF: ${descStr}${wind} m/s ${dir}${gustStr}, ${temp}°C${feelsStr} (${stName})`;
         } catch (e1) {
             console.warn('[Sää] Open-Meteo epäonnistui:', e1.message, '→ Windy/GFS fallback');
             // 2. FALLBACK: Windy GFS (22 km, 6h päivitys)
