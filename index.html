@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.81</title>
+    <title>Quartet Loki - v2038.82</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -1147,7 +1147,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.81';
+    const APP_VERSION = '2038.82';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1312,14 +1312,16 @@ button.btn {
             if (!wdata['wind_u-surface']) throw new Error('Windy: ei tuulidataa');
             const uWind = (wdata['wind_u-surface'])[0] || 0;
             const vWind = (wdata['wind_v-surface'])[0] || 0;
-            const gustRaw = (wdata['windGust-surface'] || [])[0] || 0;
+            // windGust-surface on skalaari m/s (ei u/v-komponentteja)
+            const gustRaw = (wdata['windGust-surface'] || wdata['windGust-surface:surface'] || [])[0] || 0;
             const tempK = (wdata['temp-surface'] || [])[0] || 273.15;
             const speed = Math.sqrt(uWind*uWind + vWind*vWind).toFixed(1);
             const dirDeg = (270 - Math.atan2(vWind, uWind) * 180 / Math.PI + 360) % 360;
             const dir   = getWindDir(dirDeg);
             const temp  = (tempK - 273.15).toFixed(1);
-            const gustMs = Math.sqrt(gustRaw*gustRaw);
+            const gustMs = Math.abs(gustRaw);
             const gustStr = gustMs > 0.5 ? `, puuska ${gustMs.toFixed(1)} m/s` : '';
+            console.log('[Sää] Windy tulos – nopeus:', speed, 'puuska:', gustMs, 'suunta:', dirDeg.toFixed(0), 'temp:', temp);
             return `Windy/GFS: ${speed} m/s ${dir}${gustStr}, ${temp}°C (${stName})`;
         } catch (e1) {
             console.warn('[Sää] Windy epäonnistui:', e1.message, '→ Open-Meteo');
