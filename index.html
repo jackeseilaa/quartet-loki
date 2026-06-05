@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.80</title>
+    <title>Quartet Loki - v2038.81</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -1147,7 +1147,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.80';
+    const APP_VERSION = '2038.81';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1233,26 +1233,34 @@ button.btn {
 
     // Suomen merialueen sääasemat – käytetään lähimmän aseman koordinaateilla
     const MARINE_STATIONS = [
-        // Suomenlahti
-        { name: 'Harmaja', lat: 60.1057, lon: 25.0000 },
+        // === SUOMENLAHTI – itä ===
+        { name: 'Rankki (Kotka)', lat: 60.3833, lon: 26.9667 },
+        { name: 'Orrengrund (Loviisa)', lat: 60.2767, lon: 26.4483 },
         { name: 'Kalbådagrund', lat: 59.9833, lon: 25.6000 },
-        { name: 'Orrengrund', lat: 60.2767, lon: 26.4483 },
-        { name: 'Rankki', lat: 60.3833, lon: 26.9667 },
-        { name: 'Emäsalo', lat: 60.1900, lon: 25.6200 },
-        // Saaristomeri ja länsimeri
+        { name: 'Emäsalo (Porvoo)', lat: 60.1900, lon: 25.6200 },
+        // === SUOMENLAHTI – Helsinki ===
+        { name: 'Harmaja', lat: 60.1057, lon: 25.0000 },
+        { name: 'Itätoukki', lat: 60.1433, lon: 25.0622 },
+        { name: 'Länsimäki / Eestiluoto', lat: 60.0917, lon: 24.9417 },
+        { name: 'Suomenlinna', lat: 60.1467, lon: 24.9883 },
+        { name: 'Isosaari', lat: 60.1017, lon: 25.0783 },
+        // === SUOMENLAHTI – länsi ===
+        { name: 'Bågaskär (Inkoo)', lat: 59.9767, lon: 24.0017 },
+        { name: 'Jussarö', lat: 59.8200, lon: 23.5667 },
+        // === SAARISTOMERI ===
+        { name: 'Russarö (Hanko)', lat: 59.7717, lon: 22.9500 },
+        { name: 'Tulliniemi (Hanko)', lat: 59.8176, lon: 22.9088 },
+        { name: 'Lohm (Parainen)', lat: 60.0683, lon: 21.6900 },
         { name: 'Utö', lat: 59.7790, lon: 21.3720 },
         { name: 'Bogskär', lat: 59.4973, lon: 20.3593 },
-        { name: 'Russarö', lat: 59.7717, lon: 22.9500 },
-        { name: 'Jussarö', lat: 59.8200, lon: 23.5667 },
-        { name: 'Bågaskär', lat: 59.9767, lon: 24.0017 },
-        { name: 'Tulliniemi', lat: 59.8176, lon: 22.9088 },
-        // Selkämeri
-        { name: 'Rauma (ulkomatala)', lat: 61.1333, lon: 21.0333 },
+        // === SELKÄMERI ===
+        { name: 'Rauma (Kylmäpihlaja)', lat: 61.1467, lon: 21.0133 },
+        { name: 'Mäntyluoto (Pori)', lat: 61.5950, lon: 21.4883 },
         { name: 'Valassaaret', lat: 63.4383, lon: 21.0717 },
-        { name: 'Tankar', lat: 63.9500, lon: 22.8500 },
-        // Perämeri
+        // === POHJANLAHTUI / PERÄMERI ===
+        { name: 'Tankar (Kokkola)', lat: 63.9500, lon: 22.8500 },
         { name: 'Nahkiainen', lat: 64.6167, lon: 24.5667 },
-        { name: 'Ulkokrunni', lat: 65.2333, lon: 25.2167 },
+        { name: 'Ulkokrunni (Oulu)', lat: 65.2333, lon: 25.2167 },
     ];
 
     function getNearestMarineStation(lat, lon) {
