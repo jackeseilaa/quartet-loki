@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.84</title>
+    <title>Quartet Loki - v2038.85</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -1147,7 +1147,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.84';
+    const APP_VERSION = '2038.85';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1305,62 +1305,114 @@ button.btn {
             95:'Ukkonen', 96:'Ukkonen + rakeet', 99:'Kova ukkonen + rakeet'
         };
 
-        // 1. ENSISIJAINEN: Open-Meteo best_match
-        //    Suomessa valitsee automaattisesti ICON-D2 (2 km, päivitys ~3h)
-        //    tai ECMWF IFS (9 km, päivitys 6h) – molemmat parempia kuin GFS 22 km
+        // 1. ENSISIJAINEN: FMI Harmonie (2.5 km, päivitys ~1h) – Suomen paras malli
         try {
-            const url = [
-                'https://api.open-meteo.com/v1/forecast',
-                `?latitude=${stLat}&longitude=${stLon}`,
-                '&current=temperature_2m,windspeed_10m,winddirection_10m,windgusts_10m,weathercode,apparent_temperature',
-                '&models=best_match',
-                '&windspeed_unit=ms',
-                '&timezone=Europe%2FHelsinki'
+            const now = new Date();
+            const start = now.toISOString().slice(0,16) + ':00Z';
+            const end = new Date(now.getTime() + 3600000).toISOString().slice(0,16) + ':00Z';
+            const fmiUrl = [
+                'https://opendata.fmi.fi/wfs?service=WFS&version=2.0.0&request=getFeature',
+                '&storedquery_id=fmi::forecast::harmonie::surface::point::simple',
+                `&latlon=${stLat},${stLon}`,
+                '&parameters=WindSpeedMS,WindDirection,WindGust,Temperature',
+                `&starttime=${start}&endtime=${end}`,
+                '&timestep=60'
             ].join('');
-            console.log('[Sää] Open-Meteo best_match →', stName);
-            const r = await fetchWithTimeout(url, {}, 10000);
-            if (!r.ok) throw new Error('Open-Meteo HTTP ' + r.status);
-            const d = await r.json();
-            if (!d.current) throw new Error('Open-Meteo: ei dataa');
-            const cur = d.current;
-            const model = d.hourly_units ? '' : ''; // model info ei ole current-vastauksessa
-            const desc  = weatherDesc[cur.weathercode] ?? '';
-            const wind  = parseFloat(cur.windspeed_10m || 0).toFixed(1);
-            const gust  = parseFloat(cur.windgusts_10m || 0);
-            const dir   = getWindDir(cur.winddirection_10m || 0);
-            const temp  = parseFloat(cur.temperature_2m || 0).toFixed(1);
-            const feels = parseFloat(cur.apparent_temperature || cur.temperature_2m || 0).toFixed(1);
-            const gustStr  = gust > 0.5 ? `, puuska ${gust.toFixed(1)} m/s` : '';
-            const feelsStr = Math.abs(parseFloat(feels) - parseFloat(temp)) >= 2 ? `, tuntuu ${feels}°C` : '';
-            const descStr  = desc ? desc + ', ' : '';
-            console.log('[Sää] ICON/ECMWF –', wind, 'm/s puuska:', gust, 'suunta:', cur.winddirection_10m, 'temp:', temp);
-            return `ICON/ECMWF: ${descStr}${wind} m/s ${dir}${gustStr}, ${temp}°C${feelsStr} (${stName})`;
+            console.log('[Sää] FMI Harmonie →', stName);
+            const r = await fetchWithTimeout(fmiUrl, {}, 12000);
+            if (!r.ok) throw new Error('FMI HTTP ' + r.status);
+            const xml = await r.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(xml, 'text/xml');
+
+            // Parsitaan BsWfsElement-rakenne: <BsWfs:Time>, <BsWfs:ParameterName>, <BsWfs:ParameterValue>
+            const elements = doc.querySelectorAll('BsWfsElement');
+            const vals = {};
+            elements.forEach(el => {
+                const name  = el.querySelector('ParameterName')?.textContent?.trim();
+                const value = parseFloat(el.querySelector('ParameterValue')?.textContent?.trim());
+                if (name && !isNaN(value)) vals[name] = value;
+            });
+
+            // Jos BsWfsElement ei löydy, kokeile gml:doubleOrNilReasonTupleList
+            if (Object.keys(vals).length === 0) {
+                const tuples = doc.querySelector('doubleOrNilReasonTupleList');
+                if (tuples) {
+                    const nums = tuples.textContent.trim().split(/\s+/).map(Number).filter(n => !isNaN(n));
+                    // Järjestys: WindSpeedMS, WindDirection, WindGust, Temperature
+                    if (nums.length >= 4) {
+                        vals['WindSpeedMS']   = nums[0];
+                        vals['WindDirection'] = nums[1];
+                        vals['WindGust']      = nums[2];
+                        vals['Temperature']   = nums[3];
+                    }
+                }
+            }
+
+            if (!('WindSpeedMS' in vals)) throw new Error('FMI: ei tuulidataa XML:ssä');
+
+            const wind    = (vals['WindSpeedMS'] || 0).toFixed(1);
+            const gust    = vals['WindGust'] || 0;
+            const dir     = getWindDir(vals['WindDirection'] || 0);
+            const temp    = (vals['Temperature'] || 0).toFixed(1);
+            const gustStr = gust > 0.5 ? `, puuska ${gust.toFixed(1)} m/s` : '';
+            console.log('[Sää] FMI Harmonie OK –', wind, 'm/s puuska:', gust, 'suunta:', vals['WindDirection'], 'temp:', temp);
+            return `FMI Harmonie: ${wind} m/s ${dir}${gustStr}, ${temp}°C (${stName})`;
+
         } catch (e1) {
-            console.warn('[Sää] Open-Meteo epäonnistui:', e1.message, '→ Windy/GFS fallback');
-            // 2. FALLBACK: Windy GFS (22 km, 6h päivitys)
+            console.warn('[Sää] FMI epäonnistui:', e1.message, '→ Open-Meteo ICON-D2');
+
+            // 2. FALLBACK 1: Open-Meteo ICON-D2/ECMWF best_match (2-9 km, 3-6h)
             try {
-                const windyKey = localStorage.getItem('quartet_windy_key') || WINDY_API_KEY;
-                const windyResp = await fetchWithTimeout('https://api.windy.com/api/point-forecast/v2', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ lat: stLat, lon: stLon, model: 'gfs',
-                        parameters: ['wind', 'windGust', 'temp'], levels: ['surface'], key: windyKey })
-                }, 10000);
-                if (!windyResp.ok) throw new Error('Windy HTTP ' + windyResp.status);
-                const wdata = await windyResp.json();
-                if (!wdata['wind_u-surface']) throw new Error('Windy: ei tuulidataa');
-                const uWind  = wdata['wind_u-surface'][0] || 0;
-                const vWind  = wdata['wind_v-surface'][0] || 0;
-                const gustRaw = Math.abs((wdata['windGust-surface'] || [])[0] || 0);
-                const tempK  = (wdata['temp-surface'] || [])[0] || 273.15;
-                const speed  = Math.sqrt(uWind*uWind + vWind*vWind).toFixed(1);
-                const dirDeg = (270 - Math.atan2(vWind, uWind) * 180 / Math.PI + 360) % 360;
-                const dir    = getWindDir(dirDeg);
-                const temp   = (tempK - 273.15).toFixed(1);
-                const gustStr = gustRaw > 0.5 ? `, puuska ${gustRaw.toFixed(1)} m/s` : '';
-                return `Windy/GFS: ${speed} m/s ${dir}${gustStr}, ${temp}°C (${stName})`;
+                const url = [
+                    'https://api.open-meteo.com/v1/forecast',
+                    `?latitude=${stLat}&longitude=${stLon}`,
+                    '&current=temperature_2m,windspeed_10m,winddirection_10m,windgusts_10m,weathercode,apparent_temperature',
+                    '&models=best_match&windspeed_unit=ms&timezone=Europe%2FHelsinki'
+                ].join('');
+                const r = await fetchWithTimeout(url, {}, 10000);
+                if (!r.ok) throw new Error('Open-Meteo HTTP ' + r.status);
+                const d = await r.json();
+                if (!d.current) throw new Error('Open-Meteo: ei dataa');
+                const cur = d.current;
+                const desc  = weatherDesc[cur.weathercode] ?? '';
+                const wind  = parseFloat(cur.windspeed_10m || 0).toFixed(1);
+                const gust  = parseFloat(cur.windgusts_10m || 0);
+                const dir   = getWindDir(cur.winddirection_10m || 0);
+                const temp  = parseFloat(cur.temperature_2m || 0).toFixed(1);
+                const feels = parseFloat(cur.apparent_temperature || cur.temperature_2m || 0).toFixed(1);
+                const gustStr  = gust > 0.5 ? `, puuska ${gust.toFixed(1)} m/s` : '';
+                const feelsStr = Math.abs(parseFloat(feels) - parseFloat(temp)) >= 2 ? `, tuntuu ${feels}°C` : '';
+                const descStr  = desc ? desc + ', ' : '';
+                return `ICON/ECMWF: ${descStr}${wind} m/s ${dir}${gustStr}, ${temp}°C${feelsStr} (${stName})`;
             } catch (e2) {
-                throw new Error(`Sää-haku epäonnistui. ICON/ECMWF: ${e1.message}. Windy: ${e2.message}`);
+                console.warn('[Sää] Open-Meteo epäonnistui:', e2.message, '→ Windy/GFS');
+
+                // 3. FALLBACK 2: Windy GFS (22 km, 6h) – viimeinen vaihtoehto
+                try {
+                    const windyKey = localStorage.getItem('quartet_windy_key') || WINDY_API_KEY;
+                    const windyResp = await fetchWithTimeout('https://api.windy.com/api/point-forecast/v2', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ lat: stLat, lon: stLon, model: 'gfs',
+                            parameters: ['wind', 'windGust', 'temp'], levels: ['surface'], key: windyKey })
+                    }, 10000);
+                    if (!windyResp.ok) throw new Error('Windy HTTP ' + windyResp.status);
+                    const wdata = await windyResp.json();
+                    if (!wdata['wind_u-surface']) throw new Error('Windy: ei tuulidataa');
+                    const uWind  = wdata['wind_u-surface'][0] || 0;
+                    const vWind  = wdata['wind_v-surface'][0] || 0;
+                    const gustRaw = Math.abs((wdata['windGust-surface'] || [])[0] || 0);
+                    const tempK  = (wdata['temp-surface'] || [])[0] || 273.15;
+                    const speed  = Math.sqrt(uWind*uWind + vWind*vWind).toFixed(1);
+                    const dirDeg = (270 - Math.atan2(vWind, uWind) * 180 / Math.PI + 360) % 360;
+                    const dir    = getWindDir(dirDeg);
+                    const temp   = (tempK - 273.15).toFixed(1);
+                    const gustStr = gustRaw > 0.5 ? `, puuska ${gustRaw.toFixed(1)} m/s` : '';
+                    return `Windy/GFS: ${speed} m/s ${dir}${gustStr}, ${temp}°C (${stName})`;
+                } catch (e3) {
+                    throw new Error(`Kaikki lähteet epäonnistuivat. FMI: ${e1.message} | ICON: ${e2.message} | Windy: ${e3.message}`);
+                }
             }
         }
     }

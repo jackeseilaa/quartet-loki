@@ -28,7 +28,8 @@ self.addEventListener('fetch', event => {
   const url = event.request.url;
 
   // Ohita kaikki ulkoiset API-kutsut suoraan verkolle
-  if (url.includes('firebase') ||
+  if (url.includes('opendata.fmi.fi') ||
+      url.includes('firebase') ||
       url.includes('googleapis') ||
       url.includes('open-meteo') ||
       url.includes('windy.com') ||
