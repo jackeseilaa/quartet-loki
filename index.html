@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.86</title>
+    <title>Quartet Loki - v2038.87</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -1147,7 +1147,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.86';
+    const APP_VERSION = '2038.87';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -3306,35 +3306,35 @@ button.btn {
                     return hh + 'h ' + String(mm).padStart(2,'0') + 'min';
                 };
 
-                html += \`<tr>
-                    <td rowspan="4" style="font-weight:bold;vertical-align:middle;">\${year}</td>
+                html += `<tr>
+                    <td rowspan="4" style="font-weight:bold;vertical-align:middle;">${year}</td>
                     <td><strong style="color:#0284c7;">Tmi</strong></td>
-                    <td>\${tmiStats.count}</td>
-                    <td><strong>\${fmtH(tmiStats.usageHours)}</strong><span style="color:#888;font-size:0.85em;">\${pct(tmiStats.usageHours)}</span></td>
-                    <td style="color:#555;font-size:0.9em;">\${fmtH(tmiStats.engineHours)}</td>
-                    <td>\${tmiStats.miles.toFixed(1)}</td>
-                </tr>\`;
-                html += \`<tr>
+                    <td>${tmiStats.count}</td>
+                    <td><strong>${fmtH(tmiStats.usageHours)}</strong><span style="color:#888;font-size:0.85em;">${pct(tmiStats.usageHours)}</span></td>
+                    <td style="color:#555;font-size:0.9em;">${fmtH(tmiStats.engineHours)}</td>
+                    <td>${tmiStats.miles.toFixed(1)}</td>
+                </tr>`;
+                html += `<tr>
                     <td><strong style="color:#10b981;">Oy</strong></td>
-                    <td>\${oyStats.count}</td>
-                    <td><strong>\${fmtH(oyStats.usageHours)}</strong><span style="color:#888;font-size:0.85em;">\${pct(oyStats.usageHours)}</span></td>
-                    <td style="color:#555;font-size:0.9em;">\${fmtH(oyStats.engineHours)}</td>
-                    <td>\${oyStats.miles.toFixed(1)}</td>
-                </tr>\`;
-                html += \`<tr>
+                    <td>${oyStats.count}</td>
+                    <td><strong>${fmtH(oyStats.usageHours)}</strong><span style="color:#888;font-size:0.85em;">${pct(oyStats.usageHours)}</span></td>
+                    <td style="color:#555;font-size:0.9em;">${fmtH(oyStats.engineHours)}</td>
+                    <td>${oyStats.miles.toFixed(1)}</td>
+                </tr>`;
+                html += `<tr>
                     <td><strong style="color:#ec4899;">Oma</strong></td>
-                    <td>\${omaStats.count}</td>
-                    <td><strong>\${fmtH(omaStats.usageHours)}</strong><span style="color:#888;font-size:0.85em;">\${pct(omaStats.usageHours)}</span></td>
-                    <td style="color:#555;font-size:0.9em;">\${fmtH(omaStats.engineHours)}</td>
-                    <td>\${omaStats.miles.toFixed(1)}</td>
-                </tr>\`;
-                html += \`<tr style="background:#f0f4f8;font-weight:600;">
+                    <td>${omaStats.count}</td>
+                    <td><strong>${fmtH(omaStats.usageHours)}</strong><span style="color:#888;font-size:0.85em;">${pct(omaStats.usageHours)}</span></td>
+                    <td style="color:#555;font-size:0.9em;">${fmtH(omaStats.engineHours)}</td>
+                    <td>${omaStats.miles.toFixed(1)}</td>
+                </tr>`;
+                html += `<tr style="background:#f0f4f8;font-weight:600;">
                     <td>YHTEENSÄ</td>
-                    <td>\${totalCount}</td>
-                    <td>\${fmtH(totalYearUsage)}</td>
-                    <td style="color:#555;font-size:0.9em;">\${fmtH(totalYearEngine)}</td>
-                    <td>\${totalYearMiles.toFixed(1)}</td>
-                </tr>\`;
+                    <td>${totalCount}</td>
+                    <td>${fmtH(totalYearUsage)}</td>
+                    <td style="color:#555;font-size:0.9em;">${fmtH(totalYearEngine)}</td>
+                    <td>${totalYearMiles.toFixed(1)}</td>
+                </tr>`;
             });
 
             html += '</tbody></table></div>';
