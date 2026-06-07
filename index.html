@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.87</title>
+    <title>Quartet Loki - v2038.88</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -1147,7 +1147,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.87';
+    const APP_VERSION = '2038.88';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -2897,13 +2897,22 @@ button.btn {
                 (e.year || (e.date ? e.date.substring(0,4) : '')) === currentYear
             );
 
+            const logH = (e) => {
+                if (!e.startTime || !e.endTime) return 0;
+                const ms = new Date(e.endTime) - new Date(e.startTime);
+                return ms > 0 ? ms / 3600000 : 0;
+            };
+            const fmtH = (h) => {
+                const hh = Math.floor(h);
+                const mm = Math.round((h - hh) * 60);
+                return hh + 'h ' + String(mm).padStart(2,'0') + 'min';
+            };
             const calc = (arr) => ({
                 count: arr.length,
                 miles: arr.reduce((s,e) => s + Math.max(0, (parseFloat(e.logReadingEnd)||0) - (parseFloat(e.logReadingStart)||0)), 0),
-                hours: arr.reduce((s,e) => {
-                    const start = parseFloat(e.engineHoursStart) || 0;
-                    const end   = parseFloat(e.engineHoursEnd)   || 0;
-                    const diff  = end - start;
+                usageHours: arr.reduce((s,e) => s + logH(e), 0),
+                engineHours: arr.reduce((s,e) => {
+                    const diff = (parseFloat(e.engineHoursEnd)||0) - (parseFloat(e.engineHoursStart)||0);
                     return s + (diff > 0 ? diff : 0);
                 }, 0)
             });
@@ -2920,33 +2929,38 @@ button.btn {
             const oma  = calc(entries.filter(e => e.vuokralainen === 'oma' || !e.vuokralainen));
             const all  = calc(entries);
 
-            const row = (label, color, s) => `
+            const pct = (h, total) => total > 0 ? ' <span style="color:#9ca3af;font-size:0.85em;">(' + (h/total*100).toFixed(0) + '%)</span>' : '';
+            const row = (label, color, s, totalUsage) => `
                 <tr>
                     <td><span style="font-weight:600;color:${color};">${label}</span></td>
+                    <td style="text-align:right;font-family:monospace;font-weight:600;">${fmtH(s.usageHours)}${pct(s.usageHours, totalUsage)}</td>
+                    <td style="text-align:right;font-family:monospace;color:#6b7280;font-size:0.9em;">${fmtH(s.engineHours)}</td>
                     <td style="text-align:right;font-family:monospace;">${s.miles.toFixed(1)}</td>
-                    <td style="text-align:right;font-family:monospace;">${s.hours.toFixed(2)}</td>
                     <td style="text-align:right;color:#6b7280;">${s.count}</td>
                 </tr>`;
 
+            const totalUsage = tmi.usageHours + oy.usageHours + oma.usageHours;
             statsDiv.innerHTML = `
-                <h3 style="margin-bottom:14px;font-size:1em;color:#374151;">📅 ${currentYear} — mailit ja moottoritunnit</h3>
+                <h3 style="margin-bottom:14px;font-size:1em;color:#374151;">📅 ${currentYear} — käyttötunnit ja mailit</h3>
                 <table class="data-table" style="margin-bottom:0;">
                     <thead>
                         <tr>
                             <th>Käyttö</th>
+                            <th style="text-align:right;">Käyttötunnit</th>
+                            <th style="text-align:right;color:#9ca3af;">Moottori</th>
                             <th style="text-align:right;">Mailit (nm)</th>
-                            <th style="text-align:right;">Tunnit (h)</th>
                             <th style="text-align:right;">Merk.</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${row('Tmi',  '#0284c7', tmi)}
-                        ${row('Oy',   '#10b981', oy)}
-                        ${row('Oma',  '#ec4899', oma)}
+                        ${row('Tmi',  '#0284c7', tmi,  totalUsage)}
+                        ${row('Oy',   '#10b981', oy,   totalUsage)}
+                        ${row('Oma',  '#ec4899', oma,  totalUsage)}
                         <tr style="background:#f5f5f5;font-weight:700;border-top:2px solid #e0e0e0;">
                             <td>Yhteensä</td>
+                            <td style="text-align:right;font-family:monospace;">${fmtH(totalUsage)}</td>
+                            <td style="text-align:right;font-family:monospace;color:#6b7280;font-size:0.9em;">${fmtH(all.engineHours)}</td>
                             <td style="text-align:right;font-family:monospace;">${all.miles.toFixed(1)}</td>
-                            <td style="text-align:right;font-family:monospace;">${all.hours.toFixed(2)}</td>
                             <td style="text-align:right;color:#6b7280;">${all.count}</td>
                         </tr>
                     </tbody>
