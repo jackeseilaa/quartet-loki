@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.88</title>
+    <title>Quartet Loki - v2038.89</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -1147,7 +1147,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.88';
+    const APP_VERSION = '2038.89';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -3224,7 +3224,10 @@ button.btn {
 
         generateReport() {
             const entries = DB.getEntries();
-            const totalMiles = entries.reduce((sum, e) => sum + (parseFloat(e.logReadingEnd || 0) - parseFloat(e.logReadingStart || 0)), 0);
+            const totalMiles = entries.reduce((sum, e) => {
+                const diff = (parseFloat(e.logReadingEnd) || 0) - (parseFloat(e.logReadingStart) || 0);
+                return sum + (diff > 0 && diff < 500 ? diff : 0);
+            }, 0);
             const totalHours = entries.reduce((sum, e) => {
                 const engineStart = parseFloat(e.engineHoursStart || '0');
                 const engineEnd = parseFloat(e.engineHoursEnd || '0');
@@ -3232,13 +3235,17 @@ button.btn {
             }, 0);
             const uniqueDates = new Set(entries.map(e => e.date).filter(d => d)).size;
 
-            // Ryhmitä merkinnät vuosittain
+            // Ryhmitä merkinnät vuosittain – vain kelvolliset 20xx-vuodet
             const entriesByYear = {};
             entries.forEach(e => {
-                const year = e.date ? e.date.substring(0, 4) : '2025';
-                if (!entriesByYear[year]) {
-                    entriesByYear[year] = [];
+                let year = null;
+                if (e.date && /^20\d{2}/.test(e.date)) {
+                    year = e.date.substring(0, 4);
+                } else if (e.startTime && /^20\d{2}/.test(e.startTime)) {
+                    year = e.startTime.substring(0, 4);
                 }
+                if (!year) return; // ohita virheellinen merkintä
+                if (!entriesByYear[year]) entriesByYear[year] = [];
                 entriesByYear[year].push(e);
             });
 
@@ -3258,7 +3265,10 @@ button.btn {
             const years = Object.keys(entriesByYear).sort().reverse();
             years.forEach(year => {
                 const yearEntries = entriesByYear[year];
-                const yearMiles = yearEntries.reduce((sum, e) => sum + (parseFloat(e.logReadingEnd || 0) - parseFloat(e.logReadingStart || 0)), 0);
+                const yearMiles = yearEntries.reduce((sum, e) => {
+                    const diff = (parseFloat(e.logReadingEnd) || 0) - (parseFloat(e.logReadingStart) || 0);
+                    return sum + (diff > 0 && diff < 500 ? diff : 0); // max 500 nm/merkintä, ei negatiivisia
+                }, 0);
                 const yearHours = yearEntries.reduce((sum, e) => {
                     const engineStart = parseFloat(e.engineHoursStart || '0');
                     const engineEnd = parseFloat(e.engineHoursEnd || '0');
