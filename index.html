@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.89</title>
+    <title>Quartet Loki - v2038.90</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -1147,7 +1147,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.89';
+    const APP_VERSION = '2038.90';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1224,6 +1224,17 @@ button.btn {
 
     // ==================== MERISÄÄ-HAKU ====================
     const WINDY_API_KEY = localStorage.getItem('quartet_windy_key') || 'XRmkNJnh4WvpMvUHrIrpi2lCY36e6WoO';
+
+    // Järkevyystarkistus moottoritunneille: max 24h/merkintä, ei negatiivisia
+    const safeEngineH = (e) => {
+        const diff = (parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0);
+        return (diff > 0 && diff <= 24) ? diff : 0;
+    };
+    // Järkevyystarkistus merimaileille: max 500nm/merkintä, ei negatiivisia
+    const safeMiles = (e) => {
+        const diff = (parseFloat(e.logReadingEnd) || 0) - (parseFloat(e.logReadingStart) || 0);
+        return (diff > 0 && diff <= 500) ? diff : 0;
+    };
 
     const getWindDir = (deg) => {
         const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
@@ -2909,12 +2920,9 @@ button.btn {
             };
             const calc = (arr) => ({
                 count: arr.length,
-                miles: arr.reduce((s,e) => s + Math.max(0, (parseFloat(e.logReadingEnd)||0) - (parseFloat(e.logReadingStart)||0)), 0),
+                miles: arr.reduce((s,e) => s + safeMiles(e), 0),
                 usageHours: arr.reduce((s,e) => s + logH(e), 0),
-                engineHours: arr.reduce((s,e) => {
-                    const diff = (parseFloat(e.engineHoursEnd)||0) - (parseFloat(e.engineHoursStart)||0);
-                    return s + (diff > 0 ? diff : 0);
-                }, 0)
+                engineHours: arr.reduce((s,e) => s + safeEngineH(e), 0)
             });
 
             // Etsi ongelmalliset merkinnät (negatiivinen tai puuttuva konetuntitieto)
@@ -3228,11 +3236,7 @@ button.btn {
                 const diff = (parseFloat(e.logReadingEnd) || 0) - (parseFloat(e.logReadingStart) || 0);
                 return sum + (diff > 0 && diff < 500 ? diff : 0);
             }, 0);
-            const totalHours = entries.reduce((sum, e) => {
-                const engineStart = parseFloat(e.engineHoursStart || '0');
-                const engineEnd = parseFloat(e.engineHoursEnd || '0');
-                return sum + (engineEnd - engineStart);
-            }, 0);
+            const totalHours = entries.reduce((sum, e) => sum + safeEngineH(e), 0);
             const uniqueDates = new Set(entries.map(e => e.date).filter(d => d)).size;
 
             // Ryhmitä merkinnät vuosittain – vain kelvolliset 20xx-vuodet
@@ -3269,11 +3273,7 @@ button.btn {
                     const diff = (parseFloat(e.logReadingEnd) || 0) - (parseFloat(e.logReadingStart) || 0);
                     return sum + (diff > 0 && diff < 500 ? diff : 0); // max 500 nm/merkintä, ei negatiivisia
                 }, 0);
-                const yearHours = yearEntries.reduce((sum, e) => {
-                    const engineStart = parseFloat(e.engineHoursStart || '0');
-                    const engineEnd = parseFloat(e.engineHoursEnd || '0');
-                    return sum + (engineEnd - engineStart);
-                }, 0);
+                const yearHours = yearEntries.reduce((sum, e) => sum + safeEngineH(e), 0);
                 const yearDays = new Set(yearEntries.map(e => e.date)).size;
 
                 html += `<tr>
@@ -3306,9 +3306,9 @@ button.btn {
                 };
 
                 const calcStats = (arr) => {
-                    const engineHours = arr.reduce((sum, e) => sum + Math.max(0, (parseFloat(e.engineHoursEnd || 0) - parseFloat(e.engineHoursStart || 0))), 0);
+                    const engineHours = arr.reduce((sum, e) => sum + safeEngineH(e), 0);
                     const usageHours  = arr.reduce((sum, e) => sum + logHours(e), 0);
-                    const miles       = arr.reduce((sum, e) => sum + Math.max(0, (parseFloat(e.logReadingEnd || 0) - parseFloat(e.logReadingStart || 0))), 0);
+                    const miles       = arr.reduce((sum, e) => sum + safeMiles(e), 0);
                     return { engineHours, usageHours, miles, count: arr.length };
                 };
 
