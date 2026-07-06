@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Quartet Loki - v3000.3</title>
+<title>Quartet Loki - v3000.4</title>
 <style>
 * {
     margin: 0;
@@ -305,7 +305,7 @@ button.btn {
     <header>
         <h1>⛵ Quartet Loki</h1>
         <div class="subtitle">
-            <span class="version-badge">Jacke v3000.3</span>
+            <span class="version-badge">Jacke v3000.4</span>
             <span class="sync-indicator" id="syncIndicator"></span>
             <span id="syncLabel">Synkronoitu</span>
         </div>
@@ -330,6 +330,11 @@ button.btn {
         </div>
 
         <div class="tab-content" id="tab-matkat">
+            <div class="card" style="margin-bottom:10px;">
+                <div class="form-group" style="margin-bottom:0;">
+                    <input type="text" id="matkatSearch" placeholder="🔍 Hae satamaa, kapteenia, huomiota, tapahtumaa...">
+                </div>
+            </div>
             <div id="matkatContent"></div>
         </div>
 
@@ -1038,6 +1043,7 @@ document.querySelectorAll('.nav-tabs .tab-btn').forEach(btn => {
         renderActiveTab();
     });
 });
+document.getElementById('matkatSearch').addEventListener('input', () => renderMatkat());
 
 function renderActiveTab() {
     renderFuelWidget();
@@ -1255,11 +1261,25 @@ document.getElementById('fuelSaveBtn').addEventListener('click', async () => {
 document.getElementById('jdCloseBtn').addEventListener('click', () => closeModal('journeyDetailModal'));
 
 // ==================== MATKAT ====================
+function journeyMatchesSearch(j, term) {
+    if (!term) return true;
+    const haystack = [
+        j.departurePort, j.destinationPort, j.captain, j.crew, j.personnel,
+        j.notes, j.vuokralainen, j.kayttotarkoitus, j.startWeather, fmtDate(j.startTime),
+        ...(j.events || []).flatMap(ev => [ev.name, ev.notes, fmtDate(ev.timestamp)])
+    ].filter(Boolean).join(' ').toLowerCase();
+    return haystack.includes(term);
+}
+
 function renderMatkat() {
     const el = document.getElementById('matkatContent');
-    const journeys = [...cache.journeys].sort((a,b) => (b.startTime||'').localeCompare(a.startTime||''));
+    const searchInput = document.getElementById('matkatSearch');
+    const term = (searchInput?.value || '').trim().toLowerCase();
+    const journeys = [...cache.journeys]
+        .filter(j => journeyMatchesSearch(j, term))
+        .sort((a,b) => (b.startTime||'').localeCompare(a.startTime||''));
     if (!journeys.length) {
-        el.innerHTML = '<div class="no-data">Ei vielä matkoja.</div>';
+        el.innerHTML = `<div class="no-data">${term ? 'Ei hakua vastaavia matkoja.' : 'Ei vielä matkoja.'}</div>`;
         return;
     }
     el.innerHTML = journeys.map(j => {
@@ -1421,7 +1441,10 @@ function renderKirjanpito() {
     const years = [...new Set(completed.map(j => j.year).filter(Boolean))].sort((a,b) => b.localeCompare(a));
 
     let html = `
-        <div class="card"><h3 style="margin-bottom:4px;">📊 Koko historia</h3></div>
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+            <h3 style="margin:0;">📊 Koko historia</h3>
+            <button class="btn btn-secondary" id="kirjanpitoExportBtn" style="width:auto; padding:8px 14px; white-space:nowrap;">💾 Tallenna erittely (CSV)</button>
+        </div>
         ${renderStatRow(lifetime.stats, lifetime.totalHours, entities)}
     `;
 
@@ -1456,6 +1479,7 @@ function renderKirjanpito() {
     `;
 
     el.innerHTML = html;
+    document.getElementById('kirjanpitoExportBtn').addEventListener('click', exportSummaryCsv);
 }
 
 // ==================== CSV ====================
