@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Quartet Loki - v3000.4</title>
+<title>Quartet Loki - v3000.5</title>
 <style>
 * {
     margin: 0;
@@ -305,7 +305,7 @@ button.btn {
     <header>
         <h1>⛵ Quartet Loki</h1>
         <div class="subtitle">
-            <span class="version-badge">Jacke v3000.4</span>
+            <span class="version-badge">Jacke v3000.5</span>
             <span class="sync-indicator" id="syncIndicator"></span>
             <span id="syncLabel">Synkronoitu</span>
         </div>
@@ -1441,9 +1441,18 @@ function renderKirjanpito() {
     const years = [...new Set(completed.map(j => j.year).filter(Boolean))].sort((a,b) => b.localeCompare(a));
 
     let html = `
-        <div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-            <h3 style="margin:0;">📊 Koko historia</h3>
-            <button class="btn btn-secondary" id="kirjanpitoExportBtn" style="width:auto; padding:8px 14px; white-space:nowrap;">💾 Tallenna erittely (CSV)</button>
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px;">
+                <h3 style="margin:0;">📊 Koko historia</h3>
+                <button class="btn btn-secondary" id="kirjanpitoExportBtn" style="width:auto; padding:8px 14px; white-space:nowrap;">💾 Tallenna erittely (CSV)</button>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center;">
+                <select id="reportYearSelect" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                    <option value="all">Koko historia</option>
+                    ${years.map(y => `<option value="${escapeHtml(y)}">Vuosi ${escapeHtml(y)}</option>`).join('')}
+                </select>
+                <button class="btn btn-primary" id="printReportBtn" style="width:auto; padding:10px 16px; white-space:nowrap;">🖨️ Tulosta raportti</button>
+            </div>
         </div>
         ${renderStatRow(lifetime.stats, lifetime.totalHours, entities)}
     `;
@@ -1480,6 +1489,115 @@ function renderKirjanpito() {
 
     el.innerHTML = html;
     document.getElementById('kirjanpitoExportBtn').addEventListener('click', exportSummaryCsv);
+    document.getElementById('printReportBtn').addEventListener('click', printKirjanpitoReport);
+}
+
+// ==================== TULOSTETTAVA RAPORTTI ====================
+function buildAccountingReportHtml(journeys, periodLabel) {
+    const entities = ['tmi', 'oy', 'oma'];
+    const stats = computeEntityStats(journeys, entities);
+    const printedAt = new Date().toLocaleDateString('fi-FI') + ' klo ' + new Date().toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+
+    const sortedJourneys = journeys.slice().sort((a,b) => (a.startTime||'').localeCompare(b.startTime||''));
+
+    return `
+        <div class="report-header">
+            <h2>⛵ QUARTET LOKI — MATKARAPORTTI</h2>
+            <p>Kausi: <strong>${escapeHtml(periodLabel)}</strong></p>
+        </div>
+
+        <div class="report-summary">
+            <table>
+                <thead><tr>
+                    <th style="text-align:left;">Vuokralainen</th>
+                    <th style="text-align:right;">Matkoja</th>
+                    <th style="text-align:right;">nm</th>
+                    <th style="text-align:right;">h</th>
+                    <th style="text-align:right;">%</th>
+                </tr></thead>
+                <tbody>
+                    ${entities.map(ent => `
+                        <tr>
+                            <td>${ent.toUpperCase()}</td>
+                            <td style="text-align:right;">${stats.stats[ent].count}</td>
+                            <td style="text-align:right;">${stats.stats[ent].miles.toFixed(1)}</td>
+                            <td style="text-align:right;">${stats.stats[ent].hours.toFixed(1)}</td>
+                            <td style="text-align:right;">${stats.totalHours > 0 ? Math.round(stats.stats[ent].hours/stats.totalHours*100) : 0}%</td>
+                        </tr>
+                    `).join('')}
+                    <tr style="border-top:2px solid #999; font-weight:bold;">
+                        <td>YHTEENSÄ</td>
+                        <td style="text-align:right;">${journeys.length}</td>
+                        <td style="text-align:right;">${stats.totalMiles.toFixed(1)}</td>
+                        <td style="text-align:right;">${stats.totalHours.toFixed(1)}</td>
+                        <td style="text-align:right;">100%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <table class="report-table">
+            <thead><tr>
+                <th>Pvm</th><th>Reitti</th><th>Kapteeni</th><th>Vuokralainen</th><th>nm</th><th>h</th>
+            </tr></thead>
+            <tbody>
+                ${sortedJourneys.map(j => `
+                    <tr>
+                        <td>${fmtDate(j.startTime)}</td>
+                        <td>${escapeHtml(j.departurePort||'')}${j.destinationPort ? ' → ' + escapeHtml(j.destinationPort) : ''}</td>
+                        <td>${escapeHtml(j.captain||'')}</td>
+                        <td>${(j.vuokralainen||'oma').toUpperCase()}</td>
+                        <td style="text-align:right;">${journeyMiles(j).toFixed(1)}</td>
+                        <td style="text-align:right;">${journeyHours(j).toFixed(1)}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+
+        <div style="margin-top:30px; font-size:12px;">
+            <div style="display:flex; justify-content:space-between; margin-top:40px;">
+                <div style="border-top:1px solid #999; width:45%; padding-top:4px;">Paikka ja aika</div>
+                <div style="border-top:1px solid #999; width:45%; padding-top:4px;">Allekirjoitus / hyväksyntä</div>
+            </div>
+            <p style="color:#888; margin-top:20px;">Tulostettu Quartet Loki -sovelluksesta ${printedAt}.</p>
+        </div>
+    `;
+}
+
+function printKirjanpitoReport() {
+    const sel = document.getElementById('reportYearSelect');
+    const yearVal = sel ? sel.value : 'all';
+    const completed = cache.journeys.filter(j => j.status === 'completed');
+    const journeys = yearVal === 'all' ? completed : completed.filter(j => j.year === yearVal);
+    if (!journeys.length) { alert('⚠️ Ei tulostettavaa valitulle kaudelle.'); return; }
+    const periodLabel = yearVal === 'all' ? 'Koko historia' : 'Vuosi ' + yearVal;
+    const reportHtml = buildAccountingReportHtml(journeys, periodLabel);
+
+    // Avataan aina erillisessä ikkunassa: sovelluksen oma runko käyttää
+    // position:fixed/overflow:hidden -asettelua, joka rikkoisi window.print():in
+    // suoraan pääsivulta (leikkaisi tulostuksen yhden näkymän mittaiseksi).
+    const win = window.open('', '_blank');
+    if (!win) { alert('⚠️ Salli ponnahdusikkunat selaimen asetuksista tulostusta varten.'); return; }
+    win.document.write(`<!DOCTYPE html><html><head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <title>Quartet Loki – Raportti</title>
+        <style>
+            body { font-family: Arial, sans-serif; font-size: 12px; margin: 20px; color: #222; }
+            table { width: 100%; border-collapse: collapse; }
+            .report-table th, .report-table td { border: 1px solid #ccc; padding: 5px 6px; font-size: 11px; }
+            .report-table th { background: #f0f0f0; text-align: left; }
+            .report-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 12px; }
+            .report-header h2 { margin: 0 0 4px 0; font-size: 18px; }
+            .report-header p { margin: 0; font-size: 12px; color: #666; }
+            .report-summary { background: #f8fafc; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+            .report-summary th, .report-summary td { padding: 6px 4px; }
+            @page { size: A4; margin: 15mm; }
+        </style>
+    </head><body>${reportHtml}</body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 400);
 }
 
 // ==================== CSV ====================
