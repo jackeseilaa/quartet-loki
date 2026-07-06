@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Quartet Loki - v2038.90</title>
+    <title>Quartet Loki - v2038.91</title>
     <script>
         // Suppress CloudKit errors (not used in this version)
         window.addEventListener('error', (e) => {
@@ -799,6 +799,7 @@ button.btn {
                 <button class="btn btn-secondary" id="backupBtn">💾 Lataa backup</button>
                 <button class="btn btn-success" id="restoreAutoBackupBtn">⚡ Viimeisin</button>
                 <label for="jsonRestoreInput" class="btn btn-secondary" style="cursor: pointer; margin: 0; display: inline-block; flex: 1; min-width: 120px; text-align: center;">♻️ Palauta</label>
+                <button class="btn btn-secondary" id="undoRestoreBtn">↩️ Peru palautus</button>
             </div>
         </div>
 
@@ -1147,7 +1148,7 @@ button.btn {
 
 <script>
     // ==================== VERSION & CONSTANTS ====================
-    const APP_VERSION = '2038.90';
+    const APP_VERSION = '2038.91';
     const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
     const JOURNEY_STORAGE = 'quartet_activeJourney_v2027';
     let currentEditingEntryDate = null; // Säilytä merkinnän päivämäärä paikat-välilehdelle
@@ -1746,6 +1747,7 @@ button.btn {
             addTouchListener(document.getElementById('exportDataBtn'), () => this.exportData());
             addTouchListener(document.getElementById('backupBtn'), () => this.backup());
             addTouchListener(document.getElementById('restoreAutoBackupBtn'), () => this.restoreLatestAutoBackup());
+            addTouchListener(document.getElementById('undoRestoreBtn'), () => this.undoLastRestore());
             addTouchListener(document.getElementById('clearAllBtn'), () => {
                 document.getElementById('clearAllConfirm').style.display = 'block';
             });
@@ -2910,8 +2912,8 @@ button.btn {
 
             const logH = (e) => {
                 if (!e.startTime || !e.endTime) return 0;
-                const ms = new Date(e.endTime) - new Date(e.startTime);
-                return ms > 0 ? ms / 3600000 : 0;
+                const h = (new Date(e.endTime) - new Date(e.startTime)) / 3600000;
+                return (h > 0 && h <= 24) ? h : 0;
             };
             const fmtH = (h) => {
                 const hh = Math.floor(h);
@@ -3301,8 +3303,8 @@ button.btn {
                 // Laske lokiajasta käyttötunnit (startTime → endTime)
                 const logHours = (e) => {
                     if (!e.startTime || !e.endTime) return 0;
-                    const ms = new Date(e.endTime) - new Date(e.startTime);
-                    return ms > 0 ? ms / 3600000 : 0;
+                    const h = (new Date(e.endTime) - new Date(e.startTime)) / 3600000;
+                    return (h > 0 && h <= 24) ? h : 0;
                 };
 
                 const calcStats = (arr) => {
@@ -3578,8 +3580,8 @@ button.btn {
 
                 Object.keys(entriesByDate).sort().reverse().forEach(date => {
                     entriesByDate[date].forEach(entry => {
-                        const hours = (parseFloat(entry.engineHoursEnd) || 0) - (parseFloat(entry.engineHoursStart) || 0);
-                        const miles = (parseFloat(entry.logReadingEnd) || 0) - (parseFloat(entry.logReadingStart) || 0);
+                        const hours = safeEngineH(entry);
+                        const miles = safeMiles(entry);
 
                         // Etsi tapahtumat tämän merkinnän entryId:n perusteella
                         const entryEvents = locations.filter(loc => loc.entryId === entry.id);
@@ -3618,8 +3620,8 @@ button.btn {
                     if (!currentJourney || currentJourney.date !== entryDate || currentJourney.departurePort !== entry.departurePort) {
                         if (currentJourney && journeyEntries.length > 0) {
                             // Kirjoita edellinen purjehdus
-                            const totalHours = journeyEntries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
-                            const totalMiles = journeyEntries.reduce((sum, e) => sum + ((parseFloat(e.logReadingEnd) || 0) - (parseFloat(e.logReadingStart) || 0)), 0);
+                            const totalHours = journeyEntries.reduce((sum, e) => sum + safeEngineH(e), 0);
+                            const totalMiles = journeyEntries.reduce((sum, e) => sum + safeMiles(e), 0);
                             const firstEntry = journeyEntries[0];
                             const lastEntry = journeyEntries[journeyEntries.length - 1];
                             csv += `"${journeyNum}","${currentJourney.date}","${currentJourney.captain}","${currentJourney.departurePort}","${lastEntry.arrivalPort || '—'}","${currentJourney.vuokralainen}","${currentJourney.kayttotarkoitus}","${totalMiles.toFixed(1)}","${totalHours.toFixed(2)}","${firstEntry.logReadingStart || 0}","${lastEntry.logReadingEnd || 0}","${firstEntry.engineHoursStart || 0}","${lastEntry.engineHoursEnd || 0}","${firstEntry.weather || ''}","${firstEntry.personnel || ''}","${firstEntry.notes || ''}"\n`;
@@ -3633,8 +3635,8 @@ button.btn {
 
                 // Viimeinen purjehdus
                 if (currentJourney && journeyEntries.length > 0) {
-                    const totalHours = journeyEntries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
-                    const totalMiles = journeyEntries.reduce((sum, e) => sum + ((parseFloat(e.logReadingEnd) || 0) - (parseFloat(e.logReadingStart) || 0)), 0);
+                    const totalHours = journeyEntries.reduce((sum, e) => sum + safeEngineH(e), 0);
+                    const totalMiles = journeyEntries.reduce((sum, e) => sum + safeMiles(e), 0);
                     const firstEntry = journeyEntries[0];
                     const lastEntry = journeyEntries[journeyEntries.length - 1];
                     csv += `"${journeyNum}","${currentJourney.date}","${currentJourney.captain}","${currentJourney.departurePort}","${lastEntry.arrivalPort || '—'}","${currentJourney.vuokralainen}","${currentJourney.kayttotarkoitus}","${totalMiles.toFixed(1)}","${totalHours.toFixed(2)}","${firstEntry.logReadingStart || 0}","${lastEntry.logReadingEnd || 0}","${firstEntry.engineHoursStart || 0}","${lastEntry.engineHoursEnd || 0}","${firstEntry.weather || ''}","${firstEntry.personnel || ''}","${firstEntry.notes || ''}"\n`;
@@ -3661,8 +3663,8 @@ button.btn {
                 csv = 'LOKIKIRJAN YHTEENVETO\n\n';
                 csv += 'Tilastot\n';
                 csv += 'Merkintöjä,' + entries.length + '\n';
-                const totalMiles = entries.reduce((sum, e) => sum + ((parseFloat(e.logReadingEnd) || 0) - (parseFloat(e.logReadingStart) || 0)), 0);
-                const totalHours = entries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
+                const totalMiles = entries.reduce((sum, e) => sum + safeMiles(e), 0);
+                const totalHours = entries.reduce((sum, e) => sum + safeEngineH(e), 0);
                 csv += 'Mailit (nm),' + totalMiles.toFixed(1) + '\n';
                 csv += 'Tunnit (h),' + totalHours.toFixed(2) + '\n\n';
 
@@ -3670,8 +3672,8 @@ button.btn {
                 csv += 'Entiteetti,Merkinnät,Tunnit,Mailit,Osuus %\n';
                 ['tmi', 'oy', 'oma'].forEach(entity => {
                     const entityEntries = entries.filter(e => e.vuokralainen === entity || (!e.vuokralainen && entity === 'oma'));
-                    const hours = entityEntries.reduce((sum, e) => sum + ((parseFloat(e.engineHoursEnd) || 0) - (parseFloat(e.engineHoursStart) || 0)), 0);
-                    const miles = entityEntries.reduce((sum, e) => sum + ((parseFloat(e.logReadingEnd) || 0) - (parseFloat(e.logReadingStart) || 0)), 0);
+                    const hours = entityEntries.reduce((sum, e) => sum + safeEngineH(e), 0);
+                    const miles = entityEntries.reduce((sum, e) => sum + safeMiles(e), 0);
                     const percent = totalHours > 0 ? ((hours / totalHours) * 100).toFixed(1) : 0;
                     csv += `"${entity}",${entityEntries.length},${hours.toFixed(2)},${miles.toFixed(1)},${percent}%\n`;
                 });
@@ -3717,8 +3719,8 @@ button.btn {
                 let rows = '';
                 dates.forEach(date => {
                     entriesByDate[date].forEach(entry => {
-                        const hours = (parseFloat(entry.engineHoursEnd)||0) - (parseFloat(entry.engineHoursStart)||0);
-                        const miles = (parseFloat(entry.logReadingEnd)||0) - (parseFloat(entry.logReadingStart)||0);
+                        const hours = safeEngineH(entry);
+                        const miles = safeMiles(entry);
                         const entryEvents = locations.filter(loc => loc.entryId === entry.id);
                         const eventsStr = entryEvents.map(loc => {
                             const time = new Date(loc.timestamp).toLocaleTimeString('fi-FI', {hour:'2-digit',minute:'2-digit'});
@@ -3858,10 +3860,19 @@ button.btn {
 
                     const count = data.entries.length;
                     const locCount = data.locations?.length || 0;
+                    const currentCount = DB.getEntries().length;
 
                     console.log(`✅ Valmis palautettavaksi: ${count} merkintää, ${locCount} tapahtumaa`);
 
-                    if (confirm(`✅ Tiedosto OK!\n\n📝 Merkintöjä: ${count}\n📍 Tapahtumia: ${locCount}\n\nPalautetaanko?`)) {
+                    const madeStr = data.timestamp ? new Date(data.timestamp).toLocaleString('fi-FI') : 'ei tiedossa';
+                    let msg = `✅ Tiedosto OK!\n\n📝 Merkintöjä tiedostossa: ${count}\n📍 Tapahtumia: ${locCount}\n🕒 Varmuuskopio tehty: ${madeStr}\n\n`;
+                    if (count < currentCount) {
+                        msg += `⚠️ VAROITUS: Tällä laitteella on nyt ${currentCount} merkintää - enemmän kuin tuotavassa tiedostossa!\nPalautus KORVAA kaiken nykyisen datan, se EI yhdistä tietoja.\nJos jatkat, otetaan ensin turvakopio nykyisestä datasta (voit perua "↩️ Peru palautus" -napista).\n\n`;
+                    }
+                    msg += 'Palautetaanko?';
+
+                    if (confirm(msg)) {
+                        this.takePreRestoreSnapshot();
                         DB.restore(data);
                         this.render();
                         this.updateVersionInfo();
@@ -3892,12 +3903,51 @@ button.btn {
 
                 const data = JSON.parse(backup);
                 const count = data.entries?.length || 0;
+                const currentCount = DB.getEntries().length;
 
-                if (confirm(`Palauta viimeisin auto-backup?\n📝 ${count} merkintää`)) {
+                let msg = `Palauta viimeisin auto-backup?\n📝 ${count} merkintää`;
+                if (count < currentCount) {
+                    msg += `\n\n⚠️ VAROITUS: Tällä laitteella on nyt ${currentCount} merkintää - enemmän kuin auto-backupissa! Palautus korvaa nykyisen datan kokonaan.`;
+                }
+
+                if (confirm(msg)) {
+                    this.takePreRestoreSnapshot();
                     DB.restore(data);
                     this.render();
                     this.updateVersionInfo();
                     alert(`✅ Palautettu!\n\n📝 ${count} merkintää`);
+                }
+            } catch (err) {
+                alert('❌ Virhe: ' + err.message);
+            }
+        },
+
+        // Turvakopio otetaan JUURI ENNEN jokaista palautusta - eri avain kuin
+        // 24h-välein pyörivä auto-backup, jotta huono palautus ei voi tuhota
+        // omaa ainoaa peruutusmahdollisuuttaan seuraavalla auto-backup-kierroksella.
+        takePreRestoreSnapshot() {
+            try {
+                const snapshot = DB.backup();
+                localStorage.setItem('quartet_pre_restore_backup', JSON.stringify(snapshot));
+            } catch (err) {
+                console.error('❌ Pre-restore-turvakopio epäonnistui:', err);
+            }
+        },
+
+        undoLastRestore() {
+            try {
+                const snapshot = localStorage.getItem('quartet_pre_restore_backup');
+                if (!snapshot) {
+                    alert('❌ Ei peruutettavaa palautusta saatavilla.');
+                    return;
+                }
+                const data = JSON.parse(snapshot);
+                const count = data.entries?.length || 0;
+                if (confirm(`Peru viimeisin palautus ja palauta tila sitä edeltäneeksi?\n📝 ${count} merkintää`)) {
+                    DB.restore(data);
+                    this.render();
+                    this.updateVersionInfo();
+                    alert(`✅ Palautus peruttu!\n\n📝 ${count} merkintää`);
                 }
             } catch (err) {
                 alert('❌ Virhe: ' + err.message);
