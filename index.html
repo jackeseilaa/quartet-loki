@@ -216,6 +216,7 @@ button.btn {
 .badge-oy { background: #d1fae5; color: #065f46; }
 .badge-oma { background: #fce7f3; color: #831843; }
 .badge-flag { background: #fee2e2; color: #991b1b; }
+.badge-boat { background: #e0e7ff; color: #3730a3; }
 
 .stat-card {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -373,6 +374,12 @@ button.btn {
             <label>Määränpää (jos tiedossa)</label>
             <input type="text" id="sjDestinationPort" placeholder="valinnainen">
         </div>
+        <div class="form-group">
+            <label>Vene <span class="required">*</span></label>
+            <input type="text" id="sjBoatName" list="boatNamesList" placeholder="esim. Quartet tai asiakkaan veneen nimi">
+            <datalist id="boatNamesList"></datalist>
+            <div style="font-size:0.8em;color:#666;margin-top:4px;">Muu kuin "Quartet" -merkintä ei näy Quartetin kirjanpidossa/käyttöerittelyssä — toimii omana henkilökohtaisena lokina.</div>
+        </div>
         <div class="form-row">
             <div class="form-group">
                 <label>Lokimittarin lukema <span class="required">*</span></label>
@@ -442,6 +449,11 @@ button.btn {
         <div class="form-group">
             <button class="btn btn-secondary btn-block" id="aeGpsBtn">🛰️ Hae GPS-sijainti</button>
             <div id="aeGpsResult" style="font-size:0.82em;color:#666;"></div>
+        </div>
+        <div class="form-group">
+            <button class="btn btn-secondary btn-block" id="aeWeatherBtn">🌬️ Hae sää</button>
+            <div id="aeWeatherResult"></div>
+            <input type="hidden" id="aeWeatherValue">
         </div>
         <div class="form-group">
             <label>Paikan nimi</label>
@@ -558,6 +570,7 @@ const DEFAULT_DEPARTURE_PORT = 'Roihuvuori, RVK';
 const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
 const DEFAULT_FUEL_CONSUMPTION = 1.8; // L/h
 const DEFAULT_TANK_CAPACITY = 200; // L
+const DEFAULT_BOAT_NAME = 'Quartet';
 
 firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
@@ -928,6 +941,17 @@ function getActiveJourney() {
     return cache.journeys.find(j => j.status === 'active') || null;
 }
 
+function getLastCompletedJourney(boatName) {
+    const completed = cache.journeys.filter(j => j.status === 'completed' && j.endTime
+        && (j.vene || DEFAULT_BOAT_NAME) === (boatName || DEFAULT_BOAT_NAME));
+    if (!completed.length) return null;
+    return completed.slice().sort((a, b) => (b.endTime || '').localeCompare(a.endTime || ''))[0];
+}
+
+function getAllBoatNames() {
+    return [...new Set(cache.journeys.map(j => j.vene || DEFAULT_BOAT_NAME).filter(Boolean))].sort();
+}
+
 function saveJourney(journey) {
     journey.updatedAt = new Date().toISOString();
     return fs.collection(COLLECTIONS.journeys).doc(journey.id).set(journey, { merge: true });
@@ -945,6 +969,7 @@ function startJourney(data) {
         personnel: data.personnel || null,
         departurePort: data.departurePort || DEFAULT_DEPARTURE_PORT,
         destinationPort: data.destinationPort || '',
+        vene: (data.vene || DEFAULT_BOAT_NAME).trim() || DEFAULT_BOAT_NAME,
         startLogReading: parseNum(data.startLogReading),
         startEngineHours: parseNum(data.startEngineHours),
         startLat: data.startLat ?? null,
@@ -977,7 +1002,8 @@ function addJourneyEvent(journeyId, evt) {
         lat: evt.lat ?? null,
         lon: evt.lon ?? null,
         name: evt.name || '',
-        notes: evt.notes || ''
+        notes: evt.notes || '',
+        weather: evt.weather || ''
     }]);
     return saveJourney({ ...journey, events });
 }
@@ -1014,6 +1040,7 @@ function currentFuelLevel() {
     // subtract consumption of journeys that happened after the baseline
     for (const j of cache.journeys) {
         if (j.status !== 'completed') continue;
+        if ((j.vene || DEFAULT_BOAT_NAME) !== DEFAULT_BOAT_NAME) continue;
         if (baselineTime && (j.endTime||'') <= baselineTime) continue;
         liters -= journeyHours(j) * (parseNum(j.fuelConsumption) || DEFAULT_FUEL_CONSUMPTION);
     }
@@ -1102,6 +1129,7 @@ function renderKoti() {
                 <div>
                     <div><strong>${escapeHtml(ev.name || 'Merkintä')}</strong></div>
                     <div>${escapeHtml(ev.notes || '')}</div>
+                    ${ev.weather ? `<div style="font-size:0.82em;color:#0c7a48;">🌬️ ${escapeHtml(ev.weather)}</div>` : ''}
                     <div class="ev-time">${fmtTime(ev.timestamp)}${ev.lat != null ? ' · ' + formatCoordinateToDMS(ev.lat) + ' ' + formatCoordinateToDMS(ev.lon, true) : ''}</div>
                 </div>
             </div>
@@ -1111,12 +1139,24 @@ function renderKoti() {
     document.getElementById('endJourneyBtn').addEventListener('click', () => openEndJourneyModal(active.id));
 }
 
+let sjIsEditMode = false;
+function refreshSjReadingsForBoat() {
+    if (sjIsEditMode) return;
+    const boatName = document.getElementById('sjBoatName').value.trim() || DEFAULT_BOAT_NAME;
+    const lastJourney = getLastCompletedJourney(boatName);
+    document.getElementById('sjLogReading').value = lastJourney ? (lastJourney.endLogReading ?? '') : '';
+    document.getElementById('sjEngineHours').value = lastJourney ? (lastJourney.endEngineHours ?? '') : '';
+}
+
 function openStartJourneyModal() {
+    sjIsEditMode = false;
     document.getElementById('sjStartTime').value = fmtDateTimeLocal(new Date());
     document.getElementById('sjDeparturePort').value = DEFAULT_DEPARTURE_PORT;
     document.getElementById('sjDestinationPort').value = '';
-    document.getElementById('sjLogReading').value = '';
-    document.getElementById('sjEngineHours').value = '';
+    document.getElementById('boatNamesList').innerHTML = getAllBoatNames()
+        .map(name => `<option value="${escapeHtml(name)}"></option>`).join('');
+    document.getElementById('sjBoatName').value = DEFAULT_BOAT_NAME;
+    refreshSjReadingsForBoat();
     document.getElementById('sjWeatherResult').innerHTML = '';
     document.getElementById('sjWeatherValue').value = '';
     document.getElementById('sjGpsResult').textContent = '';
@@ -1129,6 +1169,7 @@ function openStartJourneyModal() {
     sjGps = null;
     openModal('startJourneyModal');
 }
+document.getElementById('sjBoatName').addEventListener('input', refreshSjReadingsForBoat);
 
 let sjGps = null;
 document.getElementById('sjGpsBtn').addEventListener('click', async () => {
@@ -1155,6 +1196,7 @@ document.getElementById('sjSaveBtn').addEventListener('click', async () => {
     await startJourney({
         startTime, departurePort,
         destinationPort: document.getElementById('sjDestinationPort').value.trim(),
+        vene: document.getElementById('sjBoatName').value.trim(),
         startLogReading: logReading,
         startEngineHours: engineHours,
         startLat: sjGps ? sjGps.lat : null,
@@ -1178,6 +1220,8 @@ function openAddEventModal(journeyId) {
     document.getElementById('aeName').value = '';
     document.getElementById('aeNotes').value = '';
     document.getElementById('aeGpsResult').textContent = '';
+    document.getElementById('aeWeatherResult').innerHTML = '';
+    document.getElementById('aeWeatherValue').value = '';
     openModal('addEventModal');
 }
 document.getElementById('aeGpsBtn').addEventListener('click', async () => {
@@ -1190,6 +1234,7 @@ document.getElementById('aeGpsBtn').addEventListener('click', async () => {
         document.getElementById('aeGpsResult').textContent = '⚠️ ' + e.message;
     }
 });
+document.getElementById('aeWeatherBtn').addEventListener('click', () => fetchWeatherForForm('aeWeatherResult', 'aeWeatherValue'));
 document.getElementById('aeCancelBtn').addEventListener('click', () => closeModal('addEventModal'));
 document.getElementById('aeSaveBtn').addEventListener('click', async () => {
     const timestamp = document.getElementById('aeTime').value;
@@ -1201,6 +1246,7 @@ document.getElementById('aeSaveBtn').addEventListener('click', async () => {
     await addJourneyEvent(aeJourneyId, {
         timestamp, notes,
         name: document.getElementById('aeName').value.trim(),
+        weather: document.getElementById('aeWeatherValue').value,
         lat: aeGps ? aeGps.lat : null,
         lon: aeGps ? aeGps.lon : null
     });
@@ -1265,8 +1311,8 @@ function journeyMatchesSearch(j, term) {
     if (!term) return true;
     const haystack = [
         j.departurePort, j.destinationPort, j.captain, j.crew, j.personnel,
-        j.notes, j.vuokralainen, j.kayttotarkoitus, j.startWeather, fmtDate(j.startTime),
-        ...(j.events || []).flatMap(ev => [ev.name, ev.notes, fmtDate(ev.timestamp)])
+        j.notes, j.vuokralainen, j.kayttotarkoitus, j.startWeather, j.vene, fmtDate(j.startTime),
+        ...(j.events || []).flatMap(ev => [ev.name, ev.notes, ev.weather, fmtDate(ev.timestamp)])
     ].filter(Boolean).join(' ').toLowerCase();
     return haystack.includes(term);
 }
@@ -1285,11 +1331,16 @@ function renderMatkat() {
     el.innerHTML = journeys.map(j => {
         const badgeClass = 'badge-' + (j.vuokralainen || 'oma');
         const statusLabel = j.status === 'active' ? '🚀 Käynnissä' : '✅ Valmis';
+        const boatName = j.vene || DEFAULT_BOAT_NAME;
+        const isOtherBoat = boatName !== DEFAULT_BOAT_NAME;
         return `
         <div class="card journey-card" data-id="${j.id}">
             <div class="jc-top">
                 <span class="jc-route">${escapeHtml(j.departurePort || '')}${j.destinationPort ? ' → ' + escapeHtml(j.destinationPort) : ''}</span>
-                <span class="badge ${badgeClass}">${(j.vuokralainen||'oma').toUpperCase()}</span>
+                <span>
+                    ${isOtherBoat ? `<span class="badge badge-boat">⛵ ${escapeHtml(boatName)}</span> ` : ''}
+                    <span class="badge ${badgeClass}">${(j.vuokralainen||'oma').toUpperCase()}</span>
+                </span>
             </div>
             <div class="jc-meta">${fmtDate(j.startTime)} · ${statusLabel} · ${escapeHtml(j.captain||'')}</div>
             <div class="jc-meta">${journeyMiles(j).toFixed(1)} nm · ${journeyHours(j).toFixed(1)} h · ${(j.events||[]).length} tapahtumaa</div>
@@ -1313,12 +1364,14 @@ function openJourneyDetail(j) {
             <div>
                 <div><strong>${escapeHtml(ev.name||'Merkintä')}</strong> <span class="ev-time">${fmtTime(ev.timestamp)}</span></div>
                 <div>${escapeHtml(ev.notes||'')}</div>
+                ${ev.weather ? `<div style="font-size:0.82em;color:#0c7a48;">🌬️ ${escapeHtml(ev.weather)}</div>` : ''}
                 ${ev.lat != null ? `<div class="ev-time">${formatCoordinateToDMS(ev.lat)} ${formatCoordinateToDMS(ev.lon, true)}</div>` : ''}
             </div>
         </div>
     `).join('') : '<div class="no-data">Ei tapahtumia</div>';
 
     document.getElementById('journeyDetailBody').innerHTML = `
+        <div class="form-group"><label>Vene</label>${escapeHtml(j.vene || DEFAULT_BOAT_NAME)}${(j.vene || DEFAULT_BOAT_NAME) !== DEFAULT_BOAT_NAME ? ' <span class="badge badge-boat">ei Quartetin kirjanpidossa</span>' : ''}</div>
         <div class="form-group"><label>Lähtö</label>${fmtDate(j.startTime)} ${fmtTime(j.startTime)} — ${escapeHtml(j.departurePort||'')}</div>
         <div class="form-group"><label>Saapuminen</label>${j.endTime ? fmtDate(j.endTime) + ' ' + fmtTime(j.endTime) + ' — ' + escapeHtml(j.destinationPort||'') : 'Käynnissä'}</div>
         <div class="form-group"><label>Kapteeni / miehistö</label>${escapeHtml(j.captain||'')} ${j.crew ? '/ ' + escapeHtml(j.crew) : ''}</div>
@@ -1346,9 +1399,11 @@ function openJourneyDetail(j) {
 
 function openEditStart(j) {
     openStartJourneyModal();
+    sjIsEditMode = true;
     document.getElementById('sjStartTime').value = j.startTime;
     document.getElementById('sjDeparturePort').value = j.departurePort || '';
     document.getElementById('sjDestinationPort').value = j.destinationPort || '';
+    document.getElementById('sjBoatName').value = j.vene || DEFAULT_BOAT_NAME;
     document.getElementById('sjLogReading').value = j.startLogReading ?? '';
     document.getElementById('sjEngineHours').value = j.startEngineHours ?? '';
     document.getElementById('sjWeatherValue').value = j.startWeather || '';
@@ -1371,6 +1426,7 @@ function openEditStart(j) {
             date: document.getElementById('sjStartTime').value.split('T')[0],
             departurePort: document.getElementById('sjDeparturePort').value.trim(),
             destinationPort: document.getElementById('sjDestinationPort').value.trim(),
+            vene: document.getElementById('sjBoatName').value.trim() || DEFAULT_BOAT_NAME,
             startLogReading: parseNum(document.getElementById('sjLogReading').value),
             startEngineHours: parseNum(document.getElementById('sjEngineHours').value),
             startLat: sjGps ? sjGps.lat : null,
@@ -1434,7 +1490,9 @@ function renderStatRow(stats, totalHours, entities) {
 
 function renderKirjanpito() {
     const el = document.getElementById('kirjanpitoContent');
-    const completed = cache.journeys.filter(j => j.status === 'completed');
+    const allCompleted = cache.journeys.filter(j => j.status === 'completed');
+    const completed = allCompleted.filter(j => (j.vene || DEFAULT_BOAT_NAME) === DEFAULT_BOAT_NAME);
+    const otherBoatCompleted = allCompleted.filter(j => (j.vene || DEFAULT_BOAT_NAME) !== DEFAULT_BOAT_NAME);
     const entities = ['tmi', 'oy', 'oma'];
 
     const lifetime = computeEntityStats(completed, entities);
@@ -1455,6 +1513,10 @@ function renderKirjanpito() {
             </div>
         </div>
         ${renderStatRow(lifetime.stats, lifetime.totalHours, entities)}
+        ${otherBoatCompleted.length ? `
+        <div class="card" style="font-size:0.85em;color:#555;">
+            ℹ️ ${otherBoatCompleted.length} matkaa muilla veneillä (${[...new Set(otherBoatCompleted.map(j => j.vene))].join(', ')}) — ei mukana Quartetin yllä olevassa erittelyssä, näkyvät omana henkilökohtaisena lokina "Matkat"-välilehdellä.
+        </div>` : ''}
     `;
 
     years.forEach(year => {
@@ -1567,7 +1629,7 @@ function buildAccountingReportHtml(journeys, periodLabel) {
 function printKirjanpitoReport() {
     const sel = document.getElementById('reportYearSelect');
     const yearVal = sel ? sel.value : 'all';
-    const completed = cache.journeys.filter(j => j.status === 'completed');
+    const completed = cache.journeys.filter(j => j.status === 'completed' && (j.vene || DEFAULT_BOAT_NAME) === DEFAULT_BOAT_NAME);
     const journeys = yearVal === 'all' ? completed : completed.filter(j => j.year === yearVal);
     if (!journeys.length) { alert('⚠️ Ei tulostettavaa valitulle kaudelle.'); return; }
     const periodLabel = yearVal === 'all' ? 'Koko historia' : 'Vuosi ' + yearVal;
@@ -1617,13 +1679,14 @@ function downloadCsv(filename, rows) {
 }
 
 function exportJourneysCsv() {
-    const header = ['Pvm','Klo alku','Klo loppu','Vuokralainen','Kayttotarkoitus','Kapteeni','Miehisto',
+    const header = ['Pvm','Klo alku','Klo loppu','Vene','Vuokralainen','Kayttotarkoitus','Kapteeni','Miehisto',
         'Lahtosatama','Tulosatama','nm','h','Loki alku','Loki loppu','Moottori alku','Moottori loppu','Saa','Tapahtumat'];
     const rows = [header];
     cache.journeys.slice().sort((a,b) => (a.startTime||'').localeCompare(b.startTime||'')).forEach(j => {
-        const eventsStr = (j.events||[]).map(ev => `${fmtTime(ev.timestamp)} ${ev.name||''}: ${ev.notes||''}`).join(' | ');
+        const eventsStr = (j.events||[]).map(ev => `${fmtTime(ev.timestamp)} ${ev.name||''}: ${ev.notes||''}${ev.weather ? ' (' + ev.weather + ')' : ''}`).join(' | ');
         rows.push([
             fmtDate(j.startTime), fmtTime(j.startTime), fmtTime(j.endTime),
+            j.vene || DEFAULT_BOAT_NAME,
             j.vuokralainen||'', j.kayttotarkoitus||'', j.captain||'', j.crew||'',
             j.departurePort||'', j.destinationPort||'',
             journeyMiles(j).toFixed(1), journeyHours(j).toFixed(2),
@@ -1637,10 +1700,11 @@ function exportJourneysCsv() {
 function exportSummaryCsv() {
     const header = ['Vuosi','Vuokralainen','Matkoja','nm yhteensa','h yhteensa'];
     const rows = [header];
-    const years = [...new Set(cache.journeys.map(j => j.year))].sort();
+    const quartetJourneys = cache.journeys.filter(j => (j.vene || DEFAULT_BOAT_NAME) === DEFAULT_BOAT_NAME);
+    const years = [...new Set(quartetJourneys.map(j => j.year))].sort();
     years.forEach(year => {
         ['tmi','oy','oma'].forEach(ent => {
-            const arr = cache.journeys.filter(j => j.year === year && j.vuokralainen === ent && j.status === 'completed');
+            const arr = quartetJourneys.filter(j => j.year === year && j.vuokralainen === ent && j.status === 'completed');
             if (!arr.length) return;
             rows.push([
                 year, ent,
