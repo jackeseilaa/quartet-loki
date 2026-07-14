@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Quartet Loki - Jacke v3000.8</title>
+<title>Quartet Loki - Jacke v3000.9</title>
 <style>
 * {
     margin: 0;
@@ -125,6 +125,7 @@ header .subtitle {
     background: #4ade80;
 }
 .sync-indicator.syncing { animation: pulse 1s infinite; }
+.sync-indicator.offline { background: #f59e0b; animation: none; }
 @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
 
 .nav-tabs {
@@ -306,7 +307,7 @@ button.btn {
     <header>
         <h1>⛵ Quartet Loki</h1>
         <div class="subtitle">
-            <span class="version-badge">Jacke v3000.8</span>
+            <span class="version-badge">Jacke v3000.9</span>
             <span class="sync-indicator" id="syncIndicator"></span>
             <span id="syncLabel">Synkronoitu</span>
         </div>
@@ -575,6 +576,11 @@ const DEFAULT_BOAT_NAME = 'Quartet';
 firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
 const fs = firebase.firestore();
+// Paikallinen IndexedDB-välimuisti: sovellus toimii offline (luku + kirjoitus),
+// ja Firestore synkronoi jonossa olevat muutokset automaattisesti kun verkko palaa.
+fs.enablePersistence({ synchronizeTabs: true }).catch(err => {
+    console.warn('Offline-tallennus ei käytössä:', err.code, err.message);
+});
 const googleProvider = new firebase.auth.GoogleAuthProvider();
 
 // ==================== CACHE / LISTENERS ====================
@@ -641,13 +647,27 @@ function stopListeners() {
     unsubscribers = [];
 }
 
+let isCurrentlySyncing = false;
 function setSyncing(isSyncing) {
+    isCurrentlySyncing = isSyncing;
+    renderSyncStatus();
+}
+function renderSyncStatus() {
     const el = document.getElementById('syncIndicator');
     const label = document.getElementById('syncLabel');
     if (!el) return;
-    el.classList.toggle('syncing', isSyncing);
-    if (label) label.textContent = isSyncing ? 'Synkronoidaan...' : 'Synkronoitu';
+    if (!navigator.onLine) {
+        el.classList.remove('syncing');
+        el.classList.add('offline');
+        if (label) label.textContent = 'Ei verkkoa – tallennettu laitteelle';
+        return;
+    }
+    el.classList.remove('offline');
+    el.classList.toggle('syncing', isCurrentlySyncing);
+    if (label) label.textContent = isCurrentlySyncing ? 'Synkronoidaan...' : 'Synkronoitu';
 }
+window.addEventListener('online', renderSyncStatus);
+window.addEventListener('offline', renderSyncStatus);
 
 // ==================== AUTH ====================
 document.getElementById('signInBtn').addEventListener('click', () => {
@@ -920,6 +940,17 @@ async function fetchMarineWeather(latitude, longitude) {
             }
         }
     }
+}
+
+async function reverseGeocodePlaceName(lat, lon) {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=14&accept-language=fi`;
+    const r = await fetchWithTimeout(url, {}, 10000);
+    if (!r.ok) throw new Error('Nominatim HTTP ' + r.status);
+    const d = await r.json();
+    const a = d.address || {};
+    const place = a.hamlet || a.village || a.town || a.city_district || a.suburb || a.city || a.municipality || a.county || d.display_name;
+    if (!place) throw new Error('Ei paikannimeä tälle sijainnille');
+    return place;
 }
 
 async function fetchWeatherForForm(resultElId, hiddenInputId) {
@@ -1209,8 +1240,17 @@ document.getElementById('sjGpsBtn').addEventListener('click', async () => {
     document.getElementById('sjGpsResult').textContent = '⏳ Haetaan...';
     try {
         sjGps = await captureGPS();
-        document.getElementById('sjGpsResult').textContent =
-            `📍 ${formatCoordinateToDMS(sjGps.lat)} ${formatCoordinateToDMS(sjGps.lon, true)}`;
+        let text = `📍 ${formatCoordinateToDMS(sjGps.lat)} ${formatCoordinateToDMS(sjGps.lon, true)}`;
+        if (getCurrentSjBoatName() !== DEFAULT_BOAT_NAME) {
+            try {
+                const place = await reverseGeocodePlaceName(sjGps.lat, sjGps.lon);
+                document.getElementById('sjDeparturePort').value = place;
+                text += ` · ${place}`;
+            } catch (geErr) {
+                console.warn('Käänteinen geokoodaus epäonnistui', geErr);
+            }
+        }
+        document.getElementById('sjGpsResult').textContent = text;
     } catch (e) {
         document.getElementById('sjGpsResult').textContent = '⚠️ ' + e.message;
     }

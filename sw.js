@@ -1,8 +1,11 @@
 // Quartet Loki Service Worker - Offline support
-const CACHE_NAME = 'quartet-loki-v3000.8';
+const CACHE_NAME = 'quartet-loki-v3000.9';
 const ASSETS = [
   '/quartet-loki/',
-  '/quartet-loki/index.html'
+  '/quartet-loki/index.html',
+  'https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js',
+  'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js',
+  'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js'
 ];
 
 // Asenna: välimuistita app
@@ -27,7 +30,26 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = event.request.url;
 
-  // Ohita kaikki ulkoiset API-kutsut suoraan verkolle
+  // Firebase-SDK gstatic.com:sta cachetetaan appin rungon tapaan, jotta
+  // kirjautuminen ja Firestore latautuvat myös täysin offline-tilassa.
+  if (url.includes('gstatic.com/firebasejs')) {
+    event.respondWith(
+      caches.match(event.request).then(cached => {
+        const network = fetch(event.request).then(response => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          }
+          return response;
+        }).catch(() => cached);
+        return cached || network;
+      })
+    );
+    return;
+  }
+
+  // Ohita kaikki muut ulkoiset API-kutsut suoraan verkolle (Firestore/Auth-data,
+  // sää, geokoodaus jne. tarvitsevat aina tuoreen verkkovastauksen kun se on saatavilla)
   if (url.includes('opendata.fmi.fi') ||
       url.includes('firebase') ||
       url.includes('googleapis') ||
