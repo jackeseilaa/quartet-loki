@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Quartet Loki - Jacke v3000.7</title>
+<title>Quartet Loki - Jacke v3000.8</title>
 <style>
 * {
     margin: 0;
@@ -306,7 +306,7 @@ button.btn {
     <header>
         <h1>⛵ Quartet Loki</h1>
         <div class="subtitle">
-            <span class="version-badge">Jacke v3000.5</span>
+            <span class="version-badge">Jacke v3000.8</span>
             <span class="sync-indicator" id="syncIndicator"></span>
             <span id="syncLabel">Synkronoitu</span>
         </div>
@@ -376,8 +376,8 @@ button.btn {
         </div>
         <div class="form-group">
             <label>Vene <span class="required">*</span></label>
-            <input type="text" id="sjBoatName" list="boatNamesList" placeholder="esim. Quartet tai asiakkaan veneen nimi">
-            <datalist id="boatNamesList"></datalist>
+            <select id="sjBoatSelect"></select>
+            <input type="text" id="sjBoatNameNew" placeholder="Uuden veneen nimi" style="display:none;margin-top:6px;">
             <div style="font-size:0.8em;color:#666;margin-top:4px;">Muu kuin "Quartet" -merkintä ei näy Quartetin kirjanpidossa/käyttöerittelyssä — toimii omana henkilökohtaisena lokina.</div>
         </div>
         <div class="form-row">
@@ -1140,9 +1140,32 @@ function renderKoti() {
 }
 
 let sjIsEditMode = false;
+function getCurrentSjBoatName() {
+    const sel = document.getElementById('sjBoatSelect').value;
+    if (sel === '__new__') return document.getElementById('sjBoatNameNew').value.trim() || 'Muu vene';
+    return sel;
+}
+function populateSjBoatSelect(selectedBoat) {
+    const otherNames = getAllBoatNames().filter(n => n !== DEFAULT_BOAT_NAME);
+    const select = document.getElementById('sjBoatSelect');
+    select.innerHTML = `<option value="${escapeHtml(DEFAULT_BOAT_NAME)}">${escapeHtml(DEFAULT_BOAT_NAME)}</option>`
+        + otherNames.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('')
+        + `<option value="__new__">➕ Muu vene...</option>`;
+    const hasOption = [...select.options].some(o => o.value === selectedBoat);
+    const newNameInput = document.getElementById('sjBoatNameNew');
+    if (hasOption) {
+        select.value = selectedBoat;
+        newNameInput.style.display = 'none';
+        newNameInput.value = '';
+    } else {
+        select.value = '__new__';
+        newNameInput.style.display = 'block';
+        newNameInput.value = selectedBoat;
+    }
+}
 function refreshSjReadingsForBoat() {
     if (sjIsEditMode) return;
-    const boatName = document.getElementById('sjBoatName').value.trim() || DEFAULT_BOAT_NAME;
+    const boatName = getCurrentSjBoatName();
     const lastJourney = getLastCompletedJourney(boatName);
     document.getElementById('sjLogReading').value = lastJourney ? (lastJourney.endLogReading ?? '') : '';
     document.getElementById('sjEngineHours').value = lastJourney ? (lastJourney.endEngineHours ?? '') : '';
@@ -1153,9 +1176,7 @@ function openStartJourneyModal() {
     document.getElementById('sjStartTime').value = fmtDateTimeLocal(new Date());
     document.getElementById('sjDeparturePort').value = DEFAULT_DEPARTURE_PORT;
     document.getElementById('sjDestinationPort').value = '';
-    document.getElementById('boatNamesList').innerHTML = getAllBoatNames()
-        .map(name => `<option value="${escapeHtml(name)}"></option>`).join('');
-    document.getElementById('sjBoatName').value = DEFAULT_BOAT_NAME;
+    populateSjBoatSelect(DEFAULT_BOAT_NAME);
     refreshSjReadingsForBoat();
     document.getElementById('sjWeatherResult').innerHTML = '';
     document.getElementById('sjWeatherValue').value = '';
@@ -1169,7 +1190,19 @@ function openStartJourneyModal() {
     sjGps = null;
     openModal('startJourneyModal');
 }
-document.getElementById('sjBoatName').addEventListener('input', refreshSjReadingsForBoat);
+document.getElementById('sjBoatSelect').addEventListener('change', () => {
+    const newNameInput = document.getElementById('sjBoatNameNew');
+    if (document.getElementById('sjBoatSelect').value === '__new__') {
+        newNameInput.style.display = 'block';
+        newNameInput.value = '';
+        newNameInput.focus();
+    } else {
+        newNameInput.style.display = 'none';
+        newNameInput.value = '';
+    }
+    refreshSjReadingsForBoat();
+});
+document.getElementById('sjBoatNameNew').addEventListener('input', refreshSjReadingsForBoat);
 
 let sjGps = null;
 document.getElementById('sjGpsBtn').addEventListener('click', async () => {
@@ -1196,7 +1229,7 @@ document.getElementById('sjSaveBtn').addEventListener('click', async () => {
     await startJourney({
         startTime, departurePort,
         destinationPort: document.getElementById('sjDestinationPort').value.trim(),
-        vene: document.getElementById('sjBoatName').value.trim(),
+        vene: getCurrentSjBoatName(),
         startLogReading: logReading,
         startEngineHours: engineHours,
         startLat: sjGps ? sjGps.lat : null,
@@ -1403,7 +1436,7 @@ function openEditStart(j) {
     document.getElementById('sjStartTime').value = j.startTime;
     document.getElementById('sjDeparturePort').value = j.departurePort || '';
     document.getElementById('sjDestinationPort').value = j.destinationPort || '';
-    document.getElementById('sjBoatName').value = j.vene || DEFAULT_BOAT_NAME;
+    populateSjBoatSelect(j.vene || DEFAULT_BOAT_NAME);
     document.getElementById('sjLogReading').value = j.startLogReading ?? '';
     document.getElementById('sjEngineHours').value = j.startEngineHours ?? '';
     document.getElementById('sjWeatherValue').value = j.startWeather || '';
@@ -1426,7 +1459,7 @@ function openEditStart(j) {
             date: document.getElementById('sjStartTime').value.split('T')[0],
             departurePort: document.getElementById('sjDeparturePort').value.trim(),
             destinationPort: document.getElementById('sjDestinationPort').value.trim(),
-            vene: document.getElementById('sjBoatName').value.trim() || DEFAULT_BOAT_NAME,
+            vene: getCurrentSjBoatName(),
             startLogReading: parseNum(document.getElementById('sjLogReading').value),
             startEngineHours: parseNum(document.getElementById('sjEngineHours').value),
             startLat: sjGps ? sjGps.lat : null,
@@ -1488,11 +1521,15 @@ function renderStatRow(stats, totalHours, entities) {
         </div>`;
 }
 
+let kirjanpitoBoat = DEFAULT_BOAT_NAME;
 function renderKirjanpito() {
     const el = document.getElementById('kirjanpitoContent');
     const allCompleted = cache.journeys.filter(j => j.status === 'completed');
-    const completed = allCompleted.filter(j => (j.vene || DEFAULT_BOAT_NAME) === DEFAULT_BOAT_NAME);
-    const otherBoatCompleted = allCompleted.filter(j => (j.vene || DEFAULT_BOAT_NAME) !== DEFAULT_BOAT_NAME);
+    const boatNames = getAllBoatNames().filter(n => n !== DEFAULT_BOAT_NAME);
+    boatNames.unshift(DEFAULT_BOAT_NAME);
+    if (!boatNames.includes(kirjanpitoBoat)) kirjanpitoBoat = DEFAULT_BOAT_NAME;
+    const completed = allCompleted.filter(j => (j.vene || DEFAULT_BOAT_NAME) === kirjanpitoBoat);
+    const otherBoatCompleted = allCompleted.filter(j => (j.vene || DEFAULT_BOAT_NAME) !== kirjanpitoBoat);
     const entities = ['tmi', 'oy', 'oma'];
 
     const lifetime = computeEntityStats(completed, entities);
@@ -1501,8 +1538,13 @@ function renderKirjanpito() {
     let html = `
         <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px;">
-                <h3 style="margin:0;">📊 Koko historia</h3>
+                <h3 style="margin:0;">📊 ${escapeHtml(kirjanpitoBoat)} — Koko historia</h3>
                 <button class="btn btn-secondary" id="kirjanpitoExportBtn" style="width:auto; padding:8px 14px; white-space:nowrap;">💾 Tallenna erittely (CSV)</button>
+            </div>
+            <div style="margin-bottom:10px;">
+                <select id="veneRaporttiSelect" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                    ${boatNames.map(name => `<option value="${escapeHtml(name)}" ${name === kirjanpitoBoat ? 'selected' : ''}>${escapeHtml(name)}</option>`).join('')}
+                </select>
             </div>
             <div style="display:flex; gap:10px; align-items:center;">
                 <select id="reportYearSelect" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px;">
@@ -1515,7 +1557,7 @@ function renderKirjanpito() {
         ${renderStatRow(lifetime.stats, lifetime.totalHours, entities)}
         ${otherBoatCompleted.length ? `
         <div class="card" style="font-size:0.85em;color:#555;">
-            ℹ️ ${otherBoatCompleted.length} matkaa muilla veneillä (${[...new Set(otherBoatCompleted.map(j => j.vene))].join(', ')}) — ei mukana Quartetin yllä olevassa erittelyssä, näkyvät omana henkilökohtaisena lokina "Matkat"-välilehdellä.
+            ℹ️ ${otherBoatCompleted.length} matkaa muilla veneillä (${[...new Set(otherBoatCompleted.map(j => j.vene))].join(', ')}) — valitse vene yllä olevasta valikosta nähdäksesi/tulostaaksesi sen oman erittelyn.
         </div>` : ''}
     `;
 
@@ -1552,6 +1594,10 @@ function renderKirjanpito() {
     el.innerHTML = html;
     document.getElementById('kirjanpitoExportBtn').addEventListener('click', exportSummaryCsv);
     document.getElementById('printReportBtn').addEventListener('click', printKirjanpitoReport);
+    document.getElementById('veneRaporttiSelect').addEventListener('change', (e) => {
+        kirjanpitoBoat = e.target.value;
+        renderKirjanpito();
+    });
 }
 
 // ==================== TULOSTETTAVA RAPORTTI ====================
@@ -1629,10 +1675,10 @@ function buildAccountingReportHtml(journeys, periodLabel) {
 function printKirjanpitoReport() {
     const sel = document.getElementById('reportYearSelect');
     const yearVal = sel ? sel.value : 'all';
-    const completed = cache.journeys.filter(j => j.status === 'completed' && (j.vene || DEFAULT_BOAT_NAME) === DEFAULT_BOAT_NAME);
+    const completed = cache.journeys.filter(j => j.status === 'completed' && (j.vene || DEFAULT_BOAT_NAME) === kirjanpitoBoat);
     const journeys = yearVal === 'all' ? completed : completed.filter(j => j.year === yearVal);
     if (!journeys.length) { alert('⚠️ Ei tulostettavaa valitulle kaudelle.'); return; }
-    const periodLabel = yearVal === 'all' ? 'Koko historia' : 'Vuosi ' + yearVal;
+    const periodLabel = (yearVal === 'all' ? 'Koko historia' : 'Vuosi ' + yearVal) + ' — ' + kirjanpitoBoat;
     const reportHtml = buildAccountingReportHtml(journeys, periodLabel);
 
     // Avataan aina erillisessä ikkunassa: sovelluksen oma runko käyttää
@@ -1700,11 +1746,11 @@ function exportJourneysCsv() {
 function exportSummaryCsv() {
     const header = ['Vuosi','Vuokralainen','Matkoja','nm yhteensa','h yhteensa'];
     const rows = [header];
-    const quartetJourneys = cache.journeys.filter(j => (j.vene || DEFAULT_BOAT_NAME) === DEFAULT_BOAT_NAME);
-    const years = [...new Set(quartetJourneys.map(j => j.year))].sort();
+    const boatJourneys = cache.journeys.filter(j => (j.vene || DEFAULT_BOAT_NAME) === kirjanpitoBoat);
+    const years = [...new Set(boatJourneys.map(j => j.year))].sort();
     years.forEach(year => {
         ['tmi','oy','oma'].forEach(ent => {
-            const arr = quartetJourneys.filter(j => j.year === year && j.vuokralainen === ent && j.status === 'completed');
+            const arr = boatJourneys.filter(j => j.year === year && j.vuokralainen === ent && j.status === 'completed');
             if (!arr.length) return;
             rows.push([
                 year, ent,
@@ -1714,7 +1760,8 @@ function exportSummaryCsv() {
             ].map(csvEscape));
         });
     });
-    downloadCsv(`quartet_yhteenveto_${new Date().toISOString().slice(0,10)}.csv`, rows);
+    const safeName = kirjanpitoBoat.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    downloadCsv(`${safeName}_yhteenveto_${new Date().toISOString().slice(0,10)}.csv`, rows);
 }
 
 function renderCsv() {
