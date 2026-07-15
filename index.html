@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Quartet Loki - Jacke v3000.10</title>
+<title>Quartet Loki - Jacke v3000.11</title>
 <style>
 * {
     margin: 0;
@@ -307,7 +307,7 @@ button.btn {
     <header>
         <h1>⛵ Quartet Loki</h1>
         <div class="subtitle">
-            <span class="version-badge">Jacke v3000.10</span>
+            <span class="version-badge">Jacke v3000.11</span>
             <span class="sync-indicator" id="syncIndicator"></span>
             <span id="syncLabel">Synkronoitu</span>
         </div>
@@ -1121,6 +1121,27 @@ document.getElementById('fuelWidget').addEventListener('click', () => openModal(
 // ==================== MODAL HELPERS ====================
 function openModal(id) { document.getElementById(id).classList.add('active'); }
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+// Enter siirtää seuraavaan kenttään (esim. ulkoisella näppäimistöllä täytettäessä),
+// tekstialueet (huomiot) jätetään rauhaan jotta rivinvaihto toimii normaalisti.
+function setupEnterNavigation(modalId) {
+    const modal = document.getElementById(modalId);
+    modal.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        const target = e.target;
+        if (target.tagName === 'TEXTAREA' || target.tagName === 'BUTTON') return;
+        e.preventDefault();
+        const focusable = [...modal.querySelectorAll('input, select')]
+            .filter(el => el.type !== 'hidden' && el.style.display !== 'none');
+        const idx = focusable.indexOf(target);
+        if (idx > -1 && idx < focusable.length - 1) {
+            focusable[idx + 1].focus();
+        } else {
+            target.blur();
+        }
+    });
+}
+['startJourneyModal', 'addEventModal', 'endJourneyModal', 'fuelModal'].forEach(setupEnterNavigation);
 
 // ==================== KOTI ====================
 function renderKoti() {
