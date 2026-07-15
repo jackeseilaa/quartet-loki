@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Quartet Loki - Jacke v3000.14</title>
+<title>Quartet Loki - Jacke v3000.15</title>
 <style>
 * {
     margin: 0;
@@ -307,7 +307,7 @@ button.btn {
     <header>
         <h1>⛵ Quartet Loki</h1>
         <div class="subtitle">
-            <span class="version-badge">Jacke v3000.14</span>
+            <span class="version-badge">Jacke v3000.15</span>
             <span class="sync-indicator" id="syncIndicator"></span>
             <span id="syncLabel">Synkronoitu</span>
         </div>
@@ -1267,12 +1267,14 @@ function refreshSjReadingsForBoat() {
     const lastJourney = getLastCompletedJourney(boatName);
     document.getElementById('sjLogReading').value = lastJourney ? (lastJourney.endLogReading ?? '') : '';
     document.getElementById('sjEngineHours').value = lastJourney ? (lastJourney.endEngineHours ?? '') : '';
+    // Lähtösatama jatkuu siitä mihin vene viimeksi jäi (kuten lokimittarikin) -
+    // vene ei aina ole samassa kotisatamassa, joten kiinteä oletus olisi väärin.
+    document.getElementById('sjDeparturePort').value = (lastJourney && lastJourney.destinationPort) || DEFAULT_DEPARTURE_PORT;
 }
 
 function openStartJourneyModal() {
     sjIsEditMode = false;
     document.getElementById('sjStartTime').value = fmtDateTimeLocal(new Date());
-    document.getElementById('sjDeparturePort').value = DEFAULT_DEPARTURE_PORT;
     document.getElementById('sjDestinationPort').value = '';
     populateSjBoatSelect(DEFAULT_BOAT_NAME);
     refreshSjReadingsForBoat();
@@ -1308,18 +1310,27 @@ document.getElementById('sjGpsBtn').addEventListener('click', async () => {
     try {
         sjGps = await captureGPS();
         let text = `📍 ${formatCoordinateToDMS(sjGps.lat)} ${formatCoordinateToDMS(sjGps.lon, true)}`;
-        if (getCurrentSjBoatName() !== DEFAULT_BOAT_NAME) {
-            try {
-                const place = await reverseGeocodePlaceName(sjGps.lat, sjGps.lon);
-                document.getElementById('sjDeparturePort').value = place;
-                text += ` · ${place}`;
-            } catch (geErr) {
-                console.warn('Käänteinen geokoodaus epäonnistui', geErr);
-            }
+        try {
+            const place = await reverseGeocodePlaceName(sjGps.lat, sjGps.lon);
+            document.getElementById('sjDeparturePort').value = place;
+            text += ` · ${place}`;
+        } catch (geErr) {
+            console.warn('Käänteinen geokoodaus epäonnistui', geErr);
         }
         document.getElementById('sjGpsResult').textContent = text;
     } catch (e) {
         document.getElementById('sjGpsResult').textContent = '⚠️ ' + e.message;
+        return;
+    }
+    // Haetaan sää samalla GPS-sijainnilla automaattisesti, ei tarvitse painaa
+    // erikseen "Hae sää" -nappia (se jää silti käyttöön säätiedon päivitykseen).
+    document.getElementById('sjWeatherResult').innerHTML = '<div class="weather-status warn">⏳ Haetaan säätä...</div>';
+    try {
+        const weatherText = await fetchMarineWeather(sjGps.lat, sjGps.lon);
+        document.getElementById('sjWeatherResult').innerHTML = `<div class="weather-status ok">✅ ${weatherText}</div>`;
+        document.getElementById('sjWeatherValue').value = weatherText;
+    } catch (e) {
+        document.getElementById('sjWeatherResult').innerHTML = `<div class="weather-status err">⚠️ ${e.message}</div>`;
     }
 });
 document.getElementById('sjWeatherBtn').addEventListener('click', () => fetchWeatherForForm('sjWeatherResult', 'sjWeatherValue'));
@@ -1372,6 +1383,16 @@ document.getElementById('aeGpsBtn').addEventListener('click', async () => {
             `📍 ${formatCoordinateToDMS(aeGps.lat)} ${formatCoordinateToDMS(aeGps.lon, true)}`;
     } catch (e) {
         document.getElementById('aeGpsResult').textContent = '⚠️ ' + e.message;
+        return;
+    }
+    // Haetaan sää samalla GPS-sijainnilla automaattisesti.
+    document.getElementById('aeWeatherResult').innerHTML = '<div class="weather-status warn">⏳ Haetaan säätä...</div>';
+    try {
+        const weatherText = await fetchMarineWeather(aeGps.lat, aeGps.lon);
+        document.getElementById('aeWeatherResult').innerHTML = `<div class="weather-status ok">✅ ${weatherText}</div>`;
+        document.getElementById('aeWeatherValue').value = weatherText;
+    } catch (e) {
+        document.getElementById('aeWeatherResult').innerHTML = `<div class="weather-status err">⚠️ ${e.message}</div>`;
     }
 });
 document.getElementById('aeWeatherBtn').addEventListener('click', () => fetchWeatherForForm('aeWeatherResult', 'aeWeatherValue'));
