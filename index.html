@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Quartet Loki - Jacke v3000.11</title>
+<title>Quartet Loki - Jacke v3000.12</title>
 <style>
 * {
     margin: 0;
@@ -307,7 +307,7 @@ button.btn {
     <header>
         <h1>⛵ Quartet Loki</h1>
         <div class="subtitle">
-            <span class="version-badge">Jacke v3000.11</span>
+            <span class="version-badge">Jacke v3000.12</span>
             <span class="sync-indicator" id="syncIndicator"></span>
             <span id="syncLabel">Synkronoitu</span>
         </div>
@@ -807,10 +807,14 @@ const MARINE_STATIONS = [
 ];
 
 function getNearestMarineStation(lat, lon) {
+    // Pituusasteen etäisyys kutistuu leveysasteen mukaan (cos(lat)), joten se
+    // pitää skaalata ennen vertailua - muuten itä-länsi-suunnan etäisyys
+    // yliarvioituu ja lähin asema voi valikoitua väärin näillä leveysasteilla.
     let nearest = MARINE_STATIONS[0];
     let minDist = Infinity;
+    const lonScale = Math.cos(lat * Math.PI / 180);
     for (const s of MARINE_STATIONS) {
-        const dlat = s.lat - lat, dlon = s.lon - lon;
+        const dlat = s.lat - lat, dlon = (s.lon - lon) * lonScale;
         const dist = Math.sqrt(dlat*dlat + dlon*dlon);
         if (dist < minDist) { minDist = dist; nearest = s; }
     }
@@ -938,12 +942,17 @@ async function fetchMarineWeather(latitude, longitude) {
 }
 
 async function reverseGeocodePlaceName(lat, lon) {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=14&accept-language=fi`;
+    // zoom=17 + namedetails hakee tarkimman lähellä olevan nimetyn kohteen
+    // (esim. laiturin/venesataman nimen), jos sellainen on OSM:ään merkitty
+    // täsmälleen kyseiseen pisteeseen - muuten pudotaan osoitehierarkiaan.
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=17&addressdetails=1&namedetails=1&accept-language=fi`;
     const r = await fetchWithTimeout(url, {}, 10000);
     if (!r.ok) throw new Error('Nominatim HTTP ' + r.status);
     const d = await r.json();
     const a = d.address || {};
-    const place = a.hamlet || a.village || a.town || a.city_district || a.suburb || a.city || a.municipality || a.county || d.display_name;
+    const nd = d.namedetails || {};
+    const place = nd.name || a.hamlet || a.village || a.quarter || a.neighbourhood
+        || a.suburb || a.city_district || a.town || a.city || a.municipality || a.county || d.display_name;
     if (!place) throw new Error('Ei paikannimeä tälle sijainnille');
     return place;
 }
@@ -1461,8 +1470,8 @@ function openJourneyDetail(j) {
 
     document.getElementById('journeyDetailBody').innerHTML = `
         <div class="form-group"><label>Vene</label>${escapeHtml(j.vene || DEFAULT_BOAT_NAME)}${(j.vene || DEFAULT_BOAT_NAME) !== DEFAULT_BOAT_NAME ? ' <span class="badge badge-boat">ei Quartetin kirjanpidossa</span>' : ''}</div>
-        <div class="form-group"><label>Lähtö</label>${fmtDate(j.startTime)} ${fmtTime(j.startTime)} — ${escapeHtml(j.departurePort||'')}</div>
-        <div class="form-group"><label>Saapuminen</label>${j.endTime ? fmtDate(j.endTime) + ' ' + fmtTime(j.endTime) + ' — ' + escapeHtml(j.destinationPort||'') : 'Käynnissä'}</div>
+        <div class="form-group"><label>Lähtö</label>${fmtDate(j.startTime)} ${fmtTime(j.startTime)} — ${escapeHtml(j.departurePort||'')}${j.startLat != null ? `<div class="ev-time">${formatCoordinateToDMS(j.startLat)} ${formatCoordinateToDMS(j.startLon, true)}</div>` : ''}</div>
+        <div class="form-group"><label>Saapuminen</label>${j.endTime ? fmtDate(j.endTime) + ' ' + fmtTime(j.endTime) + ' — ' + escapeHtml(j.destinationPort||'') : 'Käynnissä'}${j.endLat != null ? `<div class="ev-time">${formatCoordinateToDMS(j.endLat)} ${formatCoordinateToDMS(j.endLon, true)}</div>` : ''}</div>
         <div class="form-group"><label>Kapteeni / miehistö</label>${escapeHtml(j.captain||'')} ${j.crew ? '/ ' + escapeHtml(j.crew) : ''}</div>
         <div class="form-group"><label>Lokimittari</label>${j.startLogReading ?? 0} → ${j.endLogReading ?? '—'} (${journeyMiles(j).toFixed(1)} nm)</div>
         <div class="form-group"><label>Käyttötunnit</label>${j.startEngineHours ?? 0} → ${j.endEngineHours ?? '—'} (${journeyHours(j).toFixed(1)} h)</div>
@@ -1782,15 +1791,18 @@ function downloadCsv(filename, rows) {
 
 function exportJourneysCsv() {
     const header = ['Pvm','Klo alku','Klo loppu','Vene','Vuokralainen','Kayttotarkoitus','Kapteeni','Miehisto',
-        'Lahtosatama','Tulosatama','nm','h','Loki alku','Loki loppu','Moottori alku','Moottori loppu','Saa','Tapahtumat'];
+        'Lahtosatama','Lahto koordinaatit','Tulosatama','Tulo koordinaatit','nm','h',
+        'Loki alku','Loki loppu','Moottori alku','Moottori loppu','Saa','Tapahtumat'];
     const rows = [header];
+    const coordStr = (lat, lon) => lat != null ? `${lat.toFixed(5)}, ${lon.toFixed(5)}` : '';
     cache.journeys.slice().sort((a,b) => (a.startTime||'').localeCompare(b.startTime||'')).forEach(j => {
         const eventsStr = (j.events||[]).map(ev => `${fmtTime(ev.timestamp)} ${ev.name||''}: ${ev.notes||''}${ev.weather ? ' (' + ev.weather + ')' : ''}`).join(' | ');
         rows.push([
             fmtDate(j.startTime), fmtTime(j.startTime), fmtTime(j.endTime),
             j.vene || DEFAULT_BOAT_NAME,
             j.vuokralainen||'', j.kayttotarkoitus||'', j.captain||'', j.crew||'',
-            j.departurePort||'', j.destinationPort||'',
+            j.departurePort||'', coordStr(j.startLat, j.startLon),
+            j.destinationPort||'', coordStr(j.endLat, j.endLon),
             journeyMiles(j).toFixed(1), journeyHours(j).toFixed(2),
             j.startLogReading ?? 0, j.endLogReading ?? 0, j.startEngineHours ?? 0, j.endEngineHours ?? 0,
             j.startWeather||'', eventsStr
