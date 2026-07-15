@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Quartet Loki - Jacke v3000.13</title>
+<title>Quartet Loki - Jacke v3000.14</title>
 <style>
 * {
     margin: 0;
@@ -307,7 +307,7 @@ button.btn {
     <header>
         <h1>⛵ Quartet Loki</h1>
         <div class="subtitle">
-            <span class="version-badge">Jacke v3000.13</span>
+            <span class="version-badge">Jacke v3000.14</span>
             <span class="sync-indicator" id="syncIndicator"></span>
             <span id="syncLabel">Synkronoitu</span>
         </div>
@@ -1029,6 +1029,10 @@ function saveJourney(journey) {
     return fs.collection(COLLECTIONS.journeys).doc(journey.id).set(journey, { merge: true });
 }
 
+function deleteJourney(journeyId) {
+    return fs.collection(COLLECTIONS.journeys).doc(journeyId).delete();
+}
+
 function startJourney(data) {
     const journey = {
         id: uid('j'),
@@ -1209,6 +1213,7 @@ function renderKoti() {
         <div class="card active-journey-banner">
             <div class="aj-title">🚀 ${active.departurePort}${active.destinationPort ? ' → ' + active.destinationPort : ''}</div>
             <div class="aj-meta">Lähdetty ${fmtTime(active.startTime)} · ${active.captain} · kulunut ${hours}h ${mins}min</div>
+            ${active.startWeather ? `<div class="aj-meta">🌬️ ${escapeHtml(active.startWeather)}</div>` : ''}
         </div>
         <button class="btn btn-warning btn-block" id="addEventBtn">➕ Lisää lokimerkintä</button>
         <div id="ajEventsList"></div>
@@ -1479,6 +1484,7 @@ function renderMatkat() {
             </div>
             <div class="jc-meta">${fmtDate(j.startTime)} · ${statusLabel} · ${escapeHtml(j.captain||'')}</div>
             <div class="jc-meta">${journeyMiles(j).toFixed(1)} nm · ${journeyHours(j).toFixed(1)} h · ${(j.events||[]).length} tapahtumaa</div>
+            ${j.startWeather ? `<div class="jc-meta">🌬️ ${escapeHtml(j.startWeather)}</div>` : ''}
             <div class="jc-events" id="jc-events-${j.id}"></div>
         </div>`;
     }).join('');
@@ -1518,6 +1524,7 @@ function openJourneyDetail(j) {
         <div class="form-group">
             <button class="btn btn-secondary btn-block" id="jdEditStart">✏️ Muokkaa lähtötietoja</button>
             ${j.status === 'completed' ? '<button class="btn btn-secondary btn-block" id="jdEditEnd">✏️ Muokkaa saapumistietoja</button>' : ''}
+            <button class="btn btn-danger btn-block" id="jdDeleteBtn">🗑️ Poista matka</button>
         </div>
     `;
     document.getElementById('jdEditStart').addEventListener('click', () => {
@@ -1528,6 +1535,12 @@ function openJourneyDetail(j) {
     if (editEndBtn) editEndBtn.addEventListener('click', () => {
         closeModal('journeyDetailModal');
         openEditEnd(j);
+    });
+    document.getElementById('jdDeleteBtn').addEventListener('click', async () => {
+        const label = `${fmtDate(j.startTime)} ${j.departurePort || ''}${j.destinationPort ? ' → ' + j.destinationPort : ''}`;
+        if (!confirm(`Poistetaanko matka pysyvästi?\n${label}`)) return;
+        await deleteJourney(j.id);
+        closeModal('journeyDetailModal');
     });
     openModal('journeyDetailModal');
 }
