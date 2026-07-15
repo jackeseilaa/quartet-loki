@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Quartet Loki - Jacke v3000.12</title>
+<title>Quartet Loki - Jacke v3000.13</title>
 <style>
 * {
     margin: 0;
@@ -307,7 +307,7 @@ button.btn {
     <header>
         <h1>⛵ Quartet Loki</h1>
         <div class="subtitle">
-            <span class="version-badge">Jacke v3000.12</span>
+            <span class="version-badge">Jacke v3000.13</span>
             <span class="sync-indicator" id="syncIndicator"></span>
             <span id="syncLabel">Synkronoitu</span>
         </div>
@@ -941,10 +941,47 @@ async function fetchMarineWeather(latitude, longitude) {
     }
 }
 
+// Nominatimin osoitehierarkia perustuu hallinnollisiin/katuosoite-rajoihin,
+// eikä useinkaan tunne venesatamia/laitureita tarkasti - siksi haetaan ensin
+// lähin nimetty merenkulun kohde (venesatama, laituri, satama) Overpassilla,
+// ja pudotaan osoitehakuun vasta jos mitään sopivaa ei löydy läheltä.
+async function findNearbyMarineFeatureName(lat, lon) {
+    const query = `[out:json][timeout:10];(` +
+        `node(around:600,${lat},${lon})["leisure"="marina"];` +
+        `way(around:600,${lat},${lon})["leisure"="marina"];` +
+        `node(around:600,${lat},${lon})["seamark:type"="harbour"];` +
+        `node(around:600,${lat},${lon})["man_made"="pier"];` +
+        `way(around:600,${lat},${lon})["man_made"="pier"];` +
+        `);out center tags;`;
+    const url = 'https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(query);
+    const r = await fetchWithTimeout(url, {}, 10000);
+    if (!r.ok) throw new Error('Overpass HTTP ' + r.status);
+    const d = await r.json();
+    const elements = (d.elements || []).filter(el => el.tags && el.tags.name);
+    if (!elements.length) return null;
+    const lonScale = Math.cos(lat * Math.PI / 180);
+    let nearest = null, minDist = Infinity;
+    for (const el of elements) {
+        const elat = el.lat ?? (el.center && el.center.lat);
+        const elon = el.lon ?? (el.center && el.center.lon);
+        if (elat == null) continue;
+        const dlat = elat - lat, dlon = (elon - lon) * lonScale;
+        const dist = Math.sqrt(dlat*dlat + dlon*dlon);
+        if (dist < minDist) { minDist = dist; nearest = el; }
+    }
+    return nearest ? nearest.tags.name : null;
+}
+
 async function reverseGeocodePlaceName(lat, lon) {
-    // zoom=17 + namedetails hakee tarkimman lähellä olevan nimetyn kohteen
-    // (esim. laiturin/venesataman nimen), jos sellainen on OSM:ään merkitty
-    // täsmälleen kyseiseen pisteeseen - muuten pudotaan osoitehierarkiaan.
+    try {
+        const marineName = await findNearbyMarineFeatureName(lat, lon);
+        if (marineName) return marineName;
+    } catch (e) {
+        console.warn('Merenkulun kohteen haku (Overpass) epäonnistui, käytetään osoitehakua', e);
+    }
+    // zoom=17 + namedetails hakee tarkimman lähellä olevan nimetyn kohteen,
+    // jos sellainen on OSM:ään merkitty täsmälleen kyseiseen pisteeseen -
+    // muuten pudotaan osoitehierarkiaan.
     const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=17&addressdetails=1&namedetails=1&accept-language=fi`;
     const r = await fetchWithTimeout(url, {}, 10000);
     if (!r.ok) throw new Error('Nominatim HTTP ' + r.status);
