@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Quartet Loki - Jacke v3000.15</title>
+<title>Quartet Loki - Jacke v3000.16</title>
 <style>
 * {
     margin: 0;
@@ -307,7 +307,7 @@ button.btn {
     <header>
         <h1>⛵ Quartet Loki</h1>
         <div class="subtitle">
-            <span class="version-badge">Jacke v3000.15</span>
+            <span class="version-badge">Jacke v3000.16</span>
             <span class="sync-indicator" id="syncIndicator"></span>
             <span id="syncLabel">Synkronoitu</span>
         </div>
@@ -578,12 +578,58 @@ const auth = firebase.auth();
 const fs = firebase.firestore();
 const googleProvider = new firebase.auth.GoogleAuthProvider();
 
+// Rajaton IndexedDB-cache (koko lokikirja pysyy mukana) + offline-persistenssi:
+// ilman tätä Firestore pitää dataa vain muistissa nykyisen istunnon ajan, joten
+// kylmäkäynnistys offline-tilassa jää ikuisesti odottamaan verkkoa. Persistenssi
+// myös jonottaa offline-tilassa tehdyt tallennukset ja lähettää ne automaattisesti
+// heti kun verkko palaa.
+fs.settings({ cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED });
+fs.enablePersistence({ synchronizeTabs: true }).catch(err => {
+    console.warn('Firestore offline-persistenssi ei käynnistynyt:', err.code);
+});
+
 // ==================== CACHE / LISTENERS ====================
 const cache = { journeys: [], settings: {}, fuelLog: [] };
 const cacheReady = { journeys: false, settings: false, fuelLog: false };
 let unsubscribers = [];
 let rerenderScheduled = false;
 let firstLoadWaiters = [];
+
+// Oma varmuuskopio Firestoren IndexedDB-cachen päälle: luetaan heti käynnistyessä,
+// jotta appi piirtyy viimeisimmällä tunnetulla datalla vaikka Firestore-kuuntelijat
+// eivät koskaan ehdi vastata (esim. lentokonetila jo appia avattaessa).
+const LOCAL_CACHE_KEY = 'quartet_loki_local_cache_v1';
+
+function loadLocalCache() {
+    try {
+        const raw = localStorage.getItem(LOCAL_CACHE_KEY);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        cache.journeys = saved.journeys || [];
+        cache.settings = saved.settings || {};
+        cache.fuelLog = saved.fuelLog || [];
+        cacheReady.journeys = true;
+        cacheReady.settings = true;
+        cacheReady.fuelLog = true;
+    } catch (e) {
+        console.warn('Paikallisen cachen luku epäonnistui', e);
+    }
+}
+
+function saveLocalCache() {
+    try {
+        localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify({
+            journeys: cache.journeys,
+            settings: cache.settings,
+            fuelLog: cache.fuelLog,
+            savedAt: new Date().toISOString()
+        }));
+    } catch (e) {
+        console.warn('Paikalliseen cacheen tallennus epäonnistui', e);
+    }
+}
+
+loadLocalCache();
 
 function scheduleRerender() {
     if (rerenderScheduled) return;
@@ -614,6 +660,7 @@ function startListeners() {
         fs.collection(COLLECTIONS.journeys).onSnapshot(snap => {
             cache.journeys = snap.docs.map(d => d.data());
             cacheReady.journeys = true;
+            saveLocalCache();
             checkFirstLoad();
             scheduleRerender();
             setSyncing(false);
@@ -623,6 +670,7 @@ function startListeners() {
         fs.collection(COLLECTIONS.settings).doc('app').onSnapshot(snap => {
             cache.settings = snap.exists ? snap.data() : {};
             cacheReady.settings = true;
+            saveLocalCache();
             checkFirstLoad();
             scheduleRerender();
         }, err => console.error('settings listener', err))
@@ -631,6 +679,7 @@ function startListeners() {
         fs.collection(COLLECTIONS.fuelLog).onSnapshot(snap => {
             cache.fuelLog = snap.docs.map(d => d.data());
             cacheReady.fuelLog = true;
+            saveLocalCache();
             checkFirstLoad();
             scheduleRerender();
         }, err => console.error('fuelLog listener', err))

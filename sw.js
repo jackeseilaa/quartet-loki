@@ -1,5 +1,5 @@
 // Quartet Loki Service Worker - Offline support
-const CACHE_NAME = 'quartet-loki-v3000.15';
+const CACHE_NAME = 'quartet-loki-v3000.16';
 const ASSETS = [
   '/quartet-loki/',
   '/quartet-loki/index.html',
