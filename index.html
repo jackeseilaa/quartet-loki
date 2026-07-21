@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Quartet Loki - Jacke v3000.17</title>
+<title>Quartet Loki - Jacke v3000.18</title>
 <style>
 * {
     margin: 0;
@@ -307,7 +307,7 @@ button.btn {
     <header>
         <h1>⛵ Quartet Loki</h1>
         <div class="subtitle">
-            <span class="version-badge">Jacke v3000.17</span>
+            <span class="version-badge">Jacke v3000.18</span>
             <span class="sync-indicator" id="syncIndicator"></span>
             <span id="syncLabel">Synkronoitu</span>
         </div>
@@ -661,14 +661,26 @@ function checkFirstLoad() {
     }
 }
 
+// navigator.onLine kertoo vain etta verkkoliitanta on kytkeytynyt johonkin -
+// esim. veneen omaan paikallisverkkoon, jolla ei ole reittia ulos - ei sita
+// etta data oikeasti tavoittaa palvelimen. Firestoren oma snap.metadata.fromCache
+// sen sijaan kertoo tuliko juuri saatu data varmasti palvelimelta (false) vai
+// vain paikallisesta cachesta ilman vahvistettua yhteytta (true), joten se on
+// oikea lahde "Synkronoitu"-tilalle.
+const fromCache = { journeys: true, settings: true, fuelLog: true };
+function allConfirmedFromServer() {
+    return !fromCache.journeys && !fromCache.settings && !fromCache.fuelLog;
+}
+
 function startListeners() {
     if (listenersStarted) return;
     listenersStarted = true;
     setSyncing(true);
     unsubscribers.push(
-        fs.collection(COLLECTIONS.journeys).onSnapshot(snap => {
+        fs.collection(COLLECTIONS.journeys).onSnapshot({ includeMetadataChanges: true }, snap => {
             cache.journeys = snap.docs.map(d => d.data());
             cacheReady.journeys = true;
+            fromCache.journeys = snap.metadata.fromCache;
             saveLocalCache();
             checkFirstLoad();
             scheduleRerender();
@@ -676,21 +688,25 @@ function startListeners() {
         }, err => console.error('journeys listener', err))
     );
     unsubscribers.push(
-        fs.collection(COLLECTIONS.settings).doc('app').onSnapshot(snap => {
+        fs.collection(COLLECTIONS.settings).doc('app').onSnapshot({ includeMetadataChanges: true }, snap => {
             cache.settings = snap.exists ? snap.data() : {};
             cacheReady.settings = true;
+            fromCache.settings = snap.metadata.fromCache;
             saveLocalCache();
             checkFirstLoad();
             scheduleRerender();
+            renderSyncStatus();
         }, err => console.error('settings listener', err))
     );
     unsubscribers.push(
-        fs.collection(COLLECTIONS.fuelLog).onSnapshot(snap => {
+        fs.collection(COLLECTIONS.fuelLog).onSnapshot({ includeMetadataChanges: true }, snap => {
             cache.fuelLog = snap.docs.map(d => d.data());
             cacheReady.fuelLog = true;
+            fromCache.fuelLog = snap.metadata.fromCache;
             saveLocalCache();
             checkFirstLoad();
             scheduleRerender();
+            renderSyncStatus();
         }, err => console.error('fuelLog listener', err))
     );
 }
@@ -699,6 +715,9 @@ function stopListeners() {
     unsubscribers.forEach(u => u());
     unsubscribers = [];
     listenersStarted = false;
+    fromCache.journeys = true;
+    fromCache.settings = true;
+    fromCache.fuelLog = true;
 }
 
 let isCurrentlySyncing = false;
@@ -722,9 +741,20 @@ function renderSyncStatus() {
         if (label) label.textContent = 'Ei verkkoa';
         return;
     }
-    el.classList.remove('offline');
-    el.classList.toggle('syncing', isCurrentlySyncing);
-    if (label) label.textContent = isCurrentlySyncing ? 'Synkronoidaan...' : 'Synkronoitu';
+    if (isCurrentlySyncing) {
+        el.classList.remove('offline');
+        el.classList.add('syncing');
+        if (label) label.textContent = 'Synkronoidaan...';
+        return;
+    }
+    if (!allConfirmedFromServer()) {
+        el.classList.remove('syncing');
+        el.classList.add('offline');
+        if (label) label.textContent = 'Ei yhteyttä palvelimeen - näytetään paikallinen data';
+        return;
+    }
+    el.classList.remove('offline', 'syncing');
+    if (label) label.textContent = 'Synkronoitu';
 }
 window.addEventListener('online', renderSyncStatus);
 window.addEventListener('offline', renderSyncStatus);
