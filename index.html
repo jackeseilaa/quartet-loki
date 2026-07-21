@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Quartet Loki - Jacke v3000.19</title>
+<title>Quartet Loki - Jacke v3000.20</title>
 <style>
 * {
     margin: 0;
@@ -307,7 +307,7 @@ button.btn {
     <header>
         <h1>⛵ Quartet Loki</h1>
         <div class="subtitle">
-            <span class="version-badge">Jacke v3000.19</span>
+            <span class="version-badge">Jacke v3000.20</span>
             <span class="sync-indicator" id="syncIndicator"></span>
             <span id="syncLabel">Synkronoitu</span>
         </div>
@@ -954,6 +954,20 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
     }
 }
 
+// Sää tarvitsee aina oikean internet-yhteyden (kolme ulkoista palvelua), eikä
+// sitä voi lukea paikallisesta cachesta kuten muuta dataa. Jos tiedetään jo
+// ettei vahvistettua palvelinyhteyttä ole (esim. veneen paikallisverkko ilman
+// oikeaa nettiä, jolloin navigator.onLine silti näyttää true), epäonnistutaan
+// heti sen sijaan että odotettaisiin kaikkien kolmen palvelun peräkkäiset
+// aikakatkaisut. Käytettävä KAIKISSA säänhakupaikoissa (nappi + GPS:n jälkeinen
+// automaattihaku), ei vain yhdessä kutsukohdassa.
+async function fetchMarineWeatherChecked(latitude, longitude) {
+    if (!navigator.onLine || !allConfirmedFromServer()) {
+        throw new Error('Ei vahvistettua internet-yhteyttä - sää ei ole saatavilla offline-tilassa');
+    }
+    return fetchMarineWeather(latitude, longitude);
+}
+
 async function fetchMarineWeather(latitude, longitude) {
     const station = getNearestMarineStation(latitude, longitude);
     const stLat = station.lat, stLon = station.lon, stName = station.name;
@@ -1118,16 +1132,8 @@ async function fetchWeatherForForm(resultElId, hiddenInputId) {
     resultEl.innerHTML = '<div class="weather-status warn">⏳ Haetaan sijaintia...</div>';
     try {
         const { lat, lon } = await captureGPS();
-        // Sää tarvitsee aina oikean internet-yhteyden (kolme ulkoista palvelua),
-        // eikä sitä voi lukea paikallisesta cachesta kuten muuta dataa. Jos
-        // tiedetään jo ettei vahvistettua palvelinyhteyttä ole (esim. veneen
-        // paikallisverkko ilman oikeaa nettiä), epäonnistutaan heti sen sijaan
-        // että odotettaisiin kaikkien kolmen palvelun peräkkäiset aikakatkaisut.
-        if (!navigator.onLine || !allConfirmedFromServer()) {
-            throw new Error('Ei vahvistettua internet-yhteyttä - sää ei ole saatavilla offline-tilassa');
-        }
         resultEl.innerHTML = '<div class="weather-status warn">⏳ Haetaan säätä...</div>';
-        const text = await fetchMarineWeather(lat, lon);
+        const text = await fetchMarineWeatherChecked(lat, lon);
         resultEl.innerHTML = `<div class="weather-status ok">✅ ${text}</div>`;
         document.getElementById(hiddenInputId).value = text;
     } catch (e) {
@@ -1453,7 +1459,7 @@ document.getElementById('sjGpsBtn').addEventListener('click', async () => {
     // erikseen "Hae sää" -nappia (se jää silti käyttöön säätiedon päivitykseen).
     document.getElementById('sjWeatherResult').innerHTML = '<div class="weather-status warn">⏳ Haetaan säätä...</div>';
     try {
-        const weatherText = await fetchMarineWeather(sjGps.lat, sjGps.lon);
+        const weatherText = await fetchMarineWeatherChecked(sjGps.lat, sjGps.lon);
         document.getElementById('sjWeatherResult').innerHTML = `<div class="weather-status ok">✅ ${weatherText}</div>`;
         document.getElementById('sjWeatherValue').value = weatherText;
     } catch (e) {
@@ -1515,7 +1521,7 @@ document.getElementById('aeGpsBtn').addEventListener('click', async () => {
     // Haetaan sää samalla GPS-sijainnilla automaattisesti.
     document.getElementById('aeWeatherResult').innerHTML = '<div class="weather-status warn">⏳ Haetaan säätä...</div>';
     try {
-        const weatherText = await fetchMarineWeather(aeGps.lat, aeGps.lon);
+        const weatherText = await fetchMarineWeatherChecked(aeGps.lat, aeGps.lon);
         document.getElementById('aeWeatherResult').innerHTML = `<div class="weather-status ok">✅ ${weatherText}</div>`;
         document.getElementById('aeWeatherValue').value = weatherText;
     } catch (e) {
