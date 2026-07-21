@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Quartet Loki - Jacke v3000.18</title>
+<title>Quartet Loki - Jacke v3000.19</title>
 <style>
 * {
     margin: 0;
@@ -307,7 +307,7 @@ button.btn {
     <header>
         <h1>⛵ Quartet Loki</h1>
         <div class="subtitle">
-            <span class="version-badge">Jacke v3000.18</span>
+            <span class="version-badge">Jacke v3000.19</span>
             <span class="sync-indicator" id="syncIndicator"></span>
             <span id="syncLabel">Synkronoitu</span>
         </div>
@@ -1118,6 +1118,14 @@ async function fetchWeatherForForm(resultElId, hiddenInputId) {
     resultEl.innerHTML = '<div class="weather-status warn">⏳ Haetaan sijaintia...</div>';
     try {
         const { lat, lon } = await captureGPS();
+        // Sää tarvitsee aina oikean internet-yhteyden (kolme ulkoista palvelua),
+        // eikä sitä voi lukea paikallisesta cachesta kuten muuta dataa. Jos
+        // tiedetään jo ettei vahvistettua palvelinyhteyttä ole (esim. veneen
+        // paikallisverkko ilman oikeaa nettiä), epäonnistutaan heti sen sijaan
+        // että odotettaisiin kaikkien kolmen palvelun peräkkäiset aikakatkaisut.
+        if (!navigator.onLine || !allConfirmedFromServer()) {
+            throw new Error('Ei vahvistettua internet-yhteyttä - sää ei ole saatavilla offline-tilassa');
+        }
         resultEl.innerHTML = '<div class="weather-status warn">⏳ Haetaan säätä...</div>';
         const text = await fetchMarineWeather(lat, lon);
         resultEl.innerHTML = `<div class="weather-status ok">✅ ${text}</div>`;
