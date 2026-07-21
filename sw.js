@@ -1,5 +1,5 @@
 // Quartet Loki Service Worker - Offline support
-const CACHE_NAME = 'quartet-loki-v3000.16';
+const CACHE_NAME = 'quartet-loki-v3000.17';
 const ASSETS = [
   '/quartet-loki/',
   '/quartet-loki/index.html',
@@ -8,10 +8,17 @@ const ASSETS = [
   'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js'
 ];
 
-// Asenna: välimuistita app
+// Asenna: välimuistita app. Yksittäiset epäonnistuneet haut (esim. veneen
+// paikallisverkko, jossa ei ole reittiä gstatic.com:iin) eivät saa kaataa koko
+// asennusta cache.addAll():n tapaan - muuten edes appin oma index.html ei
+// päivity cacheen, vaikka se olisi ollut haettavissa.
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then(cache =>
+      Promise.all(ASSETS.map(url =>
+        cache.add(url).catch(err => console.warn('SW install: ohitettu', url, err))
+      ))
+    )
   );
   self.skipWaiting();
 });

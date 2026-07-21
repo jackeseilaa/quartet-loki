@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Quartet Loki - Jacke v3000.16</title>
+<title>Quartet Loki - Jacke v3000.17</title>
 <style>
 * {
     margin: 0;
@@ -307,7 +307,7 @@ button.btn {
     <header>
         <h1>⛵ Quartet Loki</h1>
         <div class="subtitle">
-            <span class="version-badge">Jacke v3000.16</span>
+            <span class="version-badge">Jacke v3000.17</span>
             <span class="sync-indicator" id="syncIndicator"></span>
             <span id="syncLabel">Synkronoitu</span>
         </div>
@@ -561,6 +561,12 @@ const FIREBASE_CONFIG = {
     appId: "1:543523103696:web:439a312efa6aec398a8fd5"
 };
 const ALLOWED_EMAIL = "jacke.seilaa@gmail.com";
+const LAST_USER_KEY = 'quartet_loki_last_user_email';
+// Millisekuntia odotetaan Firebase Authin omaa vastausta ennen kuin luotetaan
+// paikalliseen tietoon: verkko, joka on "yhteydessä" mutta ilman oikeaa
+// internet-reittiä (esim. veneen paikallisverkko), ei epäonnistu nopeasti kuten
+// lentokonetila, vaan jää roikkumaan minuuteiksi ennen aikakatkaisua.
+const AUTH_OFFLINE_FALLBACK_MS = 4000;
 const COLLECTIONS = {
     journeys: 'quartet_journeys',
     settings: 'quartet_settings',
@@ -594,6 +600,7 @@ const cacheReady = { journeys: false, settings: false, fuelLog: false };
 let unsubscribers = [];
 let rerenderScheduled = false;
 let firstLoadWaiters = [];
+let listenersStarted = false;
 
 // Oma varmuuskopio Firestoren IndexedDB-cachen päälle: luetaan heti käynnistyessä,
 // jotta appi piirtyy viimeisimmällä tunnetulla datalla vaikka Firestore-kuuntelijat
@@ -655,6 +662,8 @@ function checkFirstLoad() {
 }
 
 function startListeners() {
+    if (listenersStarted) return;
+    listenersStarted = true;
     setSyncing(true);
     unsubscribers.push(
         fs.collection(COLLECTIONS.journeys).onSnapshot(snap => {
@@ -689,6 +698,7 @@ function startListeners() {
 function stopListeners() {
     unsubscribers.forEach(u => u());
     unsubscribers = [];
+    listenersStarted = false;
 }
 
 let isCurrentlySyncing = false;
@@ -700,6 +710,12 @@ function renderSyncStatus() {
     const el = document.getElementById('syncIndicator');
     const label = document.getElementById('syncLabel');
     if (!el) return;
+    if (offlineFallbackActive) {
+        el.classList.remove('syncing');
+        el.classList.add('offline');
+        if (label) label.textContent = 'Ei vahvistettu - näytetään viimeisin tallennettu data';
+        return;
+    }
     if (!navigator.onLine) {
         el.classList.remove('syncing');
         el.classList.add('offline');
@@ -727,8 +743,15 @@ document.getElementById('signInBtn').addEventListener('click', () => {
     });
 });
 
+let authResolved = false;
+let offlineFallbackActive = false;
+
 auth.onAuthStateChanged(user => {
+    authResolved = true;
     if (user && user.email === ALLOWED_EMAIL) {
+        localStorage.setItem(LAST_USER_KEY, user.email);
+        offlineFallbackActive = false;
+        renderSyncStatus();
         showApp();
         startListeners();
     } else if (user) {
@@ -740,10 +763,27 @@ auth.onAuthStateChanged(user => {
         auth.signOut();
         showAuthScreen();
     } else {
+        // Aito uloskirjautunut tila voittaa aina offline-varapolun, jos
+        // Firebase ehti vastata tässä välissä sen jälkeen.
+        offlineFallbackActive = false;
         stopListeners();
         showAuthScreen();
     }
 });
+
+// Veneen paikallisverkko yms. voi näyttää selaimelle "yhteydessä" vaikka
+// oikeaa internet-reittiä ei ole, jolloin Firebase Authin verkkokutsut eivät
+// epäonnistu nopeasti vaan jäävät roikkumaan pitkäksi aikaa. Jos vastausta ei
+// tule tietyssä ajassa mutta laitteella on edellisen onnistuneen kirjautumisen
+// jälki ja paikallinen data-cache, näytetään appi silti sillä välin.
+setTimeout(() => {
+    if (authResolved) return;
+    if (localStorage.getItem(LAST_USER_KEY) !== ALLOWED_EMAIL) return;
+    if (!(cacheReady.journeys && cacheReady.settings && cacheReady.fuelLog)) return;
+    offlineFallbackActive = true;
+    showApp();
+    startListeners();
+}, AUTH_OFFLINE_FALLBACK_MS);
 
 function showAuthScreen() {
     document.getElementById('authScreen').style.display = 'flex';
