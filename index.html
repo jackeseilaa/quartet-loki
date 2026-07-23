@@ -572,7 +572,7 @@ const COLLECTIONS = {
     settings: 'quartet_settings',
     fuelLog: 'quartet_fuel_log'
 };
-const DEFAULT_WINDY_KEY = 'XRmkNJnh4WvpMvUHrIrpi2lCY36e6WoO';
+const DEFAULT_WINDY_KEY = ''; // Ei oletusavainta - käyttäjä syöttää oman Windy-avaimensa Asetukset-näkymässä
 const DEFAULT_DEPARTURE_PORT = 'Roihuvuori, RVK';
 const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
 const DEFAULT_FUEL_CONSUMPTION = 1.8; // L/h
@@ -2209,7 +2209,7 @@ function renderAsetukset() {
             <h3 style="margin-bottom:12px;">⚙️ Yleiset asetukset</h3>
             <div class="form-group">
                 <label>Windy API-avain</label>
-                <input type="text" id="setWindyKey" value="${escapeHtml(s.windyApiKey || '')}" placeholder="${DEFAULT_WINDY_KEY}">
+                <input type="text" id="setWindyKey" value="${escapeHtml(s.windyApiKey || '')}" placeholder="Syötä oma Windy-avain (windy.com/api)">
             </div>
             <div class="form-group">
                 <label>Oletuskapteeni</label>
