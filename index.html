@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Quartet Loki - Jacke v3000.20</title>
+<title>Quartet Loki - Jacke v3000.21</title>
 <style>
 * {
     margin: 0;
@@ -307,7 +307,7 @@ button.btn {
     <header>
         <h1>⛵ Quartet Loki</h1>
         <div class="subtitle">
-            <span class="version-badge">Jacke v3000.20</span>
+            <span class="version-badge">Jacke v3000.21</span>
             <span class="sync-indicator" id="syncIndicator"></span>
             <span id="syncLabel">Synkronoitu</span>
         </div>
@@ -545,6 +545,17 @@ button.btn {
     </div>
 </div>
 
+<div class="modal" id="restoreSummaryModal">
+    <div class="modal-content">
+        <div class="modal-header">Varmuuskopion palautus</div>
+        <div class="import-summary" id="restoreSummaryBody"></div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="restoreCancelBtn">Peruuta</button>
+            <button class="btn btn-primary" id="restoreConfirmBtn">Palauta data</button>
+        </div>
+    </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
@@ -583,6 +594,12 @@ firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
 const fs = firebase.firestore();
 const googleProvider = new firebase.auth.GoogleAuthProvider();
+// Erillinen provider Drive-varmuuskopiointia varten: laajempi drive-scope pyydetään
+// vain silloin kun käyttäjä nimenomaan klikkaa "Vie Driveen", ei joka kirjautumisella
+// - ettei se hidasta tai riskeeraa jo kertaalleen viritettyä offline-kirjautumispolkua.
+const driveAuthProvider = new firebase.auth.GoogleAuthProvider();
+driveAuthProvider.addScope('https://www.googleapis.com/auth/drive');
+const DRIVE_BACKUP_FOLDER_ID = '1O-6CEd88NZgBz8DpRa8agTKwQ4miFamW'; // "Lokikirja-vertailu" Drive-kansio
 
 // Rajaton IndexedDB-cache (koko lokikirja pysyy mukana) + offline-persistenssi:
 // ilman tätä Firestore pitää dataa vain muistissa nykyisen istunnon ajan, joten
@@ -2049,6 +2066,159 @@ function renderCsv() {
     document.getElementById('csvSummaryBtn').addEventListener('click', exportSummaryCsv);
 }
 
+// ==================== VARMUUSKOPIOINTI ====================
+function buildBackupPayload() {
+    return {
+        version: 1,
+        app: 'quartet-loki',
+        exportedAt: new Date().toISOString(),
+        journeys: cache.journeys,
+        settings: cache.settings,
+        fuelLog: cache.fuelLog
+    };
+}
+
+function exportBackupJson() {
+    const payload = buildBackupPayload();
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `quartet_varmuuskopio_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+async function getDriveAccessToken() {
+    if (!auth.currentUser) throw new Error('Ei kirjautunutta käyttäjää.');
+    const result = await auth.currentUser.reauthenticateWithPopup(driveAuthProvider);
+    const credential = firebase.auth.GoogleAuthProvider.credentialFromResult(result);
+    if (!credential || !credential.accessToken) {
+        throw new Error('Google ei antanut Drive-valtuutusta.');
+    }
+    return credential.accessToken;
+}
+
+async function uploadBackupToDrive() {
+    const payload = buildBackupPayload();
+    const filename = `quartet_varmuuskopio_${new Date().toISOString().slice(0,10)}.json`;
+    const accessToken = await getDriveAccessToken();
+    const metadata = { name: filename, parents: [DRIVE_BACKUP_FOLDER_ID], mimeType: 'application/json' };
+    const boundary = 'quartet_loki_backup_boundary';
+    const body =
+        `--${boundary}\r\n` +
+        `Content-Type: application/json; charset=UTF-8\r\n\r\n` +
+        `${JSON.stringify(metadata)}\r\n` +
+        `--${boundary}\r\n` +
+        `Content-Type: application/json\r\n\r\n` +
+        `${JSON.stringify(payload, null, 2)}\r\n` +
+        `--${boundary}--`;
+    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': `multipart/related; boundary=${boundary}`
+        },
+        body
+    });
+    if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Drive-lataus epäonnistui (${res.status}): ${errText}`);
+    }
+    return res.json();
+}
+
+function buildRestorePlan(data) {
+    if (!data || !Array.isArray(data.journeys)) {
+        throw new Error('Tiedosto ei ole Quartet-lokin varmuuskopio (puuttuu journeys-taulukko).');
+    }
+    const existingJourneyIds = new Set(cache.journeys.map(j => j.id));
+    const journeysToRestore = data.journeys;
+    const newCount = journeysToRestore.filter(j => !existingJourneyIds.has(j.id)).length;
+    const overwriteCount = journeysToRestore.length - newCount;
+
+    const fuelKey = f => `${f.timestamp}|${f.type}|${f.liters}`;
+    const existingFuelKeys = new Set(cache.fuelLog.map(fuelKey));
+    const fuelLogToRestore = (data.fuelLog || []).filter(f => !existingFuelKeys.has(fuelKey(f)));
+    const fuelSkipped = (data.fuelLog || []).length - fuelLogToRestore.length;
+
+    return {
+        journeysToRestore, newCount, overwriteCount,
+        settings: data.settings || null,
+        fuelLogToRestore, fuelSkipped,
+        exportedAt: data.exportedAt || 'tuntematon'
+    };
+}
+
+let pendingRestorePlan = null;
+
+function handleRestoreFile(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+        let data;
+        try {
+            data = JSON.parse(reader.result);
+        } catch (e) {
+            alert('Tiedostoa ei voitu lukea JSON:ina: ' + e.message);
+            return;
+        }
+        try {
+            pendingRestorePlan = buildRestorePlan(data);
+        } catch (e) {
+            alert(e.message);
+            return;
+        }
+        showRestoreSummary(pendingRestorePlan);
+    };
+    reader.readAsText(file);
+}
+
+function showRestoreSummary(plan) {
+    const body = document.getElementById('restoreSummaryBody');
+    body.innerHTML = `
+        <div>Varmuuskopio otettu: <strong>${plan.exportedAt}</strong></div>
+        <div style="margin-top:8px;"><strong>${plan.newCount}</strong> uutta matkaa lisätään</div>
+        <div class="flag-row"><strong>${plan.overwriteCount}</strong> olemassa olevaa matkaa korvataan varmuuskopion versiolla (sama ID)</div>
+        <div style="margin-top:8px;">Asetukset: ${plan.settings ? 'yhdistetään nykyisiin (merge)' : 'ei mukana varmuuskopiossa'}</div>
+        <div style="margin-top:8px;"><strong>${plan.fuelLogToRestore.length}</strong> polttoainemerkintää lisätään, ${plan.fuelSkipped} ohitetaan (jo olemassa)</div>
+    `;
+    openModal('restoreSummaryModal');
+}
+
+document.getElementById('restoreCancelBtn').addEventListener('click', () => {
+    pendingRestorePlan = null;
+    closeModal('restoreSummaryModal');
+});
+document.getElementById('restoreConfirmBtn').addEventListener('click', async () => {
+    if (!pendingRestorePlan) return;
+    const btn = document.getElementById('restoreConfirmBtn');
+    btn.disabled = true;
+    btn.textContent = 'Palautetaan...';
+    try {
+        const batchSize = 400;
+        const journeys = pendingRestorePlan.journeysToRestore;
+        for (let i = 0; i < journeys.length; i += batchSize) {
+            const chunk = journeys.slice(i, i + batchSize);
+            const batch = fs.batch();
+            chunk.forEach(j => batch.set(fs.collection(COLLECTIONS.journeys).doc(j.id), j));
+            await batch.commit();
+        }
+        if (pendingRestorePlan.settings) {
+            await saveSettings(pendingRestorePlan.settings);
+        }
+        for (const f of pendingRestorePlan.fuelLogToRestore) {
+            await fs.collection(COLLECTIONS.fuelLog).doc(uid('fuel')).set(f);
+        }
+        alert(`Palautus valmis: ${journeys.length} matkaa, ${pendingRestorePlan.fuelLogToRestore.length} polttoainemerkintää.`);
+    } catch (e) {
+        alert('Palautus epäonnistui: ' + e.message);
+    }
+    btn.disabled = false;
+    btn.textContent = 'Palauta data';
+    pendingRestorePlan = null;
+    closeModal('restoreSummaryModal');
+});
+
 // ==================== ASETUKSET / LEGACY IMPORT ====================
 const KNOWN_KAYTTOTARKOITUS = ['charter', 'koulutus', 'oma-kaytto', 'muu'];
 const KNOWN_VUOKRALAINEN = ['tmi', 'oy', 'oma'];
@@ -2222,10 +2392,24 @@ function renderAsetukset() {
             <button class="btn btn-primary btn-block" id="saveSettingsBtn">Tallenna asetukset</button>
         </div>
         <div class="card">
+            <h3 style="margin-bottom:12px;">💾 Varmuuskopiointi</h3>
+            <p style="font-size:0.85em;color:#666;margin-bottom:10px;">
+                Vie koko nykyinen data (matkat, asetukset, polttoaineloki) yhtenä JSON-tiedostona.
+                Suositellaan säännöllisesti, esim. ennen pidempää venematkaa.
+            </p>
+            <button class="btn btn-primary btn-block" id="exportBackupBtn" style="margin-bottom:8px;">💾 Lataa varmuuskopio laitteelle</button>
+            <button class="btn btn-secondary btn-block" id="exportBackupDriveBtn" style="margin-bottom:14px;">☁️ Vie varmuuskopio Driveen (Lokikirja-vertailu)</button>
+            <p style="font-size:0.85em;color:#666;margin-bottom:10px;">
+                Palauta aiemmin viety varmuuskopio (.json). Samalla ID:llä olevat matkat korvataan
+                varmuuskopion versiolla, uudet lisätään — mitään ei poisteta.
+            </p>
+            <input type="file" accept=".json" id="restoreFileInput">
+        </div>
+        <div class="card">
             <h3 style="margin-bottom:12px;">📥 Tuo vanha varmuuskopio</h3>
             <p style="font-size:0.85em;color:#666;margin-bottom:10px;">
-                Kertaluontoinen tuonti vanhasta localStorage-varmuuskopiosta (.json). Voit ajaa tämän
-                turvallisesti uudelleen — jo tuodut merkinnät ohitetaan automaattisesti.
+                Kertaluontoinen tuonti vanhasta localStorage-varmuuskopiosta (.json, eri formaatti kuin yllä).
+                Voit ajaa tämän turvallisesti uudelleen — jo tuodut merkinnät ohitetaan automaattisesti.
             </p>
             <input type="file" accept=".json" id="importFileInput">
         </div>
@@ -2239,6 +2423,24 @@ function renderAsetukset() {
             defaultCaptain: document.getElementById('setDefaultCaptain').value.trim(),
             tankCapacity: parseNum(document.getElementById('setTankCapacity').value)
         });
+    });
+    document.getElementById('exportBackupBtn').addEventListener('click', exportBackupJson);
+    document.getElementById('exportBackupDriveBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('exportBackupDriveBtn');
+        btn.disabled = true;
+        btn.textContent = 'Viedään Driveen...';
+        try {
+            await uploadBackupToDrive();
+            alert('Varmuuskopio tallennettu Google Driveen (Lokikirja-vertailu-kansio).');
+        } catch (e) {
+            alert('Drive-vienti epäonnistui: ' + e.message);
+        }
+        btn.disabled = false;
+        btn.textContent = '☁️ Vie varmuuskopio Driveen (Lokikirja-vertailu)';
+    });
+    document.getElementById('restoreFileInput').addEventListener('change', e => {
+        if (e.target.files[0]) handleRestoreFile(e.target.files[0]);
+        e.target.value = '';
     });
     document.getElementById('importFileInput').addEventListener('change', e => {
         if (e.target.files[0]) handleImportFile(e.target.files[0]);
