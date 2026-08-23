@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Quartet Loki - Jacke v3000.26</title>
+<title>Quartet Loki - Jacke v3000.27</title>
 <style>
 * {
     margin: 0;
@@ -307,7 +307,7 @@ button.btn {
     <header>
         <h1>⛵ Quartet Loki</h1>
         <div class="subtitle">
-            <span class="version-badge">Jacke v3000.26</span>
+            <span class="version-badge">Jacke v3000.27</span>
             <span class="sync-indicator" id="syncIndicator"></span>
             <span id="syncLabel">Synkronoitu</span>
         </div>
@@ -521,6 +521,7 @@ button.btn {
             <button class="btn btn-secondary" id="fuelCancelBtn">Peruuta</button>
             <button class="btn btn-primary" id="fuelSaveBtn">Tallenna</button>
         </div>
+        <div id="fuelHistory" style="margin-top:16px;"></div>
     </div>
 </div>
 
@@ -1281,6 +1282,23 @@ function addFuelLog(type, liters) {
     });
 }
 
+function renderFuelHistory() {
+    const el = document.getElementById('fuelHistory');
+    if (!el) return;
+    const log = [...cache.fuelLog].sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || '')).slice(0, 20);
+    if (!log.length) {
+        el.innerHTML = '<div class="no-data">Ei vielä tankkausmerkintöjä.</div>';
+        return;
+    }
+    el.innerHTML = '<div style="font-size:0.8em;color:#666;margin-bottom:6px;">Viimeisimmät merkinnät</div>'
+        + log.map(f => `
+        <div class="event-item">
+            <div><strong>${f.type === 'set' ? 'Tason asetus' : 'Tankkaus'}</strong> <span class="ev-time">${fmtDate(f.timestamp)} ${fmtTime(f.timestamp)}</span></div>
+            <div>${f.type === 'set' ? '' : '+'}${parseNum(f.liters)} L</div>
+        </div>
+    `).join('');
+}
+
 function saveSettings(patch) {
     return fs.collection(COLLECTIONS.settings).doc('app').set(patch, { merge: true });
 }
@@ -1317,7 +1335,10 @@ function renderFuelWidget() {
     document.getElementById('fuelLabel').textContent = `${liters.toFixed(0)} / ${capacity} L`;
 }
 
-document.getElementById('fuelWidget').addEventListener('click', () => openModal('fuelModal'));
+document.getElementById('fuelWidget').addEventListener('click', () => {
+    renderFuelHistory();
+    openModal('fuelModal');
+});
 
 // ==================== MODAL HELPERS ====================
 function openModal(id) { document.getElementById(id).classList.add('active'); }
@@ -1641,6 +1662,7 @@ document.getElementById('fuelSaveBtn').addEventListener('click', async () => {
     if (liters === '') { alert('Syötä litramäärä'); return; }
     await addFuelLog(document.getElementById('fuelType').value, liters);
     document.getElementById('fuelLiters').value = '';
+    renderFuelHistory();
     closeModal('fuelModal');
 });
 
