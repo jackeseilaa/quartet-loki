@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Quartet Loki - Jacke v3000.27</title>
+<title>Quartet Loki - Jacke v3000.28</title>
 <style>
 * {
     margin: 0;
@@ -307,7 +307,7 @@ button.btn {
     <header>
         <h1>⛵ Quartet Loki</h1>
         <div class="subtitle">
-            <span class="version-badge">Jacke v3000.27</span>
+            <span class="version-badge">Jacke v3000.28</span>
             <span class="sync-indicator" id="syncIndicator"></span>
             <span id="syncLabel">Synkronoitu</span>
         </div>
@@ -516,6 +516,10 @@ button.btn {
         <div class="form-group">
             <label>Litraa <span class="required">*</span></label>
             <input type="text" inputmode="decimal" id="fuelLiters">
+        </div>
+        <div class="form-group">
+            <label>Aika <span class="required">*</span></label>
+            <input type="datetime-local" id="fuelTime">
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" id="fuelCancelBtn">Peruuta</button>
@@ -1276,9 +1280,9 @@ function currentFuelLevel() {
     return { liters, capacity };
 }
 
-function addFuelLog(type, liters) {
+function addFuelLog(type, liters, timestamp) {
     return fs.collection(COLLECTIONS.fuelLog).doc(uid('fuel')).set({
-        liters: parseNum(liters), type, timestamp: new Date().toISOString()
+        liters: parseNum(liters), type, timestamp: timestamp || new Date().toISOString()
     });
 }
 
@@ -1336,6 +1340,7 @@ function renderFuelWidget() {
 }
 
 document.getElementById('fuelWidget').addEventListener('click', () => {
+    document.getElementById('fuelTime').value = fmtDateTimeLocal(new Date());
     renderFuelHistory();
     openModal('fuelModal');
 });
@@ -1659,8 +1664,9 @@ document.getElementById('ejSaveBtn').addEventListener('click', async () => {
 document.getElementById('fuelCancelBtn').addEventListener('click', () => closeModal('fuelModal'));
 document.getElementById('fuelSaveBtn').addEventListener('click', async () => {
     const liters = document.getElementById('fuelLiters').value;
-    if (liters === '') { alert('Syötä litramäärä'); return; }
-    await addFuelLog(document.getElementById('fuelType').value, liters);
+    const timeValue = document.getElementById('fuelTime').value;
+    if (liters === '' || !timeValue) { alert('Syötä litramäärä ja aika'); return; }
+    await addFuelLog(document.getElementById('fuelType').value, liters, new Date(timeValue).toISOString());
     document.getElementById('fuelLiters').value = '';
     renderFuelHistory();
     closeModal('fuelModal');
