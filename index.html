@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Quartet Loki - Jacke v3000.24</title>
+<title>Quartet Loki - Jacke v3000.25</title>
 <style>
 * {
     margin: 0;
@@ -307,7 +307,7 @@ button.btn {
     <header>
         <h1>⛵ Quartet Loki</h1>
         <div class="subtitle">
-            <span class="version-badge">Jacke v3000.24</span>
+            <span class="version-badge">Jacke v3000.25</span>
             <span class="sync-indicator" id="syncIndicator"></span>
             <span id="syncLabel">Synkronoitu</span>
         </div>
@@ -1389,6 +1389,7 @@ function renderKoti() {
 }
 
 let sjIsEditMode = false;
+let sjEditingJourney = null;
 function getCurrentSjBoatName() {
     const sel = document.getElementById('sjBoatSelect').value;
     if (sel === '__new__') return document.getElementById('sjBoatNameNew').value.trim() || 'Muu vene';
@@ -1425,6 +1426,8 @@ function refreshSjReadingsForBoat() {
 
 function openStartJourneyModal() {
     sjIsEditMode = false;
+    sjEditingJourney = null;
+    document.querySelector('#startJourneyModal .modal-header').textContent = '🚀 Aloita matka';
     document.getElementById('sjStartTime').value = fmtDateTimeLocal(new Date());
     document.getElementById('sjDestinationPort').value = '';
     populateSjBoatSelect(DEFAULT_BOAT_NAME);
@@ -1495,7 +1498,7 @@ document.getElementById('sjSaveBtn').addEventListener('click', async () => {
         alert('Täytä pakolliset kentät (aika, lähtösatama, lokimittari, käyttötunnit)');
         return;
     }
-    await startJourney({
+    const fields = {
         startTime, departurePort,
         destinationPort: document.getElementById('sjDestinationPort').value.trim(),
         vene: getCurrentSjBoatName(),
@@ -1510,7 +1513,32 @@ document.getElementById('sjSaveBtn').addEventListener('click', async () => {
         vuokralainen: document.getElementById('sjVuokralainen').value,
         kayttotarkoitus: document.getElementById('sjKayttotarkoitus').value,
         notes: document.getElementById('sjNotes').value.trim()
-    });
+    };
+    if (sjEditingJourney) {
+        await saveJourney({
+            ...sjEditingJourney,
+            startTime: fields.startTime,
+            date: fields.startTime.split('T')[0],
+            departurePort: fields.departurePort,
+            destinationPort: fields.destinationPort,
+            vene: fields.vene,
+            startLogReading: parseNum(fields.startLogReading),
+            startEngineHours: parseNum(fields.startEngineHours),
+            startLat: fields.startLat,
+            startLon: fields.startLon,
+            startWeather: fields.startWeather,
+            captain: fields.captain,
+            crew: fields.crew,
+            personnel: fields.personnel,
+            vuokralainen: fields.vuokralainen,
+            kayttotarkoitus: fields.kayttotarkoitus,
+            notes: fields.notes
+        });
+        renderKotiIfNeeded();
+    } else {
+        await startJourney(fields);
+    }
+    sjEditingJourney = null;
     closeModal('startJourneyModal');
 });
 
@@ -1736,32 +1764,7 @@ function openEditStart(j) {
     document.getElementById('sjNotes').value = j.notes || '';
     sjGps = (j.startLat != null) ? { lat: j.startLat, lon: j.startLon } : null;
 
-    const saveBtn = document.getElementById('sjSaveBtn');
-    const clone = saveBtn.cloneNode(true);
-    saveBtn.parentNode.replaceChild(clone, saveBtn);
-    clone.addEventListener('click', async () => {
-        await saveJourney({
-            ...j,
-            startTime: document.getElementById('sjStartTime').value,
-            date: document.getElementById('sjStartTime').value.split('T')[0],
-            departurePort: document.getElementById('sjDeparturePort').value.trim(),
-            destinationPort: document.getElementById('sjDestinationPort').value.trim(),
-            vene: getCurrentSjBoatName(),
-            startLogReading: parseNum(document.getElementById('sjLogReading').value),
-            startEngineHours: parseNum(document.getElementById('sjEngineHours').value),
-            startLat: sjGps ? sjGps.lat : null,
-            startLon: sjGps ? sjGps.lon : null,
-            startWeather: document.getElementById('sjWeatherValue').value,
-            captain: document.getElementById('sjCaptain').value.trim(),
-            crew: document.getElementById('sjCrew').value.trim(),
-            personnel: document.getElementById('sjPersonnel').value,
-            vuokralainen: document.getElementById('sjVuokralainen').value,
-            kayttotarkoitus: document.getElementById('sjKayttotarkoitus').value,
-            notes: document.getElementById('sjNotes').value.trim()
-        });
-        closeModal('startJourneyModal');
-        renderKotiIfNeeded();
-    });
+    sjEditingJourney = j;
     document.querySelector('#startJourneyModal .modal-header').textContent = '✏️ Muokkaa lähtötietoja';
 }
 
