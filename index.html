@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Quartet Loki - Jacke v3000.28</title>
+<title>Quartet Loki - Jacke v3000.29</title>
 <style>
 * {
     margin: 0;
@@ -307,7 +307,7 @@ button.btn {
     <header>
         <h1>⛵ Quartet Loki</h1>
         <div class="subtitle">
-            <span class="version-badge">Jacke v3000.28</span>
+            <span class="version-badge">Jacke v3000.29</span>
             <span class="sync-indicator" id="syncIndicator"></span>
             <span id="syncLabel">Synkronoitu</span>
         </div>
@@ -592,7 +592,7 @@ const COLLECTIONS = {
 const DEFAULT_WINDY_KEY = ''; // Ei oletusavainta - käyttäjä syöttää oman Windy-avaimensa Asetukset-näkymässä
 const DEFAULT_DEPARTURE_PORT = 'Roihuvuori, RVK';
 const DEFAULT_CAPTAIN = 'Jarmo Aaltonen';
-const DEFAULT_FUEL_CONSUMPTION = 1.8; // L/h
+const DEFAULT_FUEL_CONSUMPTION = 2.1; // L/h - oletus, säädettävissä Asetuksissa (settings.fuelConsumption)
 const DEFAULT_TANK_CAPACITY = 200; // L
 const DEFAULT_BOAT_NAME = 'Quartet';
 
@@ -1269,12 +1269,16 @@ function currentFuelLevel() {
             liters += parseNum(e.liters);
         }
     }
-    // subtract consumption of journeys that happened after the baseline
+    // subtract consumption of journeys that happened after the baseline;
+    // use the single global kulutusoletus for every journey (settings, fallback to default)
+    // rather than each journey's stored fuelConsumption, so tuning the assumption
+    // recalculates the whole history consistently
+    const rate = (cache.settings && parseNum(cache.settings.fuelConsumption)) || DEFAULT_FUEL_CONSUMPTION;
     for (const j of cache.journeys) {
         if (j.status !== 'completed') continue;
         if ((j.vene || DEFAULT_BOAT_NAME) !== DEFAULT_BOAT_NAME) continue;
         if (baselineTime && (j.endTime||'') <= baselineTime) continue;
-        liters -= journeyHours(j) * (parseNum(j.fuelConsumption) || DEFAULT_FUEL_CONSUMPTION);
+        liters -= journeyHours(j) * rate;
     }
     liters = Math.max(0, Math.min(capacity, liters));
     return { liters, capacity };
@@ -2438,6 +2442,11 @@ function renderAsetukset() {
                 <label>Tankin tilavuus (L)</label>
                 <input type="text" inputmode="decimal" id="setTankCapacity" value="${s.tankCapacity || DEFAULT_TANK_CAPACITY}">
             </div>
+            <div class="form-group">
+                <label>Kulutusoletus (L/h)</label>
+                <input type="text" inputmode="decimal" id="setFuelConsumption" value="${s.fuelConsumption || DEFAULT_FUEL_CONSUMPTION}">
+                <p style="font-size:0.8em;color:#666;margin-top:4px;">Käytetään tankkimittarin laskennassa kaikille matkoille. Säädä kun olet mitannut todellisen kulutuksen.</p>
+            </div>
             <button class="btn btn-primary btn-block" id="saveSettingsBtn">Tallenna asetukset</button>
         </div>
         <div class="card">
@@ -2470,7 +2479,8 @@ function renderAsetukset() {
         saveSettings({
             windyApiKey: document.getElementById('setWindyKey').value.trim(),
             defaultCaptain: document.getElementById('setDefaultCaptain').value.trim(),
-            tankCapacity: parseNum(document.getElementById('setTankCapacity').value)
+            tankCapacity: parseNum(document.getElementById('setTankCapacity').value),
+            fuelConsumption: parseNum(document.getElementById('setFuelConsumption').value)
         });
     });
     document.getElementById('exportBackupBtn').addEventListener('click', exportBackupJson);
